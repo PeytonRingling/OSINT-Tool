@@ -1,0 +1,48 @@
+package vip.ringling.recon.domain
+
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.runningFold
+import kotlinx.coroutines.launch
+
+/** Runs every source that supports the input type in parallel, streaming events as they happen. */
+@Singleton
+class ScanRunner @Inject constructor(private val sources: Set<@JvmSuppressWildcards OsintSource>) {
+
+    fun modulesFor(type: InputType): List<ModuleId> =
+        sources.filter { type in it.supportedInputTypes }.map { it.id }.sortedBy { it.ordinal }
+
+    fun events(input: ScanInput, enabled: Set<ModuleId>? = null): Flow<ScanEvent> = channelFlow {
+        val targets = sources.filter { input.type in it.supportedInputTypes && (enabled == null || it.id in enabled) }
+        targets.forEach { send(ScanEvent.Started(it.id)) }
+        targets.forEach { source ->
+            launch {
+                try {
+                    source.run(input).collect { send(ScanEvent.Found(it)) }
+                    send(ScanEvent.Finished(source.id))
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    send(ScanEvent.Failed(source.id, e.message ?: e.javaClass.simpleName))
+                }
+            }
+        }
+    }
+
+    /** Folds [events] into progressively complete [ScanSession] snapshots. */
+    fun session(input: ScanInput, enabled: Set<ModuleId>? = null): Flow<ScanSession> =
+        events(input, enabled).runningFold(ScanSession(input)) { s, e -> s.apply(e) }
+}
+
+fun ScanSession.apply(e: ScanEvent): ScanSession = when (e) {
+    is ScanEvent.Started -> copy(statuses = statuses + (e.module to ModuleStatus.RUNNING))
+    is ScanEvent.Found -> copy(findings = findings + e.finding)
+    is ScanEvent.Finished -> copy(statuses = statuses + (e.module to ModuleStatus.DONE))
+    is ScanEvent.Failed -> copy(
+        statuses = statuses + (e.module to ModuleStatus.FAILED),
+        errors = errors + (e.module to e.message),
+    )
+}
