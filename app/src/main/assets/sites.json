@@ -1,0 +1,261 @@
+{
+ "version": 1,
+ "note": "Curated username probes. Detection is heuristic; sites change. method: status|message|redirect. confidence: HIGH (API/stable) or MEDIUM (HTML page).",
+ "sites": [
+  {
+   "name": "GitHub",
+   "url": "https://github.com/{u}",
+   "method": "status",
+   "confidence": "HIGH",
+   "usernameRegex": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$"
+  },
+  {
+   "name": "GitLab",
+   "url": "https://gitlab.com/api/v4/users?username={u}",
+   "method": "message",
+   "confidence": "HIGH",
+   "errorMsg": "[]",
+   "profileUrl": "https://gitlab.com/{u}"
+  },
+  {
+   "name": "Bitbucket",
+   "url": "https://bitbucket.org/{u}/",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Codeberg",
+   "url": "https://codeberg.org/{u}",
+   "method": "status",
+   "confidence": "HIGH"
+  },
+  {
+   "name": "SourceForge",
+   "url": "https://sourceforge.net/u/{u}/",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Docker Hub",
+   "url": "https://hub.docker.com/v2/users/{u}/",
+   "method": "status",
+   "confidence": "HIGH",
+   "profileUrl": "https://hub.docker.com/u/{u}"
+  },
+  {
+   "name": "npm",
+   "url": "https://www.npmjs.com/~{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "PyPI",
+   "url": "https://pypi.org/user/{u}/",
+   "method": "status",
+   "confidence": "HIGH"
+  },
+  {
+   "name": "Replit",
+   "url": "https://replit.com/@{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "CodePen",
+   "url": "https://codepen.io/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Kaggle",
+   "url": "https://www.kaggle.com/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "LeetCode",
+   "url": "https://leetcode.com/{u}/",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "HackerRank",
+   "url": "https://www.hackerrank.com/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Hacker News",
+   "url": "https://hacker-news.firebaseio.com/v0/user/{u}.json",
+   "method": "message",
+   "confidence": "HIGH",
+   "errorMsg": "null",
+   "profileUrl": "https://news.ycombinator.com/user?id={u}"
+  },
+  {
+   "name": "Dev.to",
+   "url": "https://dev.to/{u}",
+   "method": "status",
+   "confidence": "HIGH"
+  },
+  {
+   "name": "Reddit",
+   "url": "https://www.reddit.com/user/{u}/about.json",
+   "method": "status",
+   "confidence": "MEDIUM",
+   "profileUrl": "https://www.reddit.com/user/{u}"
+  },
+  {
+   "name": "Keybase",
+   "url": "https://keybase.io/_/api/1.0/user/lookup.json?usernames={u}",
+   "method": "message",
+   "confidence": "HIGH",
+   "errorMsg": "\"them\":[null]",
+   "profileUrl": "https://keybase.io/{u}"
+  },
+  {
+   "name": "Mastodon (mastodon.social)",
+   "url": "https://mastodon.social/@{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Bluesky",
+   "url": "https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor={u}.bsky.social",
+   "method": "status",
+   "confidence": "HIGH",
+   "absentCodes": [
+    400
+   ],
+   "profileUrl": "https://bsky.app/profile/{u}.bsky.social",
+   "usernameRegex": "^[A-Za-z0-9-]{3,18}$"
+  },
+  {
+   "name": "Steam",
+   "url": "https://steamcommunity.com/id/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "errorMsg": "The specified profile could not be found"
+  },
+  {
+   "name": "Twitch",
+   "url": "https://www.twitch.tv/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Chess.com",
+   "url": "https://api.chess.com/pub/player/{u}",
+   "method": "status",
+   "confidence": "HIGH",
+   "profileUrl": "https://www.chess.com/member/{u}"
+  },
+  {
+   "name": "Lichess",
+   "url": "https://lichess.org/api/user/{u}",
+   "method": "status",
+   "confidence": "HIGH",
+   "profileUrl": "https://lichess.org/@/{u}"
+  },
+  {
+   "name": "Last.fm",
+   "url": "https://www.last.fm/user/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Letterboxd",
+   "url": "https://letterboxd.com/{u}/",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "SoundCloud",
+   "url": "https://soundcloud.com/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Vimeo",
+   "url": "https://vimeo.com/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Behance",
+   "url": "https://www.behance.net/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Dribbble",
+   "url": "https://dribbble.com/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Patreon",
+   "url": "https://www.patreon.com/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Linktree",
+   "url": "https://linktr.ee/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "About.me",
+   "url": "https://about.me/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Gravatar",
+   "url": "https://en.gravatar.com/{u}.json",
+   "method": "status",
+   "confidence": "HIGH",
+   "profileUrl": "https://gravatar.com/{u}"
+  },
+  {
+   "name": "Imgur",
+   "url": "https://imgur.com/user/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Pastebin",
+   "url": "https://pastebin.com/u/{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Wikipedia",
+   "url": "https://en.wikipedia.org/wiki/User:{u}",
+   "method": "status",
+   "confidence": "MEDIUM"
+  },
+  {
+   "name": "Tumblr",
+   "url": "https://{u}.tumblr.com",
+   "method": "status",
+   "confidence": "MEDIUM",
+   "usernameRegex": "^[A-Za-z0-9-]{1,32}$"
+  },
+  {
+   "name": "WordPress.com",
+   "url": "https://{u}.wordpress.com",
+   "method": "status",
+   "confidence": "MEDIUM",
+   "usernameRegex": "^[A-Za-z0-9-]{1,32}$"
+  },
+  {
+   "name": "itch.io",
+   "url": "https://{u}.itch.io",
+   "method": "status",
+   "confidence": "MEDIUM",
+   "usernameRegex": "^[A-Za-z0-9_-]{1,32}$"
+  }
+ ]
+}
