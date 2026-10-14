@@ -6,6 +6,8 @@
         android:name=".ReconApp"
         android:label="Recon"
         android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
         android:supportsRtl="true"
         android:theme="@style/Theme.Recon">
