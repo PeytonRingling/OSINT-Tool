@@ -48,12 +48,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import vip.ringling.recon.data.settings.AppSettings
 import vip.ringling.recon.data.settings.ThemeMode
+import vip.ringling.recon.domain.ApiKeyId
 import vip.ringling.recon.ui.theme.ReconTheme
-
-enum class ApiKeyId(val label: String, val hint: String) {
-    HIBP("Have I Been Pwned", "Required for email breach lookups (hibp-api-key)."),
-    LEAKCHECK("LeakCheck", "Optional. Without a key the limited public endpoint is used."),
-}
 
 data class SettingsUiState(
     val settings: AppSettings = AppSettings(),
@@ -162,7 +158,7 @@ private fun KeysSection(state: SettingsUiState, a: SettingsActions) {
             KeyField(id, state.keys[id].orEmpty()) { a.onKeyChange(id, it) }
         }
         Text(
-            "Keys are entered here at runtime — nothing ships in the app. They are never logged and are held in Keystore-backed encrypted storage once the modules are wired (Phase 2).",
+            "Keys are entered here at runtime — nothing ships in the app. They are encrypted with a hardware-backed Android Keystore key, never logged, and never leave this device except in requests to the service they belong to.",
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
         )

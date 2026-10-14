@@ -1,0 +1,24 @@
+package vip.ringling.recon.di
+
+import android.content.Context
+import androidx.room.Room
+import dagger.Module
+import dagger.Provides
+import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
+import vip.ringling.recon.data.db.HistoryDb
+import vip.ringling.recon.data.db.ScanDao
+import vip.ringling.recon.data.net.Endpoints
+import vip.ringling.recon.data.net.Http
+
+@Module
+@InstallIn(SingletonComponent::class)
+object NetModule {
+    @Provides @Singleton fun http(): Http = Http()
+    @Provides @Singleton fun endpoints(): Endpoints = Endpoints()
+    @Provides @Singleton fun db(@ApplicationContext c: Context): HistoryDb =
+        Room.databaseBuilder(c, HistoryDb::class.java, "recon.db").build()
+    @Provides fun scanDao(db: HistoryDb): ScanDao = db.scans()
+}

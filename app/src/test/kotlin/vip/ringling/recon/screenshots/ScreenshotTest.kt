@@ -43,7 +43,7 @@ import vip.ringling.recon.ui.home.HomeActions
 import vip.ringling.recon.ui.home.HomeUiState
 import vip.ringling.recon.ui.scan.ScanScreen
 import vip.ringling.recon.ui.scan.ScanUiState
-import vip.ringling.recon.ui.settings.ApiKeyId
+import vip.ringling.recon.domain.ApiKeyId
 import vip.ringling.recon.ui.settings.SettingsActions
 import vip.ringling.recon.ui.settings.SettingsScreen
 import vip.ringling.recon.ui.settings.SettingsUiState

@@ -1,0 +1,4 @@
+[
+  {"Name":"Adobe","Title":"Adobe","Domain":"adobe.com","BreachDate":"2013-10-04","AddedDate":"2013-12-04T00:00:00Z","PwnCount":152445165,"Description":"x","DataClasses":["Email addresses","Password hints","Passwords","Usernames"],"IsVerified":true,"IsFabricated":false,"IsSensitive":false,"IsRetired":false,"IsSpamList":false,"LogoPath":"x.png"},
+  {"Name":"Dropbox","Title":"Dropbox","Domain":"dropbox.com","BreachDate":"2012-07-01","PwnCount":68648009,"DataClasses":["Email addresses"],"IsVerified":true,"SomeFutureField":42}
+]
