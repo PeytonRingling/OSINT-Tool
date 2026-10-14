@@ -15,7 +15,7 @@ import vip.ringling.recon.data.net.HttpException
 import vip.ringling.recon.data.sources.identity.RateLimiter
 
 /** Parsed search-result row. */
-data class IdahoRow(val id: String, val name: String, val kno: String, val address: String, val city: String, val county: String, val zip: String, val status: String)
+data class IdahoRow(val id: String, val href: String, val name: String, val kno: String, val address: String, val city: String, val county: String, val zip: String, val status: String)
 data class IdahoPage(val totalMatches: Int, val pages: Int, val rows: List<IdahoRow>)
 data class IdahoOffense(val statute: String, val description: String, val date: String, val place: String)
 data class IdahoDetail(val regStatus: String?, val lastRegistered: String?, val offenses: List<IdahoOffense>)
@@ -25,7 +25,8 @@ data class IdahoDetail(val regStatus: String?, val lastRegistered: String?, val 
  *  - ZIP search: POST SOR  form=5 & zip=NNNNN & rad=A & sz=400   (form=3 cty=…, form=4 cnt=… for city/county)
  *  - results: 15 rows per page, "N matches found in M pages", cells td#nam_field/kno_field/adr_field/cty_field×2/zip_field/stat_field
  *  - detail: GET SOR?id=N&sz=400, label cells td#sor_detail_lead, offenses table under "Offenses Requiring Registration"
- * Only the FIRST results page is ever fetched, and only for the query the user typed. Nothing is cached or stored.
+ * Both the adult (rad=A) and juvenile (rad=J) databases are queried, first results page only, for the query the user typed.
+ * Nothing is cached or stored.
  * Date of birth, physical description, aliases and photos are deliberately not read.
  */
 class IdahoRegistryAdapter @Inject constructor(
@@ -38,8 +39,21 @@ class IdahoRegistryAdapter @Inject constructor(
 
     private val limiter = RateLimiter(maxConcurrent = 3, minIntervalMs = 150)
 
-    override suspend fun search(query: RegistryQuery): RegistryResult {
-        val form = FormBody.Builder().add("sz", "400").add("rad", "A").apply {
+    override suspend fun search(query: RegistryQuery): RegistryResult = coroutineScope {
+        // Adult ("A") and juvenile ("J") are separate databases on the same site; each gets one first-page query.
+        val dbs = listOf("A" to "Adult", "J" to "Juvenile").map { (code, label) ->
+            async { label to runCatching { searchDatabase(query, code, label) } }
+        }.awaitAll()
+        val ok = dbs.mapNotNull { (_, r) -> r.getOrNull() }
+        if (ok.isEmpty()) throw dbs.first().second.exceptionOrNull() ?: AdapterUnavailable("Idaho registry unavailable")
+        val notes = dbs.filter { it.second.isFailure }.map { (label, r) -> "$label registry unavailable: ${r.exceptionOrNull()?.message}" }
+        RegistryResult(ok.sumOf { it.total }, ok.flatMap { it.entries }, "${endpoints.idahoSor}/search_zip.html", notes)
+    }
+
+    private class DbResult(val total: Int, val entries: List<RegistryEntry>)
+
+    private suspend fun searchDatabase(query: RegistryQuery, rad: String, label: String): DbResult {
+        val form = FormBody.Builder().add("sz", "400").add("rad", rad).apply {
             when {
                 query.zip != null -> { add("form", "5"); add("zip", query.zip) }
                 query.city != null -> { add("form", "3"); add("cty", query.city.uppercase()) }
@@ -57,22 +71,22 @@ class IdahoRegistryAdapter @Inject constructor(
             page.rows.map { row ->
                 async {
                     val detail = try {
-                        limiter.run { fetchDetail(row.id) }
+                        limiter.run { fetchDetail(row.href) }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (e: Exception) {
                         null
                     }
-                    RegistryEntry(row.name, summarize(row, detail), "${endpoints.idahoSor}/SOR?id=${row.id}&sz=400")
+                    RegistryEntry(row.name, "$label registry · " + summarize(row, detail), "${endpoints.idahoSor}/${row.href}")
                 }
             }.awaitAll()
         }
-        return RegistryResult(page.totalMatches, entries, "${endpoints.idahoSor}/search_zip.html")
+        return DbResult(page.totalMatches, entries)
     }
 
-    private suspend fun fetchDetail(id: String): IdahoDetail {
-        val url = "${endpoints.idahoSor}/SOR".toHttpUrl().newBuilder().addQueryParameter("id", id).addQueryParameter("sz", "400").build()
-        val html = http.execute(Request.Builder().url(url).build()) { r ->
+    /** [href] is the relative link taken from the results page, so adult and juvenile records both resolve. */
+    private suspend fun fetchDetail(href: String): IdahoDetail {
+        val html = http.execute(Request.Builder().url("${endpoints.idahoSor}/$href".toHttpUrl()).build()) { r ->
             if (r.code != 200) throw HttpException(r.code, "Idaho registry detail returned HTTP ${r.code}")
             r.body.string()
         }
@@ -88,7 +102,8 @@ class IdahoRegistryAdapter @Inject constructor(
     }.joinToString(" · ")
 
     companion object {
-        private val matchRe = Regex("""(\d+)\s+match(?:es)?\s+found\s+in\s+(\d+)\s+pages?""", RegexOption.IGNORE_CASE)
+        // Seen live: "60 matches found in 4 pages.", "4 matches found.", "1 match.", "0 matches found".
+        private val matchRe = Regex("""(\d+)\s+match(?:es)?(?:\s+found)?(?:\s+in\s+(\d+)\s+pages?)?""", RegexOption.IGNORE_CASE)
 
         private fun clean(s: String?) = s.orEmpty().replace(' ', ' ').replace(Regex("\\s+"), " ").trim()
 
@@ -101,6 +116,7 @@ class IdahoRegistryAdapter @Inject constructor(
                 val cells = tr.select("td[id=cty_field]")
                 IdahoRow(
                     id = Regex("""[?&]id=(\d+)""").find(link?.attr("href").orEmpty())?.groupValues?.get(1).orEmpty(),
+                    href = link?.attr("href").orEmpty(),
                     name = clean(link?.text() ?: tr.selectFirst("td[id=nam_field]")?.text()),
                     kno = clean(tr.selectFirst("td[id=kno_field]")?.text()),
                     address = clean(tr.selectFirst("td[id=adr_field]")?.text()),
@@ -110,7 +126,7 @@ class IdahoRegistryAdapter @Inject constructor(
                     status = clean(tr.selectFirst("td[id=stat_field]")?.text()),
                 )
             }.filter { it.id.isNotEmpty() }
-            return IdahoPage(m?.groupValues?.get(1)?.toInt() ?: rows.size, m?.groupValues?.get(2)?.toInt() ?: 1, rows)
+            return IdahoPage(m?.groupValues?.get(1)?.toInt() ?: rows.size, m?.groupValues?.get(2)?.takeIf { it.isNotEmpty() }?.toInt() ?: 1, rows)
         }
 
         fun parseDetail(html: String): IdahoDetail {

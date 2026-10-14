@@ -43,6 +43,13 @@ class IdahoParsingTest {
         assertEquals("Non Comp", p.rows[1].status)
     }
 
+    @Test fun countWordingVariantsSeenLive() {
+        assertEquals(2, IdahoRegistryAdapter.parseResults(fixture("idaho_zip_found_no_pages.html")).totalMatches)
+        val one = IdahoRegistryAdapter.parseResults(fixture("idaho_juvenile_results.html"))
+        assertEquals(1, one.totalMatches); assertEquals(1, one.rows.size)
+        assertTrue(one.rows.single().href.startsWith("SOR?id="), one.rows.single().href)
+    }
+
     @Test fun multipageAndEmpty() {
         val m = IdahoRegistryAdapter.parseResults(fixture("idaho_zip_multipage.html"))
         assertEquals(60, m.totalMatches); assertEquals(4, m.pages); assertEquals(2, m.rows.size, "only rows present are returned")
@@ -73,47 +80,65 @@ class IdahoAdapterTest {
         assertTrue(!a.handlesZip("90210") && !a.handlesZip("83100") && !a.handlesZip("83900"))
     }
 
-    @Test fun postsConfirmedFormAndFetchesOnlyFirstPage() = runTest {
+    /** Serves the adult database for rad=A and the given page for rad=J. */
+    private fun bySearch(adult: String, juvenile: String, juvenileCode: Int = 200): (okhttp3.mockwebserver.RecordedRequest) -> MockResponse = { req ->
+        if (req.method == "POST" && "rad=J" in req.body.clone().readUtf8()) html(juvenile, juvenileCode) else html(adult)
+    }
+
+    @Test fun queriesAdultAndJuvenileFirstPageOnly() = runTest {
         val (srv, router) = server(
             "/idaho/SOR?id=" to { html(fixture("idaho_detail.html")) },
-            "/idaho/SOR" to { html(fixture("idaho_zip_multipage.html")) },
+            "/idaho/SOR" to bySearch(fixture("idaho_zip_multipage.html"), fixture("idaho_juvenile_results.html")),
         )
         srv.use {
-            val src = RegistrySource(setOf(IdahoRegistryAdapter(Http(), srv.endpoints())))
-            val f = src.collect(ScanInput("83702", InputType.ZIP))
+            val f = RegistrySource(setOf(IdahoRegistryAdapter(Http(), srv.endpoints()))).collect(ScanInput("83702", InputType.ZIP))
 
-            val post = router.seen.first { it.method == "POST" }
-            val body = post.body.readUtf8()
-            assertEquals("/idaho/SOR", post.path)
-            assertTrue("form=5" in body && "zip=83702" in body && "rad=A" in body && "sz=400" in body, body)
+            val posts = router.seen.filter { it.method == "POST" }.map { it.body.clone().readUtf8() }
+            assertEquals(2, posts.size)
+            assertTrue(posts.any { "rad=A" in it && "form=5" in it && "zip=83702" in it && "sz=400" in it }, posts.toString())
+            assertTrue(posts.any { "rad=J" in it && "form=5" in it && "zip=83702" in it }, posts.toString())
             assertTrue(router.seen.none { it.path!!.contains("page=") }, "must never walk further pages")
-            assertEquals(1, router.seen.count { it.method == "POST" })
 
             val summary = f.first { it.id == "REGISTRY-summary" }
-            assertEquals("60 matches in 83702", summary.title)
-            assertTrue("Showing the first 2" in summary.detail && "verify before relying" in summary.detail, summary.detail)
-            val rec = f.first { it.title == "SAMPLE, ALEX Q" }
-            assertTrue("100 FICTION AVE, BOISE, ADA County, 83702" in rec.detail, rec.detail)
-            assertTrue("Last registered: Mar 15, 2026" in rec.detail && "18-0000 – FICTIONAL OFFENSE ONE" in rec.detail, rec.detail)
-            assertEquals("", rec.raw)
-            assertTrue(rec.url!!.endsWith("/idaho/SOR?id=90001&sz=400"))
+            assertEquals("61 matches in 83702", summary.title)
+            assertTrue("Showing the first 3" in summary.detail && "verify before relying" in summary.detail, summary.detail)
+            val adult = f.first { it.title == "SAMPLE, ALEX Q" }
+            assertTrue(adult.detail.startsWith("Adult registry · 100 FICTION AVE, BOISE, ADA County, 83702"), adult.detail)
+            assertTrue("Last registered: Mar 15, 2026" in adult.detail && "18-0000 – FICTIONAL OFFENSE ONE" in adult.detail, adult.detail)
+            assertEquals("", adult.raw)
+            val juv = f.first { it.title == "SAMPLE, JAMIE R" }
+            assertTrue(juv.detail.startsWith("Juvenile registry · 300 JUVENILE EXAMPLE LN"), juv.detail)
+            assertTrue(juv.url!!.endsWith("/idaho/SOR?id=90101&sz=400"), juv.url)
         }
     }
 
     @Test fun detailFailureDegradesButKeepsRow() = runTest {
         val (srv, _) = server(
             "/idaho/SOR?id=" to { html("boom", 500) },
-            "/idaho/SOR" to { html(fixture("idaho_zip_results.html")) },
+            "/idaho/SOR" to bySearch(fixture("idaho_zip_results.html"), fixture("idaho_zip_empty.html")),
         )
         srv.use {
             val f = RegistrySource(setOf(IdahoRegistryAdapter(Http(), srv.endpoints()))).collect(ScanInput("83702", InputType.ZIP))
             val rec = f.first { it.title == "EXAMPLE, BEN" }
             assertTrue("Status: Non Comp" in rec.detail && "Offense details unavailable" in rec.detail, rec.detail)
-            assertTrue("Showing the first" !in f.first { it.id == "REGISTRY-summary" }.detail, "complete result is not 'partial'")
+            assertTrue("Showing the first" !in f.first { it.id == "REGISTRY-summary" }.detail, "complete result is not partial")
         }
     }
 
-    @Test fun noMatchesIsClean() = runTest {
+    @Test fun juvenileOutageStillReturnsAdultWithANote() = runTest {
+        val (srv, _) = server(
+            "/idaho/SOR?id=" to { html(fixture("idaho_detail.html")) },
+            "/idaho/SOR" to bySearch(fixture("idaho_zip_results.html"), "down", juvenileCode = 503),
+        )
+        srv.use {
+            val f = RegistrySource(setOf(IdahoRegistryAdapter(Http(), srv.endpoints()))).collect(ScanInput("83702", InputType.ZIP))
+            assertTrue(f.any { it.title == "SAMPLE, ALEX Q" })
+            val note = f.first { it.id.startsWith("REGISTRY-note") }
+            assertTrue("Juvenile registry unavailable" in note.detail && "503" in note.detail, note.detail)
+        }
+    }
+
+    @Test fun noMatchesInEitherDatabaseIsClean() = runTest {
         val (srv, _) = server("/idaho/SOR" to { html(fixture("idaho_zip_empty.html")) })
         srv.use {
             val f = RegistrySource(setOf(IdahoRegistryAdapter(Http(), srv.endpoints()))).collect(ScanInput("83702", InputType.ZIP))
@@ -121,7 +146,7 @@ class IdahoAdapterTest {
         }
     }
 
-    @Test fun serverErrorFailsTheModuleLoudly() = runTest {
+    @Test fun bothDatabasesDownFailsTheModuleLoudly() = runTest {
         val (srv, _) = server("/idaho/SOR" to { html("down", 503) })
         srv.use {
             val ex = assertFailsWith<HttpException> {
@@ -136,9 +161,10 @@ class IdahoAdapterTest {
         srv.use {
             val a = IdahoRegistryAdapter(Http(), srv.endpoints())
             a.search(RegistryQuery(city = "Boise")); a.search(RegistryQuery(county = "Ada"))
-            val bodies = router.seen.map { it.body.readUtf8() }
-            assertTrue("form=3" in bodies[0] && "cty=BOISE" in bodies[0], bodies[0])
-            assertTrue("form=4" in bodies[1] && "cnt=ADA" in bodies[1], bodies[1])
+            val bodies = router.seen.map { it.body.clone().readUtf8() }
+            assertTrue(bodies.any { "form=3" in it && "cty=BOISE" in it && "rad=A" in it }, bodies.toString())
+            assertTrue(bodies.any { "form=3" in it && "rad=J" in it }, bodies.toString())
+            assertTrue(bodies.any { "form=4" in it && "cnt=ADA" in it }, bodies.toString())
         }
     }
 }

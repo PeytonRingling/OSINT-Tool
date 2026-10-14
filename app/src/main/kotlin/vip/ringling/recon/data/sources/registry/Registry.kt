@@ -17,7 +17,7 @@ data class RegistryQuery(val zip: String? = null, val city: String? = null, val 
 data class RegistryEntry(val name: String, val summary: String, val sourceUrl: String)
 
 /** [totalMatches] is what the registry reports; [entries] is only the first page we fetched. */
-data class RegistryResult(val totalMatches: Int, val entries: List<RegistryEntry>, val searchUrl: String)
+data class RegistryResult(val totalMatches: Int, val entries: List<RegistryEntry>, val searchUrl: String, val notes: List<String> = emptyList())
 
 class AdapterUnavailable(message: String) : Exception(message)
 
@@ -44,6 +44,9 @@ class RegistrySource @Inject constructor(private val adapters: Set<@JvmSuppressW
             return@flow
         }
         val r = adapter.search(RegistryQuery(zip = zip))
+        r.notes.forEachIndexed { i, n ->
+            emit(Finding("REGISTRY-note-$i", ModuleId.REGISTRY, "Part of the registry could not be searched", n, Severity.INFO))
+        }
         if (r.totalMatches == 0 && r.entries.isEmpty()) {
             emit(Finding("REGISTRY-none", ModuleId.REGISTRY, "No records for $zip", "The ${adapter.stateName} registry reports no matches for this ZIP.", Severity.CLEAN, r.searchUrl))
             return@flow
