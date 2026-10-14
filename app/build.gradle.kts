@@ -49,6 +49,20 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             isReturnDefaultValues = true
+            all {
+                // Robolectric on JDK 17+ needs reflective access to these packages.
+                it.jvmArgs(
+                    "--add-opens=java.base/java.io=ALL-UNNAMED",
+                    "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                    "--add-opens=java.base/java.util=ALL-UNNAMED",
+                    "--add-opens=java.base/java.nio=ALL-UNNAMED",
+                    "--add-opens=java.base/java.net=ALL-UNNAMED",
+                    "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+                    "--add-opens=java.base/java.text=ALL-UNNAMED",
+                    "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED",
+                )
+                it.maxHeapSize = "2g"
+            }
         }
     }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
@@ -95,4 +109,8 @@ dependencies {
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.androidx.compose.ui.test)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
+}
+
+roborazzi {
+    outputDir.set(rootProject.layout.projectDirectory.dir("docs/screenshots"))
 }

@@ -63,10 +63,14 @@ import vip.ringling.recon.ui.components.LocalSharedScopes
 import vip.ringling.recon.ui.components.SharedScopes
 import vip.ringling.recon.ui.detail.EmptyDetailPane
 import vip.ringling.recon.ui.detail.FindingDetail
+import vip.ringling.recon.domain.Finding
+import vip.ringling.recon.domain.ScanRecord
 import vip.ringling.recon.ui.history.HistoryScreen
+import vip.ringling.recon.ui.history.HistoryUiState
 import vip.ringling.recon.ui.history.HistoryViewModel
 import vip.ringling.recon.ui.home.HomeActions
 import vip.ringling.recon.ui.home.HomeScreen
+import vip.ringling.recon.ui.home.HomeUiState
 import vip.ringling.recon.ui.home.HomeViewModel
 import vip.ringling.recon.ui.home.scanResults
 import vip.ringling.recon.ui.scan.ScanScreen
@@ -157,7 +161,7 @@ fun ReconApp() {
                         val r by vm.record.collectAsStateWithLifecycle()
                         CompositionLocalProvider(LocalSharedScopes provides SharedScopes(this@SharedTransitionLayout, this)) {
                             r?.let { rec ->
-                                LazyColumn(Modifier.fillMaxSize(), contentPadding = pad, verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+                                LazyColumn(Modifier.fillMaxSize(), contentPadding = pad.listInsets(), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
                                     scanResults(
                                         rec.input, rec.findings, recordStatuses(rec), emptyMap(), null, true, {},
                                         { nav.navigate("finding/${it.id}") }, { actions.exportScan(rec.input, rec.findings) },
@@ -170,43 +174,59 @@ fun ReconApp() {
             }
         }
 
-        if (useRail) {
-            Row(Modifier.fillMaxSize()) {
-                NavigationRail(containerColor = MaterialTheme.colorScheme.background) {
-                    Box(Modifier.weight(1f))
-                    Tab.entries.forEach { tab ->
-                        val sel = tab == topLevel || (topLevel == null && tab == Tab.HOME)
-                        NavigationRailItem(
-                            selected = sel, onClick = { nav.goTab(tab) },
-                            icon = { Icon(if (sel) tab.selected else tab.icon, null) }, label = { Text(tab.label) },
-                        )
-                    }
-                    Box(Modifier.weight(1f))
+        AppShell(
+            selected = topLevel, useRail = useRail, snackbar = snackbar,
+            onTab = { nav.goTab(it) }, content = content,
+        )
+    }
+}
+
+/** Bottom bar on phones, rail from 600dp up. Stateless so screenshot tests render the real thing. */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun AppShell(
+    selected: Tab?,
+    useRail: Boolean,
+    snackbar: SnackbarHostState,
+    onTab: (Tab) -> Unit,
+    content: @Composable (PaddingValues) -> Unit,
+) {
+    if (useRail) {
+        Row(Modifier.fillMaxSize()) {
+            NavigationRail(containerColor = MaterialTheme.colorScheme.background) {
+                Box(Modifier.weight(1f))
+                Tab.entries.forEach { tab ->
+                    val sel = tab == selected || (selected == null && tab == Tab.HOME)
+                    NavigationRailItem(
+                        selected = sel, onClick = { onTab(tab) },
+                        icon = { Icon(if (sel) tab.selected else tab.icon, null) }, label = { Text(tab.label) },
+                    )
                 }
-                Scaffold(
-                    Modifier.weight(1f), containerColor = MaterialTheme.colorScheme.background,
-                    snackbarHost = { SnackbarHost(snackbar) },
-                ) { content(it) }
+                Box(Modifier.weight(1f))
             }
-        } else {
             Scaffold(
-                containerColor = MaterialTheme.colorScheme.background,
+                Modifier.weight(1f), containerColor = MaterialTheme.colorScheme.background,
                 snackbarHost = { SnackbarHost(snackbar) },
-                bottomBar = {
-                    if (topLevel != null) {
-                        ShortNavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
-                            Tab.entries.forEach { tab ->
-                                val sel = tab == topLevel
-                                ShortNavigationBarItem(
-                                    selected = sel, onClick = { nav.goTab(tab) },
-                                    icon = { Icon(if (sel) tab.selected else tab.icon, null) }, label = { Text(tab.label) },
-                                )
-                            }
-                        }
-                    }
-                },
             ) { content(it) }
         }
+    } else {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbar) },
+            bottomBar = {
+                if (selected != null) {
+                    ShortNavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
+                        Tab.entries.forEach { tab ->
+                            val sel = tab == selected
+                            ShortNavigationBarItem(
+                                selected = sel, onClick = { onTab(tab) },
+                                icon = { Icon(if (sel) tab.selected else tab.icon, null) }, label = { Text(tab.label) },
+                            )
+                        }
+                    }
+                }
+            },
+        ) { content(it) }
     }
 }
 
@@ -230,6 +250,11 @@ private fun HomeRoute(nav: NavHostController, expanded: Boolean, actions: ReconA
         onAckRegistry = vm::ackRegistry, onRecent = vm::reuse,
         onExportAll = { st.session?.let { actions.exportScan(it.input, it.findings) } },
     )
+    HomePane(st, ha, selected, actions, expanded, pad)
+}
+
+@Composable
+fun HomePane(st: HomeUiState, ha: HomeActions, selected: Finding?, actions: ReconActions, expanded: Boolean, pad: PaddingValues) {
     if (!expanded) {
         HomeScreen(st, ha, contentPadding = pad)
     } else {
@@ -249,26 +274,38 @@ private fun HistoryRoute(nav: NavHostController, expanded: Boolean, actions: Rec
     val vm: HistoryViewModel = hiltViewModel()
     val st by vm.state.collectAsStateWithLifecycle()
     val rec by vm.selectedRecord.collectAsStateWithLifecycle(null)
+    var findingId by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf<String?>(null) }
     if (!expanded) {
         HistoryScreen(st, { nav.navigate("record/${it.id}") }, vm::delete, vm::clearAll, contentPadding = pad)
     } else {
-        var findingId by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf<String?>(null) }
-        ListDetail(
-            list = { HistoryScreen(st, { findingId = null; vm.open(it) }, vm::delete, vm::clearAll, contentPadding = pad) },
-            detail = {
-                AnimatedContent(rec to findingId, transitionSpec = paneTransition(), label = "pane") { (r, fid) ->
-                    val f = r?.findings?.firstOrNull { it.id == fid }
-                    when {
-                        r == null -> EmptyDetailPane()
-                        f != null -> FindingDetail(f, actions.detail, onBack = { findingId = null }, contentPadding = pad)
-                        else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = pad, verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
-                            scanResults(r.input, r.findings, recordStatuses(r), emptyMap(), null, true, {}, { findingId = it.id }, { actions.exportScan(r.input, r.findings) })
-                        }
-                    }
-                }
-            },
+        HistoryPane(
+            st, rec, findingId, actions, pad,
+            onOpen = { findingId = null; vm.open(it) }, onDelete = vm::delete, onClearAll = vm::clearAll,
+            onFinding = { findingId = it },
         )
     }
+}
+
+@Composable
+fun HistoryPane(
+    st: HistoryUiState, rec: ScanRecord?, findingId: String?, actions: ReconActions, pad: PaddingValues,
+    onOpen: (ScanRecord) -> Unit, onDelete: (ScanRecord) -> Unit, onClearAll: () -> Unit, onFinding: (String?) -> Unit,
+) {
+    ListDetail(
+        list = { HistoryScreen(st, onOpen, onDelete, onClearAll, contentPadding = pad) },
+        detail = {
+            AnimatedContent(rec to findingId, transitionSpec = paneTransition(), label = "pane") { (r, fid) ->
+                val f = r?.findings?.firstOrNull { it.id == fid }
+                when {
+                    r == null -> EmptyDetailPane()
+                    f != null -> FindingDetail(f, actions.detail, onBack = { onFinding(null) }, contentPadding = pad)
+                    else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = pad.listInsets(), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+                        scanResults(r.input, r.findings, recordStatuses(r), emptyMap(), null, true, {}, { onFinding(it.id) }, { actions.exportScan(r.input, r.findings) })
+                    }
+                }
+            }
+        },
+    )
 }
 
 private fun <S> paneTransition(): androidx.compose.animation.AnimatedContentTransitionScope<S>.() -> androidx.compose.animation.ContentTransform = {
@@ -279,10 +316,12 @@ private fun <S> paneTransition(): androidx.compose.animation.AnimatedContentTran
 @Composable
 fun ListDetail(list: @Composable () -> Unit, detail: @Composable () -> Unit) {
     Row(Modifier.fillMaxSize()) {
-        Box(Modifier.width(440.dp).fillMaxSize()) { list() }
+        Box(Modifier.width(380.dp).fillMaxSize()) { list() }
         VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
         Box(Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.TopCenter) {
             Box(Modifier.widthIn(max = 720.dp).fillMaxSize()) { detail() }
         }
     }
 }
+
+private fun PaddingValues.listInsets() = PaddingValues(top = calculateTopPadding() + 12.dp, bottom = calculateBottomPadding() + 24.dp)

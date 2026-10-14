@@ -185,7 +185,7 @@ private fun KeyField(id: ApiKeyId, value: String, onChange: (String) -> Unit) {
         Text(id.hint, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
         Surface(shape = MaterialTheme.shapes.small, color = cs.surfaceContainerHigh, border = BorderStroke(1.dp, cs.outlineVariant)) {
             Row(Modifier.padding(start = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f).padding(vertical = 14.dp)) {
+                androidx.compose.foundation.layout.Box(Modifier.weight(1f).padding(vertical = 14.dp)) {
                     if (value.isEmpty()) Text("Paste key", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
                     BasicTextField(
                         value = value, onValueChange = onChange, singleLine = true,

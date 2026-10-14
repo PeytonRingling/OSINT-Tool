@@ -156,7 +156,7 @@ private fun HistoryRow(r: ScanRecord, selected: Boolean, now: Long, onOpen: () -
         Surface(
             Modifier.fillMaxWidth().clickable(role = Role.Button, onClickLabel = "Open scan", onClick = onOpen),
             shape = MaterialTheme.shapes.large,
-            color = if (selected) cs.primaryContainer.copy(alpha = 0.3f) else cs.surfaceContainer,
+            color = if (selected) cs.surfaceContainerHighest else cs.surfaceContainer,
             border = BorderStroke(1.dp, if (selected) cs.primary.copy(alpha = 0.6f) else cs.outlineVariant.copy(alpha = 0.6f)),
         ) {
             Row(

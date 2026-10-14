@@ -72,7 +72,7 @@ fun ModuleCard(
                 }
                 Column(Modifier.weight(1f)) {
                     Text(module.label, style = MaterialTheme.typography.titleLarge, color = cs.onSurface)
-                    val sub = when (status) {
+                    val sub = if (gate != null) "Locked · read the notice first" else when (status) {
                         ModuleStatus.QUEUED -> "Queued"
                         ModuleStatus.RUNNING -> if (findings.isEmpty()) "Querying…" else "Streaming · ${findings.size} so far"
                         ModuleStatus.DONE -> "${findings.size} result${if (findings.size == 1) "" else "s"}"
@@ -85,7 +85,7 @@ fun ModuleCard(
                         LoadingIndicator(Modifier.size(40.dp), color = cs.primary)
                     else -> {
                         val worst = findings.maxByOrNull { it.severity.ordinal }?.severity
-                        if (worst != null) SeverityChip(worst)
+                        if (worst != null && gate == null) SeverityChip(worst)
                     }
                 }
             }

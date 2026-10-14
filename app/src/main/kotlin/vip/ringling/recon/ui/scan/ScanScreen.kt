@@ -41,6 +41,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
@@ -147,19 +148,21 @@ private fun Radar(findings: List<Finding>, active: Boolean, modifier: Modifier =
         drawLine(ring, Offset(c.x - r, c.y), Offset(c.x + r, c.y), 1.5f)
         drawLine(ring, Offset(c.x, c.y - r), Offset(c.x, c.y + r), 1.5f)
         val alpha = if (active) 0.55f else 0.18f
-        drawArc(
-            brush = Brush.sweepGradient(
-                0f to Color.Transparent, 0.82f to Color.Transparent, 1f to primary.copy(alpha = alpha),
-                center = c,
-            ),
-            startAngle = angle - 90f, sweepAngle = 90f, useCenter = true,
-            topLeft = Offset(c.x - r, c.y - r), size = androidx.compose.ui.geometry.Size(r * 2, r * 2),
-        )
+        rotate(angle, c) {
+            drawArc(
+                brush = Brush.sweepGradient(
+                    0f to primary.copy(alpha = alpha), 0.75f to Color.Transparent, 1f to primary.copy(alpha = alpha),
+                    center = c,
+                ),
+                startAngle = -90f, sweepAngle = 90f, useCenter = true,
+                topLeft = Offset(c.x - r, c.y - r), size = androidx.compose.ui.geometry.Size(r * 2, r * 2),
+            )
+        }
         // Blips: stable position per finding id so they don't jump as new ones stream in.
         findings.forEachIndexed { i, f ->
             val h = f.id.hashCode()
             val a = Math.toRadians(((h and 0x7fffffff) % 360).toDouble())
-            val d = r * (0.38f + ((h ushr 9) and 0x7fffffff) % 55 / 100f)
+            val d = r * (0.55f + ((h ushr 9) and 0x7fffffff) % 38 / 100f)
             val p = Offset(c.x + (cos(a) * d).toFloat(), c.y + (sin(a) * d).toFloat())
             drawCircle(colors[i].copy(alpha = 0.25f), 16f, p)
             drawCircle(colors[i], 7f, p)

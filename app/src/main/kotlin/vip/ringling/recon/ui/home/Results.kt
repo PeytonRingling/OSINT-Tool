@@ -1,6 +1,7 @@
 package vip.ringling.recon.ui.home
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,25 +42,34 @@ fun LazyListScope.scanResults(
     onExportAll: () -> Unit,
 ) {
     item(key = "summary") {
+        // Registry results stay hidden (including in counts and the risk score) until the legal notice is accepted.
+        val findings = findings.filter { !(it.module == ModuleId.REGISTRY && !registryAck) }
         val total = statuses.size
         val done = statuses.values.count { it == ModuleStatus.DONE || it == ModuleStatus.FAILED }
         val running = done < total
         val cs = MaterialTheme.colorScheme
         Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                RiskRing(RiskScore.compute(findings), size = 132.dp, stroke = 13.dp)
-                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Icon(input.type.icon(), null, Modifier.padding(end = 2.dp), tint = cs.primary)
-                        Text(input.type.label.uppercase(), style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant)
+            BoxWithConstraints {
+                val narrow = maxWidth < 420.dp
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (narrow) 12.dp else 20.dp)) {
+                    RiskRing(RiskScore.compute(findings), size = if (narrow) 96.dp else 132.dp, stroke = if (narrow) 10.dp else 13.dp)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(input.type.icon(), null, Modifier.padding(end = 2.dp), tint = cs.primary)
+                            Text(input.type.label.uppercase(), Modifier.weight(1f), style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant)
+                            IconButton(onClick = onExportAll) { Icon(Icons.Rounded.FileDownload, "Export all as JSON") }
+                        }
+                        Text(
+                            input.raw,
+                            style = if (narrow) MaterialTheme.typography.titleLarge else MaterialTheme.typography.headlineSmall,
+                            color = cs.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            "$done of $total modules · ${findings.size} findings · ${findings.count { it.severity == Severity.EXPOSED }} exposed",
+                            style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
+                        )
                     }
-                    Text(input.raw, style = MaterialTheme.typography.headlineSmall, color = cs.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(
-                        "$done of $total modules · ${findings.size} findings · ${findings.count { it.severity == Severity.EXPOSED }} exposed",
-                        style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
-                    )
                 }
-                IconButton(onClick = onExportAll) { Icon(Icons.Rounded.FileDownload, "Export all as JSON") }
             }
             if (running) {
                 LinearProgressIndicator(progress = { if (total == 0) 0f else done / total.toFloat() }, Modifier.fillMaxWidth(), color = cs.primary, trackColor = cs.surfaceContainerHighest)

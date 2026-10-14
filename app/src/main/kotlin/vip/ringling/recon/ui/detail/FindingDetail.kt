@@ -1,10 +1,10 @@
 package vip.ringling.recon.ui.detail
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -55,6 +54,7 @@ private fun Finding.weight() = when (severity) {
     Severity.CLEAN -> 6
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun FindingDetail(
     finding: Finding,
@@ -112,7 +112,7 @@ fun FindingDetail(
             }
         }
         item {
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilledTonalButton(onClick = { actions.onCopy(finding) }, Modifier.heightIn(min = 48.dp)) {
                     Icon(Icons.Rounded.ContentCopy, null, Modifier.size(18.dp)); Text("Copy", Modifier.padding(start = 8.dp))
                 }
