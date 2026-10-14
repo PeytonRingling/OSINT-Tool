@@ -6,8 +6,9 @@ endpoints/logic; its `offender_registry.py` is NOT in this repo — inspect the 
 Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pascal-nd1y36`.
 
 ## Process rules
-- **Phase 1 (done when approved):** scaffold, design system, four tab screens + detail with MOCK data,
-  committed screenshots. **Stop and show the user before wiring real modules (Phase 2).**
+- **Phase 1 (done, approved):** scaffold, design system, four tab screens + detail, committed screenshots.
+- **Phase 2 (in progress):** breach, identity, domain modules DONE and fixture-tested; Room history and
+  Keystore-encrypted keys DONE; **Idaho registry adapter BLOCKED** (see Open items).
 - Commit in small steps. No PR unless asked.
 - **No API keys exist in the environment and none may ever be committed.** Keys are entered in
   Settings at runtime (Keystore-backed encrypted storage, never plaintext, never logged, masked with
@@ -53,7 +54,7 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - OkHttp + kotlinx.serialization, Jsoup, Room (history with clear-all + per-item delete).
 - Everything on-device, no backend.
 
-## Modules (Phase 2 — only after design approval)
+## Modules
 1. **Breach**: HIBP v3 for email (`hibp-api-key` header, required user-agent, honor 429 `Retry-After`);
    LeakCheck with key, falling back to its public endpoint without a key.
 2. **Identity**: username via bundled curated JSON site list (URL template + detection method),
@@ -69,7 +70,22 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - **Legal notice wording** in `ui/components/Cards.kt` (LegalNotice) and Settings is a placeholder paraphrase of
   Idaho Code §74-120 as described by the user; verify against the statute before release.
 - Registry mock data uses clearly fictional placeholder records only. Never commit real registry data.
-- Phase 1 stand-ins to replace in Phase 2: `MockSources.kt` (bound in `di/AppModule.kt`),
+- 
   `InMemoryHistoryRepository` (→ Room), in-memory API keys in `SettingsViewModel` (→ Keystore-backed encrypted storage).
 - Workflow `.github/workflows/build.yml` has not been run yet (no Actions access from the cloud session).
 - Keep `docs/screenshots/` in sync: re-run `./gradlew recordRoborazziDebug` after any UI change and commit the PNGs.
+
+## Phase 2 status / gotchas
+- Cloud container egress blocks every data host (HIBP, LeakCheck, Cloudflare DoH, crt.sh, rdap.org, apps.isp.idaho.gov,
+  github.com profiles). Response shapes in `app/src/test/resources/fixtures/` are AUTHORED from API docs/memory, not
+  captured live — the user must live-check on a phone. If a shape is wrong, fix the parser + fixture together.
+- Unofficial endpoints that may change: Spotify signup validation (identity/email), `sites.json` detection rules
+  (heuristic; MEDIUM confidence for HTML pages, HIGH for APIs), LeakCheck v2/public field names.
+- **Idaho registry**: `IdahoRegistryAdapter` is an explicit stub that throws `AdapterUnavailable` (module shows as failed
+  with that message — it never fabricates records). To finish it: get `offender_registry.py` or allow
+  `apps.isp.idaho.gov`, confirm form params + result/detail markup, implement Jsoup parsing, add fixtures.
+- Registry findings are shown live only: `ScanController` strips them before saving history (tested). Never cache.
+- Failure policy: a failing sub-check becomes an INFO "… unavailable" finding (breach/domain); an inconclusive site probe
+  is counted, never treated as "not found".
+- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 78 tests at last count.
+- Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.

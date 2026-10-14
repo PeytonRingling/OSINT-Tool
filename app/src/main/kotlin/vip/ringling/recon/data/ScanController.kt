@@ -52,8 +52,11 @@ class ScanController @Inject constructor(
         job = scope.launch {
             var last = ScanSession(input)
             runner.session(input, enabled).collect { s -> last = s; _session.value = s }
+            // Registry results are live-lookup only and must never be stored (Idaho Code §74-120): keep the
+            // query in history, drop the findings.
+            val storable = last.findings.filter { it.module != ModuleId.REGISTRY }
             if (last.findings.isNotEmpty()) {
-                history.add(ScanRecord(UUID.randomUUID().toString(), input, System.currentTimeMillis(), last.findings))
+                history.add(ScanRecord(UUID.randomUUID().toString(), input, System.currentTimeMillis(), storable))
             }
             _completed.emit(Unit)
         }
