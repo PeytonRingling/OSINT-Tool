@@ -13,34 +13,23 @@ import vip.ringling.recon.domain.Severity
 
 data class RegistryQuery(val zip: String? = null, val city: String? = null, val county: String? = null)
 
-/** One row from a state's search results; [detailRef] is whatever the adapter needs to fetch the detail page. */
-data class RegistryEntry(val name: String, val summary: String, val detailRef: String, val sourceUrl: String)
+/** One registrant, already summarized for display. Nothing here is persisted. */
+data class RegistryEntry(val name: String, val summary: String, val sourceUrl: String)
 
-/** Thrown by an adapter that exists but can't run yet (e.g. form details not confirmed). */
+/** [totalMatches] is what the registry reports; [entries] is only the first page we fetched. */
+data class RegistryResult(val totalMatches: Int, val entries: List<RegistryEntry>, val searchUrl: String)
+
 class AdapterUnavailable(message: String) : Exception(message)
 
 /**
  * One adapter per state registry. Contract (Idaho Code §74-120): live per-query lookups only —
- * adapters must not cache, persist or compile results, and must not page through the whole registry.
+ * adapters must not cache, persist or compile results, and must never walk beyond the first page of a query.
  */
 interface RegistryAdapter {
     val stateCode: String
     val stateName: String
     fun handlesZip(zip: String): Boolean
-    suspend fun search(query: RegistryQuery): List<RegistryEntry>
-}
-
-/** Placeholder until the live search form + result markup are confirmed. */
-class IdahoRegistryAdapter @Inject constructor() : RegistryAdapter {
-    override val stateCode = "ID"
-    override val stateName = "Idaho"
-    // Idaho ZIPs are 832xx–838xx.
-    override fun handlesZip(zip: String) = zip.take(3).toIntOrNull() in 832..838
-    override suspend fun search(query: RegistryQuery): List<RegistryEntry> =
-        throw AdapterUnavailable(
-            "The Idaho adapter is not wired yet: apps.isp.idaho.gov/sor_id request parameters and result markup " +
-                "still need to be confirmed against the live site.",
-        )
+    suspend fun search(query: RegistryQuery): RegistryResult
 }
 
 class RegistrySource @Inject constructor(private val adapters: Set<@JvmSuppressWildcards RegistryAdapter>) : OsintSource {
@@ -54,11 +43,22 @@ class RegistrySource @Inject constructor(private val adapters: Set<@JvmSuppressW
             emit(Finding("REGISTRY-nostate", ModuleId.REGISTRY, "No registry adapter for this ZIP", "Only states with an adapter can be searched (currently: ${adapters.joinToString { it.stateName }.ifEmpty { "none" }}).", Severity.INFO))
             return@flow
         }
-        val entries = adapter.search(RegistryQuery(zip = zip))
-        if (entries.isEmpty()) {
-            emit(Finding("REGISTRY-none", ModuleId.REGISTRY, "No records for $zip", "${adapter.stateName} registry returned no records for this ZIP.", Severity.CLEAN))
+        val r = adapter.search(RegistryQuery(zip = zip))
+        if (r.totalMatches == 0 && r.entries.isEmpty()) {
+            emit(Finding("REGISTRY-none", ModuleId.REGISTRY, "No records for $zip", "The ${adapter.stateName} registry reports no matches for this ZIP.", Severity.CLEAN, r.searchUrl))
+            return@flow
         }
-        entries.forEachIndexed { i, e ->
+        val partial = r.totalMatches > r.entries.size
+        emit(
+            Finding(
+                id = "REGISTRY-summary", module = ModuleId.REGISTRY,
+                title = "${r.totalMatches} match${if (r.totalMatches == 1) "" else "es"} in $zip",
+                detail = (if (partial) "Showing the first ${r.entries.size}; open the official ${adapter.stateName} registry for the rest. " else "") +
+                    "Matches are by location only. The registry warns that records may not relate to the person you have in mind; verify before relying on any of this.",
+                severity = Severity.INFO, url = r.searchUrl,
+            ),
+        )
+        r.entries.forEachIndexed { i, e ->
             emit(
                 Finding(
                     id = "REGISTRY-${adapter.stateCode}-$i", module = ModuleId.REGISTRY, title = e.name, detail = e.summary,

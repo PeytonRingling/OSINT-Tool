@@ -10,4 +10,5 @@ data class Endpoints(
     val rdap: String = "https://rdap.org",
     val spotify: String = "https://spclient.wg.spotify.com",
     val gravatar: String = "https://gravatar.com",
+    val idahoSor: String = "https://apps.isp.idaho.gov/sor_id",
 )

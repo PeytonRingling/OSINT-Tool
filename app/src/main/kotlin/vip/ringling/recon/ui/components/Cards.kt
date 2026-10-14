@@ -150,9 +150,11 @@ fun LegalNotice(onAcknowledge: () -> Unit, modifier: Modifier = Modifier) {
             Text("Legal notice", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
         }
         Text(
-            "Registry results are public-record data under Idaho Code §74-120. Recon performs a live, per-query " +
-                "lookup and never stores, caches or compiles registry data. Use it only for lawful personal-safety " +
-                "purposes — harassment, retaliation or discrimination against listed individuals is unlawful.",
+            "Idaho's registry is an open record, but Idaho Code §74-120 bars using this inquiry for any commercial " +
+                "purpose or for compiling a telephone or mailing list. Using registry information to harass or intimidate " +
+                "anyone, or to commit a crime against a listed person, is prosecutable (Idaho Code §18-8326, §18-8413). " +
+                "Recon looks up only what you search, live, and never stores or compiles registry data. Records may not " +
+                "match the person you have in mind — verify before relying on them.",
             style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant,
         )
         Button(onClick = onAcknowledge, modifier = Modifier.heightIn(min = 48.dp)) { Text("I understand — show results") }

@@ -230,8 +230,9 @@ private fun LegalSection(state: SettingsUiState) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Recon ${state.versionName}", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
             Text(
-                "Everything runs on this device — no backend, no telemetry. The offender registry module performs live, " +
-                    "per-query lookups only and never stores or compiles registry data (Idaho Code §74-120).",
+                "Everything runs on this device — no backend, no telemetry. The offender registry module performs live lookups " +
+                    "of your query only, reads just the first results page, and never stores or compiles registry data " +
+                    "(Idaho Code §74-120: no commercial use, no telephone or mailing lists).",
                 style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
             )
         }

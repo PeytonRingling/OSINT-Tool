@@ -8,7 +8,7 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 ## Process rules
 - **Phase 1 (done, approved):** scaffold, design system, four tab screens + detail, committed screenshots.
 - **Phase 2 (in progress):** breach, identity, domain modules DONE and fixture-tested; Room history and
-  Keystore-encrypted keys DONE; **Idaho registry adapter BLOCKED** (see Open items).
+  Keystore-encrypted keys DONE; Idaho registry adapter DONE (live-inspected 2026-10-14).
 - Commit in small steps. No PR unless asked.
 - **No API keys exist in the environment and none may ever be committed.** Keys are entered in
   Settings at runtime (Keystore-backed encrypted storage, never plaintext, never logged, masked with
@@ -67,24 +67,21 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
    (Idaho Code 74-120). Show the legal notice before results.
 
 ## Open items / notes
-- **Legal notice wording** in `ui/components/Cards.kt` (LegalNotice) and Settings is a placeholder paraphrase of
-  Idaho Code §74-120 as described by the user; verify against the statute before release.
+- **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
+  (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.
 - Registry mock data (screenshots only) uses clearly fictional placeholder records. Never commit real registry data.
 - Phase 1 stand-ins are replaced: Room history, Keystore-encrypted keys, real breach/identity/domain sources. `data/mock/MockData.kt` remains only for screenshot tests and previews.
 - Workflow `.github/workflows/build.yml` has not been run yet (no Actions access from the cloud session).
 - Keep `docs/screenshots/` in sync: re-run `./gradlew recordRoborazziDebug` after any UI change and commit the PNGs.
 
 ## Phase 2 status / gotchas
-- Cloud container egress blocks every data host (HIBP, LeakCheck, Cloudflare DoH, crt.sh, rdap.org, apps.isp.idaho.gov,
-  github.com profiles). Response shapes in `app/src/test/resources/fixtures/` are AUTHORED from API docs/memory, not
+- Cloud container egress blocks every data host (HIBP, LeakCheck, Cloudflare DoH, crt.sh, rdap.org, github.com profiles; apps.isp.idaho.gov was later allowed). Response shapes in `app/src/test/resources/fixtures/` are AUTHORED from API docs/memory, not
   captured live — the user must live-check on a phone. If a shape is wrong, fix the parser + fixture together.
 - Unofficial endpoints that may change: Spotify signup validation (identity/email), `sites.json` detection rules
   (heuristic; MEDIUM confidence for HTML pages, HIGH for APIs), LeakCheck v2/public field names.
-- **Idaho registry**: `IdahoRegistryAdapter` is an explicit stub that throws `AdapterUnavailable` (module shows as failed
-  with that message — it never fabricates records). To finish it: get `offender_registry.py` or allow
-  `apps.isp.idaho.gov`, confirm form params + result/detail markup, implement Jsoup parsing, add fixtures.
+- **Idaho registry** (implemented from the live site, not memory): ZIP search = `POST /sor_id/SOR` `form=5&zip=NNNNN&rad=A&sz=400`; city `form=3&cty=`, county `form=4&cnt=` (city/county built from the form markup, not live-run). HTML results: 15 rows/page, "N matches found in M pages", cells `td#nam_field/kno_field/adr_field/cty_field(x2)/zip_field/stat_field`; detail `GET SOR?id=N&sz=400`. Adapter reads ONLY page 1, never DOB/physical description/aliases/photos, retains nothing (`raw` empty). Adult DB only (`rad=A`); juvenile (`rad=J`) intentionally not queried. Fixtures are fictional but mirror the markup; if Idaho changes markup, update parser + fixtures together.
 - Registry findings are shown live only: `ScanController` strips them before saving history (tested). Never cache.
 - Failure policy: a failing sub-check becomes an INFO "… unavailable" finding (breach/domain); an inconclusive site probe
   is counted, never treated as "not found".
-- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 78 tests at last count.
+- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 85 tests at last count.
 - Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.
