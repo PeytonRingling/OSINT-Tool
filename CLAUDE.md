@@ -69,9 +69,8 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 ## Open items / notes
 - **Legal notice wording** in `ui/components/Cards.kt` (LegalNotice) and Settings is a placeholder paraphrase of
   Idaho Code §74-120 as described by the user; verify against the statute before release.
-- Registry mock data uses clearly fictional placeholder records only. Never commit real registry data.
-- 
-  `InMemoryHistoryRepository` (→ Room), in-memory API keys in `SettingsViewModel` (→ Keystore-backed encrypted storage).
+- Registry mock data (screenshots only) uses clearly fictional placeholder records. Never commit real registry data.
+- Phase 1 stand-ins are replaced: Room history, Keystore-encrypted keys, real breach/identity/domain sources. `data/mock/MockData.kt` remains only for screenshot tests and previews.
 - Workflow `.github/workflows/build.yml` has not been run yet (no Actions access from the cloud session).
 - Keep `docs/screenshots/` in sync: re-run `./gradlew recordRoborazziDebug` after any UI change and commit the PNGs.
 
