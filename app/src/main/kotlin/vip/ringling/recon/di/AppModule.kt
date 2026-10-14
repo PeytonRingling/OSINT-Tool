@@ -1,0 +1,27 @@
+package vip.ringling.recon.di
+
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.IntoSet
+import javax.inject.Singleton
+import vip.ringling.recon.data.HistoryRepository
+import vip.ringling.recon.data.InMemoryHistoryRepository
+import vip.ringling.recon.data.mock.MockBreachSource
+import vip.ringling.recon.data.mock.MockDomainSource
+import vip.ringling.recon.data.mock.MockIdentitySource
+import vip.ringling.recon.data.mock.MockRegistrySource
+import vip.ringling.recon.domain.OsintSource
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class AppModule {
+    @Binds @Singleton abstract fun history(impl: InMemoryHistoryRepository): HistoryRepository
+
+    // Phase 2: replace each Mock* with the real source; UI is unaffected.
+    @Binds @IntoSet abstract fun breach(s: MockBreachSource): OsintSource
+    @Binds @IntoSet abstract fun identity(s: MockIdentitySource): OsintSource
+    @Binds @IntoSet abstract fun domain(s: MockDomainSource): OsintSource
+    @Binds @IntoSet abstract fun registry(s: MockRegistrySource): OsintSource
+}
