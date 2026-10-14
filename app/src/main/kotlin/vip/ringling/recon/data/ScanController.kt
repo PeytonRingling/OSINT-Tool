@@ -12,9 +12,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.ModuleId
+import vip.ringling.recon.domain.ModuleStatus
 import vip.ringling.recon.domain.ScanInput
 import vip.ringling.recon.domain.ScanRecord
 import vip.ringling.recon.domain.ScanRunner
@@ -36,9 +38,15 @@ class ScanController @Inject constructor(
     /** Emits once each time a scan finishes (drives the completion haptic). */
     val completed: SharedFlow<Unit> = _completed
 
-    fun modulesFor(input: ScanInput) = runner.modulesFor(input.type)
+    private val _enabled = MutableStateFlow(ModuleId.entries.toSet())
+    /** Modules the user has switched on in the Scan tab. */
+    val enabled: StateFlow<Set<ModuleId>> = _enabled.asStateFlow()
+    fun setEnabled(module: ModuleId, on: Boolean) = _enabled.update { if (on) it + module else it - module }
 
-    fun start(input: ScanInput, enabled: Set<ModuleId>? = null) {
+    fun modulesFor(input: ScanInput) = runner.modulesFor(input.type)
+    fun rescan() { _session.value?.input?.let { start(it) } }
+
+    fun start(input: ScanInput, enabled: Set<ModuleId>? = _enabled.value) {
         job?.cancel()
         _session.value = ScanSession(input)
         job = scope.launch {
@@ -48,6 +56,17 @@ class ScanController @Inject constructor(
                 history.add(ScanRecord(UUID.randomUUID().toString(), input, System.currentTimeMillis(), last.findings))
             }
             _completed.emit(Unit)
+        }
+    }
+
+    /** Stops a running scan, keeping what has streamed in so far; unfinished modules are marked stopped. */
+    fun cancel() {
+        job?.cancel()
+        _session.update { s ->
+            s?.copy(
+                statuses = s.statuses.mapValues { (_, v) -> if (v == ModuleStatus.RUNNING || v == ModuleStatus.QUEUED) ModuleStatus.FAILED else v },
+                errors = s.errors + s.statuses.filterValues { it == ModuleStatus.RUNNING || it == ModuleStatus.QUEUED }.keys.associateWith { "Stopped" },
+            )
         }
     }
 
