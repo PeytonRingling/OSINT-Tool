@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.width
+import vip.ringling.recon.domain.isRegistryRecord
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -177,8 +179,11 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
         findings = hibpSamples + MockData.identity(email).take(1) + vip.ringling.recon.data.sources.emailintel.EmailAnalysis.analyze(email.raw, false, listOf("mx.google.com")),
     )
 
-    private fun results(state: ResultsUiState): @Composable (Boolean, PaddingValues) -> Unit = { _, pad ->
-        if (state.input?.type == InputType.ZIP) AreaScreen(state, ResultsActions(), contentPadding = pad) else ExposureScreen(state, ResultsActions(), contentPadding = pad)
+    private fun results(state: ResultsUiState): @Composable (Boolean, PaddingValues) -> Unit = { wide, pad ->
+        val st = if (wide) state.copy(selectedId = state.selectedId ?: state.findings.firstOrNull { it.severity == vip.ringling.recon.domain.Severity.EXPOSED || it.isRegistryRecord }?.id) else state
+        if (st.input?.type == InputType.ZIP) AreaScreen(st, ResultsActions(), contentPadding = pad, split = wide)
+        else if (wide) vip.ringling.recon.ui.results.ExposureWide(st, ResultsActions(), pad)
+        else ExposureScreen(st, ResultsActions(), contentPadding = pad)
     }
 
     @Test fun results_email() = shot("03_results_email", tab = null, content = results(exposureEmail))
@@ -260,8 +265,20 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
 
     @Test fun cases_list() = shot("11_cases", tab = Tab.CASES) { _, pad -> vip.ringling.recon.ui.cases.CasesScreen(casesState, vip.ringling.recon.ui.cases.CasesActions(), contentPadding = pad) }
 
-    @Test fun case_detail_pivots() = shot("11b_case_detail", tab = Tab.CASES) { _, pad ->
-        vip.ringling.recon.ui.cases.CaseDetailScreen(footprint, vip.ringling.recon.ui.cases.CaseTab.PIVOTS, vip.ringling.recon.ui.cases.CaseDetailActions(), contentPadding = pad)
+    @Test fun case_detail_pivots() = shot("11b_case_detail", tab = Tab.CASES) { wide, pad ->
+        val detail: @Composable () -> Unit = {
+            vip.ringling.recon.ui.cases.CaseDetailScreen(
+                footprint, if (wide) vip.ringling.recon.ui.cases.CaseTab.CHANGES else vip.ringling.recon.ui.cases.CaseTab.PIVOTS, vip.ringling.recon.ui.cases.CaseDetailActions(), contentPadding = pad,
+                graphHeight = if (wide) 380.dp else 300.dp,
+                changesContent = if (wide) { { androidx.compose.foundation.layout.Column { vip.ringling.recon.ui.cases.ExposurePanel(footprint); vip.ringling.recon.ui.cases.ChangeTimeline(footprint.events, NOW) } } } else null,
+            )
+        }
+        if (wide) androidx.compose.foundation.layout.Row(Modifier.fillMaxSize()) {
+            androidx.compose.foundation.layout.Box(Modifier.width(280.dp).fillMaxSize()) {
+                vip.ringling.recon.ui.cases.CasesScreen(casesState, vip.ringling.recon.ui.cases.CasesActions(), contentPadding = pad, selectedId = footprint.file.id, compact = true)
+            }
+            androidx.compose.foundation.layout.Box(Modifier.weight(1f).fillMaxSize()) { detail() }
+        } else detail()
     }
 
     @Test fun case_detail_targets() = shot("11c_case_targets", tab = Tab.CASES) { _, pad ->

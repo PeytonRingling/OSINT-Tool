@@ -159,8 +159,8 @@ fun ReconApp() {
                     composable(Tab.HOME.route) {
                         RadarRoute(nav, expanded, pad, onLoadout = { showLoadout = true })
                     }
-                    composable("results") { ResultsEntry(nav, actions, pad) { pinInput = it } }
-                    composable("results/{id}") { ResultsEntry(nav, actions, pad) { pinInput = it } }
+                    composable("results") { ResultsEntry(nav, actions, pad, expanded) { pinInput = it } }
+                    composable("results/{id}") { ResultsEntry(nav, actions, pad, expanded) { pinInput = it } }
                     composable(Tab.HISTORY.route) {
                         val vm: vip.ringling.recon.ui.log.LogViewModel = hiltViewModel()
                         val st by vm.state.collectAsStateWithLifecycle()
@@ -186,14 +186,23 @@ fun ReconApp() {
                     }
                     composable(Tab.CASES.route) {
                         val newCase by main.newCaseRequests.collectAsStateWithLifecycle()
-                        vip.ringling.recon.ui.cases.CasesRoute(pad, newCase) { id -> nav.navigate("cases/$id") }
+                        if (expanded) vip.ringling.recon.ui.cases.CasesWorkspace(pad, newCase, null, { id -> nav.navigate("cases/$id") }) {}
+                        else vip.ringling.recon.ui.cases.CasesRoute(pad, newCase) { id -> nav.navigate("cases/$id") }
                     }
-                    composable("cases/{id}") {
-                        vip.ringling.recon.ui.cases.CaseDetailRoute(
-                            pad, actions, onBack = { nav.popBackStack() }, onChanges = { id -> nav.navigate("cases/$id/changes") },
-                            onOpenScan = { st -> if (st.latest == null || st.isArea) radarVm.rerun(vip.ringling.recon.domain.ScanInput(st.target.value, st.target.type)) else nav.navigate("results/${st.latest!!.id}") },
-                            onRun = { q -> main.requestSearch(q) },
-                        )
+                    composable("cases/{id}") { entry ->
+                        val id = entry.arguments?.getString("id")
+                        val detail: @Composable () -> Unit = {
+                            vip.ringling.recon.ui.cases.CaseDetailRoute(
+                                if (expanded) PaddingValues(top = pad.calculateTopPadding(), bottom = pad.calculateBottomPadding()) else pad, actions,
+                                onBack = { nav.popBackStack() }, onChanges = { cid -> nav.navigate("cases/$cid/changes") },
+                                onOpenScan = { st -> if (st.latest == null || st.isArea) radarVm.rerun(vip.ringling.recon.domain.ScanInput(st.target.value, st.target.type)) else nav.navigate("results/${st.latest!!.id}") },
+                                onRun = { q -> main.requestSearch(q) }, wide = expanded,
+                            )
+                        }
+                        if (expanded) {
+                            val newCase by main.newCaseRequests.collectAsStateWithLifecycle()
+                            vip.ringling.recon.ui.cases.CasesWorkspace(pad, newCase, id, { cid -> nav.navigate("cases/$cid") { popUpTo(Tab.CASES.route) } }, detail)
+                        } else detail()
                     }
                     composable("cases/{id}/changes") { vip.ringling.recon.ui.cases.CaseTimelineRoute(pad, actions, onBack = { nav.popBackStack() }) }
                     composable("finding/{id}") {
@@ -254,10 +263,10 @@ fun recordStatuses(r: vip.ringling.recon.domain.ScanRecord) =
     r.findings.map { it.module }.distinct().sortedBy { it.ordinal }.associateWith { ModuleStatus.DONE }
 
 @Composable
-private fun ResultsEntry(nav: NavHostController, actions: ReconActions, pad: PaddingValues, onPin: (vip.ringling.recon.domain.ScanInput) -> Unit) {
+private fun ResultsEntry(nav: NavHostController, actions: ReconActions, pad: PaddingValues, wide: Boolean, onPin: (vip.ringling.recon.domain.ScanInput) -> Unit) {
     vip.ringling.recon.ui.results.ResultsRoute(
         pad, onBack = { nav.popBackStack() }, onFinding = { f -> nav.navigate("finding/${f.id}") },
-        onExport = { st -> st.input?.let { actions.exportScan(it, st.findings) } }, onPin = { st -> st.input?.let(onPin) },
+        onExport = { st -> st.input?.let { actions.exportScan(it, st.findings) } }, onPin = { st -> st.input?.let(onPin) }, wide = wide,
     )
 }
 

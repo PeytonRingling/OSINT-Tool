@@ -82,6 +82,8 @@ data class ResultsActions(
     val onExport: () -> Unit = {},
     val onPin: () -> Unit = {},
     val onFinding: (Finding) -> Unit = {},
+    val onOpenFinding: (Finding) -> Unit = {},
+    val onHandled: (Finding, Boolean) -> Unit = { _, _ -> },
     val onFilter: (FindingFilter) -> Unit = {},
     val onSort: (AreaSort) -> Unit = {},
     val onAckRegistry: () -> Unit = {},
@@ -233,8 +235,8 @@ fun AreaScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modifie
     val records = state.findings.filter { it.isRegistryRecord }
     val located = records.filter { it.geo != null }
     val rings = remember(located) { vip.ringling.recon.domain.Geo.scanRings(located.map { it.geo!! }) }
-    Column(modifier.fillMaxSize().background(sig.ground)) {
-        Box(Modifier.fillMaxWidth().height(mapHeight + contentPadding.calculateTopPadding())) {
+    val mapBox: @Composable (Modifier) -> Unit = { mod ->
+        Box(mod) {
             TileMap(
                 pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title, vip.ringling.recon.domain.APPROXIMATE_TAG in it.tags) },
                 me = me, selectedId = state.selectedId, onPinClick = { p -> located.firstOrNull { it.id == p.id }?.let(actions.onFinding) },
@@ -252,6 +254,22 @@ fun AreaScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modifie
                 GlassButton(Icons.Rounded.BookmarkAdd, "Pin to case", actions.onPin)
             }
         }
+    }
+    if (split) {
+        // Large screens: map fills the centre, a 320dp pane on the right carries the selected record and the list.
+        Row(modifier.fillMaxSize().background(sig.ground)) {
+            mapBox(Modifier.weight(1f).fillMaxSize())
+            Column(Modifier.width(320.dp).fillMaxSize().background(sig.panel).border(1.dp, sig.hairline)) {
+                state.findings.firstOrNull { it.id == state.selectedId && it.isRegistryRecord }?.let { r ->
+                    SelectedFindingCard(r, state.selectedId in state.handled, actions.onOpenFinding, actions.onPin, "Open record", Modifier.padding(start = 12.dp, end = 12.dp, top = contentPadding.calculateTopPadding() + 8.dp), onHandled = null)
+                }
+                AreaSheetList(state, actions, records, me, Modifier.weight(1f), contentPadding)
+            }
+        }
+        return
+    }
+    Column(modifier.fillMaxSize().background(sig.ground)) {
+        mapBox(Modifier.fillMaxWidth().height(mapHeight + contentPadding.calculateTopPadding()))
         // bottom sheet, overlapping the map by 18dp
         Column(
             Modifier.weight(1f).fillMaxWidth().padding(top = 0.dp).clip(RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)).background(Color(0xFF070A08).let { if (sig.ground.red > 0.5f) sig.panel else it })
@@ -259,6 +277,27 @@ fun AreaScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modifie
         ) {
             Box(Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 4.dp), contentAlignment = Alignment.Center) { Box(Modifier.size(width = 36.dp, height = 4.dp).clip(RoundedCornerShape(2.dp)).background(sig.ledOff)) }
             AreaSheetList(state, actions, records, me, Modifier.weight(1f), contentPadding)
+        }
+    }
+}
+
+/** Compact detail card for the selected finding in the right-hand pane of the large-screen layouts. */
+@Composable
+fun SelectedFindingCard(f: Finding, handled: Boolean, onOpen: (Finding) -> Unit, onPin: () -> Unit, openLabel: String, modifier: Modifier = Modifier, onHandled: ((Boolean) -> Unit)?) {
+    val sig = ReconTheme.signal
+    BracketPanel(modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SignalLabel("Selected", small = true)
+            Text(f.title, color = sig.text, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(f.detail.lineSequence().first(), color = sig.muted, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            if (f.tags.isNotEmpty()) androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                f.tags.take(6).forEach { t -> StatusTag(t.removeSuffix(" registry"), if (t in f.hotTags) Tone.ALERT else Tone.INFO) }
+            }
+            Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                SignalButton(openLabel, { onOpen(f) }, Modifier.heightIn(min = 48.dp), filled = true, mono = true)
+                if (onHandled == null) SignalButton("Pin to case", onPin, Modifier.heightIn(min = 48.dp), mono = true)
+                else SignalButton(if (handled) "Handled ✓" else "Mark handled", { onHandled(!handled) }, Modifier.heightIn(min = 48.dp), mono = true)
+            }
         }
     }
 }

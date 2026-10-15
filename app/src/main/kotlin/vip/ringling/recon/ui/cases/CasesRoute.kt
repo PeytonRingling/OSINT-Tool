@@ -1,6 +1,20 @@
 package vip.ringling.recon.ui.cases
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Text
+import vip.ringling.recon.ui.signal.SegmentedControl
+import vip.ringling.recon.ui.theme.ReconTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,7 +48,7 @@ fun CasesRoute(pad: PaddingValues, newCaseSignal: Int, onOpen: (String) -> Unit)
 @Composable
 fun CaseDetailRoute(
     pad: PaddingValues, actions: ReconActions, onBack: () -> Unit, onChanges: (String) -> Unit,
-    onOpenScan: (CaseTargetState) -> Unit, onRun: (String) -> Unit,
+    onOpenScan: (CaseTargetState) -> Unit, onRun: (String) -> Unit, wide: Boolean = false,
 ) {
     val vm: CaseDetailViewModel = hiltViewModel()
     val st by vm.state.collectAsStateWithLifecycle()
@@ -50,7 +64,7 @@ fun CaseDetailRoute(
     CaseDetailScreen(
         c, st.tab,
         CaseDetailActions(
-            onBack = onBack, onTab = { t -> if (t == CaseTab.CHANGES) onChanges(vm.caseId) else vm.setTab(t) }, onOpenTarget = onOpenScan, onAddTarget = { dialog = "add" },
+            onBack = onBack, onTab = { t -> if (t == CaseTab.CHANGES && !wide) onChanges(vm.caseId) else vm.setTab(t) }, onOpenTarget = onOpenScan, onAddTarget = { dialog = "add" },
             onRemoveTarget = vm::removeTarget,
             onRunPivot = { p ->
                 InputDetector.detect(p.query)?.let { vm.addTarget(it, InputDetector.normalize(p.query, it)) }
@@ -63,6 +77,17 @@ fun CaseDetailRoute(
             onRename = { dialog = "rename" }, onDelete = { dialog = "delete" }, onChanges = { onChanges(vm.caseId) },
         ),
         contentPadding = pad,
+        graphHeight = if (wide) 380.dp else 300.dp,
+        changesContent = if (wide) {
+            {
+                var filter by rememberSaveable { mutableStateOf(ChangeFilter.ALL) }
+                Column {
+                    ExposurePanel(c)
+                    SegmentedControl(ChangeFilter.entries.map { it.label }, filter.ordinal, { filter = ChangeFilter.entries[it] }, Modifier.padding(top = 12.dp))
+                    ChangeTimeline(c.events.filtered(filter), System.currentTimeMillis())
+                }
+            }
+        } else null,
     )
 }
 
@@ -78,4 +103,26 @@ fun CaseTimelineRoute(pad: PaddingValues, actions: ReconActions, onBack: () -> U
         onExport = { actions.shareText("Recon case changes", CaseReport.markdown(c.file, c.states, c.events, c.pivots, stamp)) },
         now = System.currentTimeMillis(), contentPadding = pad,
     )
+}
+
+/** Cases on large screens: 280dp list pane + the selected case's canvas (link graph, then Targets/Pivots/Notes/Changes below). Selection lives in the route ("cases/{id}"). */
+@Composable
+fun CasesWorkspace(pad: PaddingValues, newCaseSignal: Int, selectedId: String?, onSelect: (String) -> Unit, detail: @Composable () -> Unit) {
+    val vm: CasesViewModel = hiltViewModel()
+    val st by vm.state.collectAsStateWithLifecycle()
+    val sig = ReconTheme.signal
+    var showNew by rememberSaveable { mutableStateOf(false) }
+    var showWatch by rememberSaveable { mutableStateOf(false) }
+    var handledSignal by rememberSaveable { mutableStateOf(newCaseSignal) }
+    LaunchedEffect(newCaseSignal) { if (newCaseSignal != handledSignal) { handledSignal = newCaseSignal; showNew = true } }
+    if (showNew) NewCaseDialog(onDismiss = { showNew = false }, onCreate = { name -> showNew = false; vm.create(name, null, onSelect) })
+    if (showWatch) AddWatchDialog(onDismiss = { showWatch = false }, onAdd = { vm.addWatch(it); showWatch = false })
+    Row(Modifier.fillMaxSize()) {
+        Box(Modifier.width(280.dp).fillMaxSize().border(1.dp, sig.hairline)) {
+            CasesScreen(st, CasesActions(onOpen = { onSelect(it.file.id) }, onNewCase = { showNew = true }, onAddWatch = { showWatch = true }, onRemoveWatch = vm::removeWatch), contentPadding = pad, selectedId = selectedId, compact = true)
+        }
+        Box(Modifier.weight(1f).fillMaxSize()) {
+            if (selectedId == null) Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Select a case", color = sig.muted) } else detail()
+        }
+    }
 }

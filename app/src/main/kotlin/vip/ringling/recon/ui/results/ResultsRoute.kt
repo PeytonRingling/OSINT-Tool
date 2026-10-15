@@ -1,7 +1,14 @@
 package vip.ringling.recon.ui.results
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -23,6 +30,7 @@ fun ResultsRoute(
     onFinding: (Finding) -> Unit,
     onExport: (state: ResultsUiState) -> Unit,
     onPin: (state: ResultsUiState) -> Unit,
+    wide: Boolean = false,
 ) {
     val vm: ResultsViewModel = hiltViewModel()
     val main: MainViewModel = hiltViewModel(LocalContext.current as androidx.activity.ComponentActivity)
@@ -32,7 +40,7 @@ fun ResultsRoute(
     LaunchedEffect(hasLocated) { if (hasLocated && main.hasLocationPermission()) main.refreshLocation() }
     val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()) { main.refreshLocation() }
     val actions = ResultsActions(
-        onBack = onBack, onExport = { onExport(st) }, onPin = { onPin(st) }, onFinding = onFinding, onFilter = vm::setFilter, onSort = vm::setSort,
+        onBack = onBack, onExport = { onExport(st) }, onPin = { onPin(st) }, onFinding = if (wide) { f -> vm.select(f.id) } else onFinding, onOpenFinding = onFinding, onHandled = vm::setHandled, onFilter = vm::setFilter, onSort = vm::setSort,
         onAckRegistry = vm::ackRegistry, onShowFindings = { showFindings = true }, onStop = vm::stop,
         onRequestLocation = {
             if (main.hasLocationPermission()) main.refreshLocation()
@@ -40,8 +48,25 @@ fun ResultsRoute(
         },
     )
     when {
-        st.input?.type == InputType.ZIP -> AreaScreen(st, actions, contentPadding = pad)
+        st.input?.type == InputType.ZIP -> AreaScreen(st, actions, contentPadding = pad, split = wide)
+        wide -> ExposureWide(st, actions, pad)
         showFindings -> { BackHandler { showFindings = false }; FindingsList(st, actions, contentPadding = pad, onBack = { showFindings = false }) }
         else -> ExposureScreen(st, actions, contentPadding = pad)
+    }
+}
+
+/** Unfolded / tablet exposure map: graph + timeline + fix-first in the centre, 320dp findings pane (All/Exposed/Info) with the selected finding on the right. */
+@Composable
+fun ExposureWide(st: ResultsUiState, actions: ResultsActions, pad: PaddingValues) {
+    val sig = vip.ringling.recon.ui.theme.ReconTheme.signal
+    androidx.compose.foundation.layout.Row(androidx.compose.ui.Modifier.fillMaxSize()) {
+        ExposureScreen(st, actions, Modifier.weight(1f), pad, showFindingsButton = false)
+        androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.width(320.dp).fillMaxSize().background(sig.panel).border(1.dp, sig.hairline)) {
+            val selected = st.findings.firstOrNull { it.id == st.selectedId }
+            selected?.let { f ->
+                SelectedFindingCard(f, f.id in st.handled, actions.onOpenFinding, actions.onPin, "Open details", androidx.compose.ui.Modifier.padding(start = 12.dp, end = 12.dp, top = pad.calculateTopPadding() + 8.dp), onHandled = { actions.onHandled(f, it) })
+            }
+            FindingsList(st, actions, Modifier.weight(1f), PaddingValues(top = if (selected == null) pad.calculateTopPadding() else 0.dp, bottom = pad.calculateBottomPadding()), showHeader = false)
+        }
     }
 }
