@@ -30,6 +30,8 @@ data class Site(
     val absentCodes: List<Int> = emptyList(),
     /** Usernames not matching this can't exist on the site, so it is skipped. */
     val usernameRegex: String? = null,
+    /** Optional profile enrichment (see [Extract]); the response body of a hit is mined for facts, avatar and linked handles. */
+    val extract: Extract? = null,
 )
 
 @Serializable

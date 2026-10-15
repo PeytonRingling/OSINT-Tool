@@ -15,7 +15,15 @@
    "method": "message",
    "confidence": "HIGH",
    "errorMsg": "[]",
-   "profileUrl": "https://gitlab.com/{u}"
+   "profileUrl": "https://gitlab.com/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "0.name",
+     "Created": "0.created_at|date"
+    },
+    "avatar": "0.avatar_url"
+   }
   },
   {
    "name": "Bitbucket",
@@ -25,9 +33,21 @@
   },
   {
    "name": "Codeberg",
-   "url": "https://codeberg.org/{u}",
+   "url": "https://codeberg.org/api/v1/users/{u}",
    "method": "status",
-   "confidence": "LOW"
+   "confidence": "HIGH",
+   "profileUrl": "https://codeberg.org/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "full_name",
+     "Location": "location",
+     "Website": "website",
+     "Bio": "description",
+     "Created": "created|date"
+    },
+    "avatar": "avatar_url"
+   }
   },
   {
    "name": "SourceForge",
@@ -40,7 +60,17 @@
    "url": "https://hub.docker.com/v2/users/{u}/",
    "method": "status",
    "confidence": "HIGH",
-   "profileUrl": "https://hub.docker.com/u/{u}"
+   "profileUrl": "https://hub.docker.com/u/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "full_name",
+     "Location": "location",
+     "Company": "company",
+     "Created": "date_joined|date"
+    },
+    "avatar": "gravatar_url"
+   }
   },
   {
    "name": "npm",
@@ -80,13 +110,36 @@
    "confidence": "HIGH",
    "errorMsg": "null",
    "profileUrl": "https://news.ycombinator.com/user?id={u}",
-   "usernameRegex": "^[A-Za-z0-9_-]{2,15}$"
+   "usernameRegex": "^[A-Za-z0-9_-]{2,15}$",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Bio": "about",
+     "Karma": "karma"
+    }
+   }
   },
   {
    "name": "Dev.to",
-   "url": "https://dev.to/{u}",
+   "url": "https://dev.to/api/users/by_username?url={u}",
    "method": "status",
-   "confidence": "HIGH"
+   "confidence": "HIGH",
+   "profileUrl": "https://dev.to/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "name",
+     "Bio": "summary",
+     "Location": "location",
+     "Website": "website_url",
+     "Created": "joined_at"
+    },
+    "avatar": "profile_image",
+    "handles": [
+     "twitter_username",
+     "github_username"
+    ]
+   }
   },
   {
    "name": "Reddit",
@@ -102,13 +155,35 @@
    "confidence": "HIGH",
    "errorMsg": "\"them\":[null]",
    "profileUrl": "https://keybase.io/{u}",
-   "usernameRegex": "^[A-Za-z0-9_]{2,16}$"
+   "usernameRegex": "^[A-Za-z0-9_]{2,16}$",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "them.0.profile.full_name",
+     "Location": "them.0.profile.location",
+     "Bio": "them.0.profile.bio"
+    },
+    "avatar": "them.0.pictures.primary.url",
+    "handles": [
+     "them.0.proofs_summary.by_presentation_group.*.*.nametag"
+    ]
+   }
   },
   {
    "name": "Mastodon (mastodon.social)",
-   "url": "https://mastodon.social/@{u}",
+   "url": "https://mastodon.social/api/v1/accounts/lookup?acct={u}",
    "method": "status",
-   "confidence": "MEDIUM"
+   "confidence": "HIGH",
+   "profileUrl": "https://mastodon.social/@{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "display_name",
+     "Created": "created_at|date",
+     "Followers": "followers_count"
+    },
+    "avatar": "avatar"
+   }
   },
   {
    "name": "Bluesky",
@@ -119,28 +194,68 @@
     400
    ],
    "profileUrl": "https://bsky.app/profile/{u}.bsky.social",
-   "usernameRegex": "^[A-Za-z0-9-]{3,18}$"
+   "usernameRegex": "^[A-Za-z0-9-]{3,18}$",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "displayName",
+     "Bio": "description",
+     "Followers": "followersCount",
+     "Created": "createdAt|date"
+    },
+    "avatar": "avatar"
+   }
   },
   {
    "name": "Steam",
-   "url": "https://steamcommunity.com/id/{u}",
+   "url": "https://steamcommunity.com/id/{u}?xml=1",
    "method": "message",
    "confidence": "MEDIUM",
-   "errorMsg": "The specified profile could not be found"
+   "errorMsg": "could not be found",
+   "extract": {
+    "kind": "xml",
+    "facts": {
+     "Name": "profile > realname",
+     "Location": "profile > location",
+     "Created": "profile > memberSince"
+    },
+    "avatar": "profile > avatarFull"
+   }
   },
   {
    "name": "Chess.com",
    "url": "https://api.chess.com/pub/player/{u}",
    "method": "status",
    "confidence": "HIGH",
-   "profileUrl": "https://www.chess.com/member/{u}"
+   "profileUrl": "https://www.chess.com/member/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "name",
+     "Location": "location",
+     "Followers": "followers"
+    },
+    "avatar": "avatar",
+    "handles": [
+     "twitch_url|host"
+    ]
+   }
   },
   {
    "name": "Lichess",
    "url": "https://lichess.org/api/user/{u}",
    "method": "status",
    "confidence": "HIGH",
-   "profileUrl": "https://lichess.org/@/{u}"
+   "profileUrl": "https://lichess.org/@/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "profile.realName",
+     "Location": "profile.location",
+     "Bio": "profile.bio",
+     "Country": "profile.country"
+    }
+   }
   },
   {
    "name": "Last.fm",
@@ -201,7 +316,19 @@
    "url": "https://en.gravatar.com/{u}.json",
    "method": "status",
    "confidence": "HIGH",
-   "profileUrl": "https://gravatar.com/{u}"
+   "profileUrl": "https://gravatar.com/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "entry.0.displayName",
+     "Bio": "entry.0.aboutMe",
+     "Location": "entry.0.currentLocation"
+    },
+    "avatar": "entry.0.thumbnailUrl",
+    "handles": [
+     "entry.0.accounts.*.username"
+    ]
+   }
   },
   {
    "name": "Pastebin",
@@ -230,6 +357,103 @@
    "method": "status",
    "confidence": "MEDIUM",
    "usernameRegex": "^[A-Za-z0-9_-]{1,32}$"
+  },
+  {
+   "name": "Hugging Face",
+   "url": "https://huggingface.co/api/users/{u}/overview",
+   "method": "status",
+   "confidence": "HIGH",
+   "profileUrl": "https://huggingface.co/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "fullname",
+     "Followers": "numFollowers"
+    },
+    "avatar": "avatarUrl"
+   }
+  },
+  {
+   "name": "Scratch",
+   "url": "https://api.scratch.mit.edu/users/{u}",
+   "method": "status",
+   "confidence": "HIGH",
+   "profileUrl": "https://scratch.mit.edu/users/{u}/",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Bio": "profile.bio",
+     "Country": "profile.country",
+     "Created": "history.joined|date"
+    }
+   }
+  },
+  {
+   "name": "crates.io",
+   "url": "https://crates.io/api/v1/users/{u}",
+   "method": "status",
+   "confidence": "MEDIUM",
+   "profileUrl": "https://crates.io/users/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "user.name"
+    },
+    "avatar": "user.avatar"
+   }
+  },
+  {
+   "name": "Codeforces",
+   "url": "https://codeforces.com/api/user.info?handles={u}",
+   "method": "status",
+   "confidence": "HIGH",
+   "absentCodes": [
+    400
+   ],
+   "profileUrl": "https://codeforces.com/profile/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Name": "result.0.firstName",
+     "Location": "result.0.city",
+     "Country": "result.0.country",
+     "Organization": "result.0.organization"
+    },
+    "avatar": "result.0.titlePhoto"
+   }
+  },
+  {
+   "name": "Speedrun.com",
+   "url": "https://www.speedrun.com/api/v1/users/{u}",
+   "method": "status",
+   "confidence": "MEDIUM",
+   "profileUrl": "https://www.speedrun.com/users/{u}",
+   "extract": {
+    "kind": "json",
+    "facts": {
+     "Location": "data.location.country.names.international",
+     "Created": "data.signup|date"
+    },
+    "handles": [
+     "data.twitch.uri|host"
+    ]
+   }
+  },
+  {
+   "name": "Telegram",
+   "url": "https://t.me/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Telegram: View @{u}",
+   "extract": {
+    "kind": "meta",
+    "facts": {
+     "Name": "og:title",
+     "Bio": "og:description"
+    },
+    "avatar": "og:image"
+   },
+   "usernameRegex": "^[A-Za-z][A-Za-z0-9_]{4,31}$"
   }
  ]
 }

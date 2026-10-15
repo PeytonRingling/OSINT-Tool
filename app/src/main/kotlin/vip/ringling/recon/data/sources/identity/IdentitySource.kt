@@ -22,10 +22,13 @@ import vip.ringling.recon.data.net.BROWSER_USER_AGENT
 import vip.ringling.recon.data.net.Endpoints
 import vip.ringling.recon.data.net.Http
 import vip.ringling.recon.domain.Confidence
+import vip.ringling.recon.domain.Fact
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.ModuleId
+import vip.ringling.recon.domain.Link
 import vip.ringling.recon.domain.OsintSource
+import vip.ringling.recon.domain.Pivot
 import vip.ringling.recon.domain.ScanInput
 import vip.ringling.recon.domain.Severity
 
@@ -49,6 +52,8 @@ class RateLimiter(maxConcurrent: Int, private val minIntervalMs: Long) {
 
 internal sealed interface Probe {
     data object Found : Probe
+    /** Found, with the response body kept so a site's [Extract] spec can mine it. */
+    data class Hit(val body: String) : Probe
     data object Absent : Probe
     data class Inconclusive(val reason: String) : Probe
 }
@@ -77,6 +82,8 @@ class IdentitySource @Inject constructor(
         var absent = 0
         val inconclusive = mutableListOf<String>()
         val tally = Mutex()
+        val profiles = mutableListOf<Pair<String, Extracted>>()
+        val avatars = mutableListOf<Pair<String, String>>()
         coroutineScope { applicable.forEach { site ->
             launch {
                 val result = try {
@@ -87,15 +94,27 @@ class IdentitySource @Inject constructor(
                     Probe.Inconclusive(e.javaClass.simpleName)
                 }
                 when (result) {
-                    Probe.Found -> {
+                    Probe.Found, is Probe.Hit -> {
                         tally.withLock { found++ }
                         val url = (site.profileUrl ?: site.url).replace("{u}", username)
+                        val ex = if (result is Probe.Hit && site.extract != null) Extractor.extract(site.extract, result.body) else null
+                        if (ex != null) tally.withLock {
+                            profiles += site.name to ex
+                            ex.avatar?.let { avatars += site.name to it }
+                        }
+                        val handleLinks = ex?.handles?.filter { !it.equals(username, true) }?.distinct().orEmpty()
                         send(
                             Finding(
                                 id = "IDENTITY-${site.name}", module = ModuleId.IDENTITY, title = site.name,
-                                detail = "Account found for $username.", severity = Severity.INFO, url = url,
+                                detail = buildString {
+                                    append(if (ex != null && ex.facts.isNotEmpty()) ex.facts.take(2).joinToString(" · ") { "${it.first}: ${it.second}" } else "Account found for $username.")
+                                },
+                                severity = Severity.INFO, url = url,
                                 raw = """{"site":"${site.name}","probe":"${site.url.replace("{u}", username)}","method":"${site.method}"}""",
                                 confidence = site.confidence,
+                                imageUrl = ex?.avatar, imageLargeUrl = ex?.avatar,
+                                facts = ex?.facts?.map { Fact(it.first, it.second) }.orEmpty(),
+                                pivots = handleLinks.map { Pivot("Search @$it", it) },
                             ),
                         )
                     }
@@ -105,6 +124,61 @@ class IdentitySource @Inject constructor(
             }
         } }
         send(summary(found, absent, inconclusive, applicable.size, all.size - applicable.size))
+        aggregate(username, profiles, avatars)?.let { send(it) }
+        send(manualChecks(username))
+    }
+
+    /** Correlates what the individual profiles disclosed (names, places, sites, mail, linked handles) into one card with pivots. */
+    internal fun aggregate(username: String, profiles: List<Pair<String, Extracted>>, avatars: List<Pair<String, String>>): Finding? {
+        if (profiles.isEmpty()) return null
+        fun collect(label: String) = profiles.flatMap { (site, ex) -> ex.facts.filter { it.first == label }.map { it.second to site } }
+            .groupBy({ it.first.trim() }, { it.second }).filterKeys { it.isNotEmpty() }
+        val facts = mutableListOf<Fact>()
+        val pivots = mutableListOf<Pivot>()
+        for (label in listOf("Name", "Location", "Website", "Email", "Bio", "Company")) {
+            val m = collect(label)
+            if (m.isEmpty()) continue
+            facts += Fact(label, m.entries.joinToString("\n") { (v, sites) -> "$v (${sites.distinct().sorted().joinToString(", ")})" })
+            if (label == "Email") m.keys.filter { '@' in it }.forEach { pivots += Pivot("Breach check $it", it) }
+            if (label == "Website") m.keys.map { it.removePrefix("https://").removePrefix("http://").substringBefore('/').removePrefix("www.") }
+                .filter { '.' in it && ' ' !in it }.distinct().forEach { pivots += Pivot("Domain intel $it", it) }
+        }
+        val linked = profiles.flatMap { (site, ex) -> ex.handles.filter { !it.equals(username, true) }.map { it to site } }.groupBy({ it.first }, { it.second })
+        if (linked.isNotEmpty()) {
+            facts += Fact("Linked handles", linked.entries.joinToString("\n") { (h, sites) -> "$h (via ${sites.distinct().sorted().joinToString(", ")})" })
+            linked.keys.take(8).forEach { pivots += Pivot("Search @$it", it) }
+        }
+        val names = collect("Name").keys
+        val links = avatars.map { (site, url) ->
+            Link("Reverse-image $site avatar (Google Lens)", "https://lens.google.com/uploadbyurl?url=" + URLEncoder.encode(url, "UTF-8"))
+        } + avatars.take(1).map { (_, url) -> Link("Reverse-image (Yandex)", "https://yandex.com/images/search?rpt=imageview&url=" + URLEncoder.encode(url, "UTF-8")) }
+        return Finding(
+            id = "IDENTITY-profile", module = ModuleId.IDENTITY,
+            title = "Identity profile · ${profiles.size} enriched profile${if (profiles.size == 1) "" else "s"}",
+            detail = (if (names.isNotEmpty()) "Names seen: ${names.joinToString(", ")}. " else "") +
+                "Compiled from public profile data; same handle on different sites is not proof of the same person.",
+            severity = Severity.INFO, confidence = Confidence.MEDIUM,
+            imageUrl = avatars.firstOrNull()?.second, imageLargeUrl = avatars.firstOrNull()?.second,
+            facts = facts, pivots = pivots.distinctBy { it.query }, links = links,
+            raw = "",
+        )
+    }
+
+    /** Big platforms block automated checks; give one-tap manual lookups instead of pretending we checked. */
+    internal fun manualChecks(username: String): Finding {
+        val u = URLEncoder.encode(username, "UTF-8")
+        val links = listOf(
+            "Instagram" to "https://www.instagram.com/$u/", "X / Twitter" to "https://x.com/$u", "TikTok" to "https://www.tiktok.com/@$u",
+            "Facebook" to "https://www.facebook.com/$u", "LinkedIn" to "https://www.linkedin.com/in/$u", "Snapchat" to "https://www.snapchat.com/add/$u",
+            "YouTube" to "https://www.youtube.com/@$u", "Twitch" to "https://www.twitch.tv/$u", "Pinterest" to "https://www.pinterest.com/$u/",
+            "Threads" to "https://www.threads.net/@$u", "Reddit" to "https://www.reddit.com/user/$u", "Telegram" to "https://t.me/$u",
+            "Google (exact handle)" to "https://www.google.com/search?q=%22$u%22", "DuckDuckGo (exact handle)" to "https://duckduckgo.com/?q=%22$u%22",
+        ).map { Link(it.first, it.second) }
+        return Finding(
+            id = "IDENTITY-manual", module = ModuleId.IDENTITY, title = "Check manually · bot-walled platforms",
+            detail = "These sites block automated lookups, so they were not checked. Open them to verify by eye.",
+            severity = Severity.INFO, confidence = Confidence.LOW, links = links,
+        )
     }
 
     internal fun summary(found: Int, absent: Int, inconclusive: List<String>, checked: Int, skipped: Int): Finding {
@@ -135,7 +209,7 @@ class IdentitySource @Inject constructor(
             // Bot walls answer 403/503 (or even 200) with an interstitial; that says nothing about the account.
             val head = if (code in 200..299 || code == 403 || code == 503) r.peekBody(200_000).string() else ""
             val challenged = head.isNotEmpty() && challengeMarkers.any { head.contains(it, ignoreCase = true) } && head.length < 20_000
-            when {
+            val res = when {
                 challenged -> Probe.Inconclusive("bot challenge")
                 code in absentCodes -> Probe.Absent
                 code == 429 || code == 406 -> Probe.Inconclusive("rate-limited")
@@ -148,6 +222,7 @@ class IdentitySource @Inject constructor(
                     if (site.errorUrl != null && r.request.url.toString().contains(site.errorUrl)) Probe.Absent else Probe.Found
                 else -> Probe.Found
             }
+            if (res == Probe.Found && site.extract != null) Probe.Hit(head) else res
         }
     }
 
@@ -165,7 +240,7 @@ class IdentitySource @Inject constructor(
             launch {
                 val r = try { limiter.run { fn() } } catch (e: CancellationException) { throw e } catch (e: Exception) { Probe.Inconclusive(e.javaClass.simpleName) }
                 when (r) {
-                    Probe.Found -> send(
+                    Probe.Found, is Probe.Hit -> send(
                         Finding(
                             "IDENTITY-$name", ModuleId.IDENTITY, name,
                             if (name == "Gravatar") "A public Gravatar profile exists for this address." else "This address is registered (the signup flow reports it as taken).",

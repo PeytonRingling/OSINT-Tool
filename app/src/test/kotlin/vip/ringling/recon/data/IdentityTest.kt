@@ -64,7 +64,7 @@ class IdentityTest {
             val src = IdentitySource(Http(), srv.endpoints(), { sites(base) }).also { it.limiter = RateLimiter(4, 0) }
             val f = src.collect(user)
 
-            val hits = f.filter { it.id != "IDENTITY-summary" }.associateBy { it.title }
+            val hits = f.filter { it.id != "IDENTITY-summary" && it.id != "IDENTITY-manual" }.associateBy { it.title }
             assertEquals(setOf("StatusOk", "MsgOk"), hits.keys, "only real hits are emitted")
             assertEquals(Confidence.HIGH, hits.getValue("StatusOk").confidence)
             assertEquals(Confidence.MEDIUM, hits.getValue("MsgOk").confidence)
@@ -98,7 +98,7 @@ class IdentityTest {
             )
             val src = IdentitySource(Http(), srv.endpoints(), { list }).also { it.limiter = RateLimiter(4, 0) }
             val hits = src.collect(ScanInput("ghost", InputType.USERNAME))
-            assertEquals(listOf("HR"), hits.filter { it.id != "IDENTITY-summary" }.map { it.title }, "only the foundMsg site matches")
+            assertEquals(listOf("HR"), hits.filter { it.id != "IDENTITY-summary" && it.id != "IDENTITY-manual" }.map { it.title }, "only the foundMsg site matches")
             val s = hits.single { it.id == "IDENTITY-summary" }
             assertTrue("1 found, 1 not found" in s.detail && "2 inconclusive" in s.detail, s.detail)
             assertTrue("Wall (bot challenge)" in s.raw && "CF (bot challenge)" in s.raw, s.raw)
@@ -113,7 +113,7 @@ class IdentityTest {
         srv.use {
             val base = srv.url("/").toString().trimEnd('/')
             val src = IdentitySource(Http(), srv.endpoints(), { listOf(Site("Flaky", "$base/s/ok/{u}")) }).also { it.limiter = RateLimiter(2, 0) }
-            val s = src.collect(user).single()
+            val s = src.collect(user).single { it.id == "IDENTITY-summary" }
             assertTrue("1 inconclusive" in s.detail, s.detail)
             assertTrue(s.severity != Severity.CLEAN, "can't claim clean when nothing was verified")
         }
@@ -170,5 +170,43 @@ class IdentityTest {
             }
         }
         assertEquals(2, peak)
+    }
+
+    @Test fun profileEnrichmentCorrelatesAcrossSitesAndOffersPivots() = runTest {
+        val (srv, _) = server(
+            "/a/" to { MockResponse().setResponseCode(200).setBody("""{"name":"Jane Doe","location":"Boise","website_url":"https://jane.example/blog","github_username":"janed","profile_image":"https://img.example/a.png"}""") },
+            "/b/" to { MockResponse().setResponseCode(200).setBody("""{"displayName":"Jane Doe","bio":"hi","them":[{"proofs_summary":{"g":[{"nametag":"jd_other"}]}}]}""") },
+        )
+        srv.use {
+            val base = srv.url("/").toString().trimEnd('/')
+            val list = listOf(
+                Site("A", "$base/a/{u}", Method.status, Confidence.HIGH, extract = vip.ringling.recon.data.sources.identity.Extract(
+                    facts = mapOf("Name" to "name", "Location" to "location", "Website" to "website_url"), avatar = "profile_image", handles = listOf("github_username"))),
+                Site("B", "$base/b/{u}", Method.status, Confidence.HIGH, extract = vip.ringling.recon.data.sources.identity.Extract(
+                    facts = mapOf("Name" to "displayName"), handles = listOf("them.0.proofs_summary.*.*.nametag"))),
+            )
+            val src = IdentitySource(Http(), srv.endpoints(), { list }).also { it.limiter = RateLimiter(2, 0) }
+            val f = src.collect(user)
+            val a = f.single { it.id == "IDENTITY-A" }
+            assertEquals("https://img.example/a.png", a.imageUrl)
+            assertTrue(a.pivots.any { it.query == "janed" })
+            val profile = f.single { it.id == "IDENTITY-profile" }
+            assertTrue(profile.facts.single { it.label == "Name" }.value.contains("Jane Doe (A, B)"), profile.facts.toString())
+            assertTrue(profile.pivots.any { it.query == "jane.example" })
+            assertTrue(profile.pivots.any { it.query == "jd_other" })
+            assertTrue(profile.links.any { "lens.google.com" in it.url })
+            assertTrue(f.single { it.id == "IDENTITY-manual" }.links.size >= 10)
+        }
+    }
+
+    @Test fun extractorHandlesJsonXmlMetaAndGarbage() {
+        val x = vip.ringling.recon.data.sources.identity.Extractor
+        val j = x.extract(vip.ringling.recon.data.sources.identity.Extract(facts = mapOf("N" to "0.name", "D" to "0.at|date", "H" to "0.site|host")), """[{"name":"X","at":"2020-01-02T03:04","site":"https://www.a.io/p"}]""")!!
+        assertEquals(listOf("N" to "X", "D" to "2020-01-02", "H" to "a.io"), j.facts)
+        val xml = x.extract(vip.ringling.recon.data.sources.identity.Extract(kind = "xml", facts = mapOf("N" to "profile > realname"), avatar = "profile > avatarFull"), "<response><profile><realname>Al</realname><avatarFull>http://i/x.jpg</avatarFull></profile></response>")!!
+        assertEquals(listOf("N" to "Al"), xml.facts); assertEquals("http://i/x.jpg", xml.avatar)
+        val meta = x.extract(vip.ringling.recon.data.sources.identity.Extract(kind = "meta", facts = mapOf("N" to "og:title")), """<meta property="og:title" content="Telegram: View"/>""")!!
+        assertEquals(listOf("N" to "Telegram: View"), meta.facts)
+        assertEquals(null, x.extract(vip.ringling.recon.data.sources.identity.Extract(), "<<not json"))
     }
 }

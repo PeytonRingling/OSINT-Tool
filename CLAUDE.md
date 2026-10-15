@@ -108,6 +108,15 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Free sources cannot name a number's owner. Findings gained `links` ("Open in browser") and `pivots` ("Search next" -> `ScanController.requestSearch`).
 - 800notes/Veriphone/Twilio shapes: fixtures only; verify live on the phone.
 
+## Username enrichment (added 2026-10-15)
+- `Site.extract` (`data/sources/identity/Extract.kt`): per-site spec (kind json|xml|meta; label->path, `*` wildcard over arrays/objects, transforms `|date|num|host`;
+  avatar; `handles` = linked accounts on other services). A hit's body is mined for facts, avatar and pivots. Well-known labels (Name, Location, Website, Email, Bio, Company)
+  are correlated into one "Identity profile" finding (with pivots: emails -> breach, websites -> domain, linked handles -> username, reverse-image links).
+  "Check manually" finding links bot-walled platforms (Instagram, X, TikTok, ...) instead of pretending they were checked.
+- API sites with extraction (existence verified live 2026-10-15; extraction paths verified against live shapes for GitLab, Keybase, Chess.com, Bluesky, Mastodon, Dev.to, Hugging Face, Lichess; others authored from docs).
+  Telegram: found = title "Telegram: View @x".
+- Same-handle matches across sites are not proof of the same person; the profile card says so.
+
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.
