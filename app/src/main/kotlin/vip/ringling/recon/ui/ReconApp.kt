@@ -138,7 +138,7 @@ fun ReconApp() {
                     enterTransition = { fadeIn(tween(220)) },
                     exitTransition = { fadeOut(tween(160)) },
                     popEnterTransition = { fadeIn(tween(220)) },
-                    popExitTransition = { fadeOut(tween(160)) },
+                    popExitTransition = { fadeOut(tween(90)) },
                 ) {
                     composable(Tab.HOME.route) {
                         CompositionLocalProvider(LocalSharedScopes provides if (expanded) null else SharedScopes(this@SharedTransitionLayout, this)) {
@@ -176,7 +176,7 @@ fun ReconApp() {
                         val vm: vip.ringling.recon.ui.casefile.CaseViewModel = hiltViewModel()
                         val st by vm.state.collectAsStateWithLifecycle()
                         val stamp = remember { java.time.LocalDate.now().toString() }
-                        vip.ringling.recon.ui.casefile.CaseScreen(
+                        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { vip.ringling.recon.ui.casefile.CaseScreen(
                             st,
                             vip.ringling.recon.ui.casefile.CaseActions(
                                 onBack = { nav.popBackStack() },
@@ -187,13 +187,15 @@ fun ReconApp() {
                                 onShare = { actions.shareText("Recon case report", vip.ringling.recon.domain.CaseReport.markdown(st.items, stamp)) },
                             ),
                             contentPadding = pad,
-                        )
+                        ) }
                     }
                     composable("finding/{id}") {
                         val vm: DetailViewModel = hiltViewModel()
                         val f by vm.finding.collectAsStateWithLifecycle()
                         CompositionLocalProvider(LocalSharedScopes provides SharedScopes(this@SharedTransitionLayout, this)) {
-                            f?.let { FindingDetail(it, actions.detail, onBack = { nav.popBackStack() }, contentPadding = pad) }
+                            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                                f?.let { FindingDetail(it, actions.detail, onBack = { nav.popBackStack() }, contentPadding = pad) }
+                            }
                         }
                     }
                     composable("record/{id}") {
@@ -201,7 +203,7 @@ fun ReconApp() {
                         val r by vm.record.collectAsStateWithLifecycle()
                         CompositionLocalProvider(LocalSharedScopes provides SharedScopes(this@SharedTransitionLayout, this)) {
                             r?.let { rec ->
-                                LazyColumn(Modifier.fillMaxSize(), contentPadding = pad.listInsets(), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+                                LazyColumn(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentPadding = pad.listInsets(), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
                                     scanResults(
                                         rec.input, rec.findings, recordStatuses(rec), emptyMap(), null, true, {},
                                         { nav.navigate("finding/${it.id}") }, { actions.exportScan(rec.input, rec.findings) },

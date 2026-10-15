@@ -22,6 +22,11 @@ fun Modifier.sharedFinding(id: String): Modifier {
         this@sharedFinding.sharedBounds(
             sharedContentState = rememberSharedContentState("finding-$id"),
             animatedVisibilityScope = s.visibility,
+            // Re-layout inside the moving bounds instead of scaling a snapshot: a tall detail header (breaches) otherwise
+            // shrinks into the list row as a visibly squashed copy of the page while going back.
+            resizeMode = SharedTransitionScope.ResizeMode.RemeasureToBounds,
+            enter = androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(120)),
+            exit = androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(80)),
         )
     }
 }
