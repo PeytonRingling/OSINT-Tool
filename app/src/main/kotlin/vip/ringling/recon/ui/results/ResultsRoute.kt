@@ -47,8 +47,13 @@ fun ResultsRoute(
             else permission.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION))
         },
     )
+    val tabletop = vip.ringling.recon.ui.signal.LocalTabletop.current
     when {
-        st.input?.type == InputType.ZIP -> AreaScreen(st, actions, contentPadding = pad, split = wide)
+        st.input?.type == InputType.ZIP -> AreaScreen(st, actions, contentPadding = pad, split = wide && !tabletop)
+        wide && tabletop -> androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
+            ExposureScreen(st, actions, Modifier.weight(1f), pad, showFindingsButton = false)
+            FindingsList(st, actions, Modifier.weight(1f), PaddingValues(bottom = pad.calculateBottomPadding()), showHeader = false, compact = true)
+        }
         wide -> ExposureWide(st, actions, pad)
         showFindings -> { BackHandler { showFindings = false }; FindingsList(st, actions, contentPadding = pad, onBack = { showFindings = false }) }
         else -> ExposureScreen(st, actions, contentPadding = pad)

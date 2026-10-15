@@ -140,6 +140,8 @@ fun ReconApp() {
     newCaseFor?.let { input ->
         vip.ringling.recon.ui.cases.NewCaseDialog(onDismiss = { newCaseFor = null }, onCreate = { name -> main.createCaseWith(name, input); newCaseFor = null })
     }
+    val batch by main.batch.collectAsStateWithLifecycle()
+    if (batch.active) vip.ringling.recon.ui.log.RescanSheet(batch, onClose = main::dismissBatch, onCancel = main::cancelBatch)
     if (showLoadout) {
         vip.ringling.recon.ui.radar.LoadoutSheet(radarState.enabled, radarState.autoPick, radarVm::toggle, radarVm::setAuto, onDismiss = { showLoadout = false })
     }
@@ -149,6 +151,8 @@ fun ReconApp() {
         val expanded = width >= 840.dp
         val useRail = width >= 600.dp
         val content: @Composable (PaddingValues) -> Unit = { pad ->
+            val tabletop = vip.ringling.recon.ui.signal.rememberTabletop()
+            androidx.compose.runtime.CompositionLocalProvider(vip.ringling.recon.ui.signal.LocalTabletop provides tabletop) {
             Box(Modifier.fillMaxSize().imePadding()) {
             SharedTransitionLayout {
                 NavHost(
@@ -172,7 +176,8 @@ fun ReconApp() {
                                 onMode = vm::setMode,
                                 onOpenTarget = { t -> if (t.isArea) radarVm.rerun(vip.ringling.recon.domain.ScanInput(t.value, t.type)) else nav.navigate("results/${t.latest.id}") },
                                 onOpenScan = { sn -> if (sn.isArea) radarVm.rerun(vip.ringling.recon.domain.ScanInput(sn.value, sn.type)) else nav.navigate("results/${sn.id}") },
-                                onDelete = { vm.deleteTarget(it) }, onClearAll = vm::clearAll,
+                                onDelete = { vm.deleteTarget(it) }, onClearAll = vm::clearAll, onUndoClear = vm::undoClear,
+                                onRescanAll = { main.rescanAll(st.targets.map { t -> vip.ringling.recon.domain.ScanInput(t.value, t.type) }) },
                             ),
                             contentPadding = pad,
                         )
@@ -198,7 +203,7 @@ fun ReconApp() {
                                 if (expanded) PaddingValues(top = pad.calculateTopPadding(), bottom = pad.calculateBottomPadding()) else pad, actions,
                                 onBack = { nav.popBackStack() }, onChanges = { cid -> nav.navigate("cases/$cid/changes") },
                                 onOpenScan = { st -> if (st.latest == null || st.isArea) radarVm.rerun(vip.ringling.recon.domain.ScanInput(st.target.value, st.target.type)) else nav.navigate("results/${st.latest!!.id}") },
-                                onRun = { q -> main.requestSearch(q) }, wide = expanded,
+                                onRun = { q -> main.requestSearch(q) }, wide = expanded, onRescan = main::rescanAll,
                             )
                         }
                         if (expanded) {
@@ -218,6 +223,7 @@ fun ReconApp() {
                         }
                     }
                 }
+            }
             }
             }
         }

@@ -47,6 +47,8 @@ import vip.ringling.recon.domain.LogTarget
 import vip.ringling.recon.domain.ScanSnapshot
 import vip.ringling.recon.ui.components.icon
 import vip.ringling.recon.ui.signal.PageHeader
+import vip.ringling.recon.ui.signal.HairPanel
+import vip.ringling.recon.ui.signal.SignalButton
 import vip.ringling.recon.ui.signal.SegmentedControl
 import vip.ringling.recon.ui.signal.SignalLabel
 import vip.ringling.recon.ui.signal.Sparkline
@@ -62,6 +64,8 @@ data class LogActions(
     val onOpenScan: (ScanSnapshot) -> Unit = {},
     val onDelete: (LogTarget) -> Unit = {},
     val onClearAll: () -> Unit = {},
+    val onRescanAll: () -> Unit = {},
+    val onUndoClear: () -> Unit = {},
 )
 
 fun ago(ts: Long, now: Long): String {
@@ -102,7 +106,18 @@ fun LogScreen(state: LogUiState, actions: LogActions, modifier: Modifier = Modif
                 }
             }
             item { SegmentedControl(LogMode.entries.map { it.label }, state.mode.ordinal, { actions.onMode(LogMode.entries[it]) }, Modifier.padding(top = 4.dp, bottom = 4.dp)) }
-            if (state.scanCount == 0) item {
+            if (state.undoCount > 0) item {
+                HairPanel(Modifier.fillMaxWidth()) {
+                    Row(Modifier.fillMaxWidth().heightIn(min = 56.dp).padding(start = 14.dp, end = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Text("Cleared ${state.undoCount} scans.", Modifier.weight(1f), color = sig.text, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
+                        SignalButton("Undo", actions.onUndoClear, filled = true, mono = true)
+                    }
+                }
+            }
+            if (state.targets.any { it.type != vip.ringling.recon.domain.InputType.ZIP }) item {
+                SignalButton("Re-scan all targets", actions.onRescanAll, Modifier.fillMaxWidth(), mono = true)
+            }
+            if (state.scanCount == 0 && state.undoCount == 0) item {
                 Text("Nothing logged yet. Scans are saved on this device only.", color = sig.muted, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 24.dp, horizontal = 4.dp))
             }
             when (state.mode) {

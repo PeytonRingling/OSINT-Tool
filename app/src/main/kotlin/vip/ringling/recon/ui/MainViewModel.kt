@@ -48,6 +48,10 @@ class MainViewModel @Inject constructor(
     fun checkForUpdateQuietly() = updates.checkQuietly()
     fun requestSearch(query: String) = controller.requestSearch(query)
     fun runPaid(f: Finding) = controller.runPaid(f)
+    val batch: StateFlow<vip.ringling.recon.data.BatchState> = controller.batch
+    fun rescanAll(inputs: List<vip.ringling.recon.domain.ScanInput>) = controller.rescanAll(inputs)
+    fun dismissBatch() = controller.dismissBatch()
+    fun cancelBatch() = controller.cancelBatch()
     fun setMapSatellite(on: Boolean) { viewModelScope.launch { settingsRepo.setMapSatellite(on) } }
     /** Synchronous read of the lock setting for the very first frame (DataStore is fast but async). */
     fun appLockNow(): Boolean = kotlinx.coroutines.runBlocking { settingsRepo.settings.first().appLock }

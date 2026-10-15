@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import vip.ringling.recon.domain.Finding
@@ -21,6 +22,13 @@ import vip.ringling.recon.domain.ScanInput
 import vip.ringling.recon.domain.ScanRecord
 import vip.ringling.recon.domain.ScanRunner
 import vip.ringling.recon.domain.ScanSession
+
+data class BatchState(
+    val total: Int = 0, val done: Int = 0, val current: String? = null, val results: List<vip.ringling.recon.domain.ScanDiff> = emptyList(),
+) {
+    val active: Boolean get() = total > 0
+    val running: Boolean get() = active && done < total
+}
 
 /** App-scoped so a scan survives tab switches and rotation. Saves to history when it completes. */
 @Singleton
@@ -65,6 +73,41 @@ class ScanController @Inject constructor(
     val pendingQuery: StateFlow<String?> = _pendingQuery.asStateFlow()
     fun requestSearch(query: String) { _pendingQuery.value = query }
     fun consumePending() { _pendingQuery.value = null }
+
+    private var batchJob: Job? = null
+    private val _batch = MutableStateFlow(BatchState())
+    /** Progress and per-target diff of a "Re-scan all" run (background; the main scan session is untouched). */
+    val batch: StateFlow<BatchState> = _batch.asStateFlow()
+
+    /** Re-runs every target one after another, saving each scan like a normal one and reporting what changed since its previous scan. ZIP/photo targets are skipped. */
+    fun rescanAll(inputs: List<ScanInput>) {
+        val todo = vip.ringling.recon.domain.ScanDiffs.batchable(inputs)
+        if (todo.isEmpty() || _batch.value.running) return
+        _batch.value = BatchState(total = todo.size)
+        batchJob = scope.launch {
+            val before = snapshots.snapshots.first()
+            for (input in todo) {
+                _batch.update { it.copy(current = input.raw) }
+                var last = ScanSession(input)
+                val ok = runCatching { runner.session(input, _enabled.value).collect { last = it } }.isSuccess
+                val prev = before.filter { it.type == input.type && it.value == input.raw }.maxByOrNull { it.ts }
+                val diff = if (ok && last.findings.isNotEmpty()) {
+                    val id = UUID.randomUUID().toString(); val now = System.currentTimeMillis()
+                    val storable = last.findings.filter { it.module != ModuleId.REGISTRY && it.paid == null }
+                    history.add(ScanRecord(id, input, now, storable))
+                    val snap = vip.ringling.recon.domain.ScanSnapshot.of(id, input, last.findings, now)
+                    snapshots.add(snap)
+                    vip.ringling.recon.domain.ScanDiffs.compare(prev, snap, last.findings)
+                } else vip.ringling.recon.domain.ScanDiff(input, prev?.risk, prev?.risk ?: 0, emptyList(), 0, failed = true)
+                _batch.update { it.copy(done = it.done + 1, results = it.results + diff) }
+            }
+            _batch.update { it.copy(current = null) }
+            _completed.emit(Unit)
+        }
+    }
+
+    fun cancelBatch() { batchJob?.cancel(); _batch.value = BatchState() }
+    fun dismissBatch() { if (!_batch.value.running) _batch.value = BatchState() }
 
     fun modulesFor(input: ScanInput) = runner.modulesFor(input.type)
     fun rescan() { _session.value?.input?.let { start(it) } }

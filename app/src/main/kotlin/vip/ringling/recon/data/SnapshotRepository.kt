@@ -17,6 +17,7 @@ class SnapshotRepository @Inject constructor(private val dao: SnapshotDao) {
 
     suspend fun add(s: ScanSnapshot) = dao.insert(s.toEntity())
     suspend fun clear() = dao.clear()
+    suspend fun restore(list: List<ScanSnapshot>) = dao.insertAll(list.map { it.toEntity() })
     suspend fun deleteTarget(type: InputType, value: String) = dao.deleteTarget(type.name, value)
 
     /** Adds a snapshot for every History row that has none (builds that predate the table, or a scan that finished before it existed). */

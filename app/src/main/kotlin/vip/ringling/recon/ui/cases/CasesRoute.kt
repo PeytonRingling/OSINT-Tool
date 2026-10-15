@@ -49,7 +49,7 @@ fun CasesRoute(pad: PaddingValues, newCaseSignal: Int, onOpen: (String) -> Unit)
 @Composable
 fun CaseDetailRoute(
     pad: PaddingValues, actions: ReconActions, onBack: () -> Unit, onChanges: (String) -> Unit,
-    onOpenScan: (CaseTargetState) -> Unit, onRun: (String) -> Unit, wide: Boolean = false,
+    onOpenScan: (CaseTargetState) -> Unit, onRun: (String) -> Unit, wide: Boolean = false, onRescan: (List<ScanInput>) -> Unit = {},
 ) {
     val vm: CaseDetailViewModel = hiltViewModel()
     val st by vm.state.collectAsStateWithLifecycle()
@@ -75,7 +75,7 @@ fun CaseDetailRoute(
             onSaveMarkdown = { actions.saveFile("recon-case-${c.file.name.lowercase().replace(Regex("[^a-z0-9]+"), "-")}-$stamp.md", report().toByteArray()) },
             onSavePdf = { actions.saveFile("recon-case-${c.file.name.lowercase().replace(Regex("[^a-z0-9]+"), "-")}-$stamp.pdf", PdfWriter.fromMarkdown(report())) },
             onShare = { actions.shareText("Recon case report", report()) },
-            onRename = { dialog = "rename" }, onDelete = { dialog = "delete" }, onChanges = { onChanges(vm.caseId) },
+            onRescan = { onRescan(c.file.targets.map { ScanInput(it.value, it.type) }) }, onRename = { dialog = "rename" }, onDelete = { dialog = "delete" }, onChanges = { onChanges(vm.caseId) },
         ),
         contentPadding = pad,
         graphHeight = if (wide) 380.dp else 300.dp,

@@ -75,6 +75,7 @@ data class CaseDetailActions(
     val onRename: () -> Unit = {},
     val onDelete: () -> Unit = {},
     val onChanges: () -> Unit = {},
+    val onRescan: () -> Unit = {},
 )
 
 /** Case detail: header, link graph, Targets / Pivots / Notes / Changes tabs. [showChangesInline] renders the timeline on the Changes tab (large screens). */
@@ -155,6 +156,7 @@ fun CaseHeader(c: CaseView, actions: CaseDetailActions, modifier: Modifier = Mod
         Box {
             SignalIconButton(Icons.Rounded.MoreVert, "More actions", { menu = true })
             DropdownMenu(menu, { menu = false }) {
+                DropdownMenuItem({ Text("Re-scan all targets") }, { menu = false; actions.onRescan() })
                 DropdownMenuItem({ Text("Rename case") }, { menu = false; actions.onRename() })
                 DropdownMenuItem({ Text("Delete case") }, { menu = false; actions.onDelete() })
             }

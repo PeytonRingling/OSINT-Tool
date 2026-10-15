@@ -25,6 +25,8 @@ data class LogUiState(
     val scans: List<ScanSnapshot> = emptyList(),
     val mode: LogMode = LogMode.BY_TARGET,
     val now: Long = System.currentTimeMillis(),
+    /** Number of scans a Clear all can still bring back (kept in memory only until the app closes or something new is saved). */
+    val undoCount: Int = 0,
 ) {
     val scanCount: Int get() = scans.size
 }
@@ -38,8 +40,11 @@ class LogViewModel @Inject constructor(
 
     init { viewModelScope.launch { snapshots.backfill(history.records.let { f -> f.first() }) } }
 
-    val state: StateFlow<LogUiState> = combine(snapshots.snapshots, mode) { snaps, m ->
-        LogUiState(LogMath.targets(snaps), snaps.sortedByDescending { it.ts }, m, System.currentTimeMillis())
+    private var backup: Pair<List<vip.ringling.recon.domain.ScanRecord>, List<ScanSnapshot>>? = null
+    private val undo = MutableStateFlow(0)
+
+    val state: StateFlow<LogUiState> = combine(snapshots.snapshots, mode, undo) { snaps, m, u ->
+        LogUiState(LogMath.targets(snaps), snaps.sortedByDescending { it.ts }, m, undoCount = if (snaps.isEmpty()) u else 0, now = System.currentTimeMillis())
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LogUiState())
 
     fun setMode(m: LogMode) { mode.value = m }
@@ -50,5 +55,15 @@ class LogViewModel @Inject constructor(
         snapshots.deleteTarget(t.type, t.value)
     }
 
-    fun clearAll() = viewModelScope.launch { history.clear(); snapshots.clear() }
+    fun clearAll() = viewModelScope.launch {
+        val recs = history.records.first(); val snaps = snapshots.snapshots.first()
+        backup = recs to snaps
+        history.clear(); snapshots.clear(); undo.value = snaps.size
+    }
+
+    fun undoClear() = viewModelScope.launch {
+        val (recs, snaps) = backup ?: return@launch
+        recs.forEach { history.add(it) }; snapshots.restore(snaps)
+        backup = null; undo.value = 0
+    }
 }

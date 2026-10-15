@@ -96,6 +96,7 @@ dependencies {
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.exif)
     implementation(libs.androidx.work)
+    implementation(libs.androidx.window)
 
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)
