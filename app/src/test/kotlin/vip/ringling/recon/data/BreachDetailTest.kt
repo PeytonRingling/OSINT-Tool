@@ -97,3 +97,59 @@ class BreachDetailTest {
         assertTrue(BreachAdvice.forClasses(emptyList()).single().startsWith("No password or financial data"))
     }
 }
+
+class LeakCheckV2Test {
+    private val client = vip.ringling.recon.data.sources.breach.LeakCheckClient(vip.ringling.recon.data.net.Http(), "http://x", "http://y")
+
+    @Test fun mergesEntriesPerLeakAndReadsFlagsFieldsQuota() {
+        val r = client.parseV2(fixture("leakcheck_v2.json"))
+        assertEquals(3, r.found); assertEquals(395, r.quota); assertTrue(!r.viaPublic)
+        assertEquals(2, r.leaks.size, "two entries from the same leak merge")
+        val c1 = r.leaks.first { it.name == "Collection #1" }
+        assertEquals("2019-01", c1.date); assertEquals(listOf("email", "password", "username"), c1.fields); assertTrue(c1.compilation && !c1.unverified)
+        val naz = r.leaks.first { it.name == "Naz.API" }
+        assertTrue(naz.unverified && naz.passwordless && naz.date == null)
+        assertEquals(listOf("email", "password", "username", "ip"), r.fields)
+    }
+
+    @Test fun leakedValuesAreNeverExtractedOrShown() {
+        val r = client.parseV2(fixture("leakcheck_v2.json"))
+        val f = LeakCheckMapper.finding(r)
+        val everything = f.detail + f.raw + f.facts.joinToString { it.label + it.value } + f.tags.joinToString()
+        for (secret in listOf("hunter2", "another-FAKE", "a@b.com", "203.0.113.7", "neo")) assertTrue(secret !in everything, "$secret must not appear")
+        assertTrue("\"password\"" in f.raw && "<text" in f.raw, "raw keeps the shape with masked values: ${f.raw}")
+    }
+
+    @Test fun mapperShowsPerLeakFieldsAndFlags() {
+        val f = LeakCheckMapper.finding(client.parseV2(fixture("leakcheck_v2.json")))
+        assertEquals(Severity.EXPOSED, f.severity)
+        assertTrue("1 of 2 leaks include a password" in f.detail, f.detail)
+        assertTrue("marked unverified" in f.detail && "combo-list" in f.detail, f.detail)
+        assertEquals("2019-01 · email, password, username · combo list", f.facts.first { it.label == "Collection #1" }.value)
+        assertEquals("date unknown · email, ip · unverified, no password", f.facts.first { it.label == "Naz.API" }.value)
+        assertEquals("395", f.facts.first { it.label == "Queries left" }.value)
+        assertEquals("Keyed API", f.facts.first { it.label == "Endpoint" }.value)
+    }
+
+    @Test fun toleratesVariantShapes() {
+        // source as a bare string, no "fields" → field names inferred from which keys have values (names only)
+        val r = client.parseV2("""{"success":true,"found":1,"result":[{"source":"Plain.com","email":"x@y.z","name":"Q","dob":null}]}""")
+        assertEquals("Plain.com", r.leaks.single().name)
+        assertEquals(listOf("email", "name"), r.leaks.single().fields, "null-valued keys are skipped")
+        assertEquals(null, r.quota)
+        assertEquals(1, client.parseV2("""{"success":true,"result":[{"source":{"name":"A"}}]}""").found, "found falls back to result size")
+    }
+
+    @Test fun notFoundAndBadResponses() {
+        assertEquals(0, client.parseV2("""{"success":false,"error":"Not found"}""").found)
+        val limit = runCatching { client.parseV2("""{"success":false,"error":"Limit reached"}""") }
+        assertTrue(limit.exceptionOrNull()?.message?.contains("Limit reached") == true, "limit: $limit")
+        val junk = runCatching { client.parseV2("<html>") }
+        assertTrue(junk.exceptionOrNull()?.message?.startsWith("LeakCheck sent") == true, "junk: $junk")
+    }
+
+    @Test fun redactTruncatesArraysAndMasksStrings() {
+        val shape = client.redact(Json.parseToJsonElement("""{"a":"secret","n":5,"l":[{"k":"v"},{"k":"v"},{"k":"v"},{"k":"v"}]}""")).toString()
+        assertTrue("secret" !in shape && "<text, 6 chars>" in shape && "\"n\":5" in shape && "2 more" in shape, shape)
+    }
+}

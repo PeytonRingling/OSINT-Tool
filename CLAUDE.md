@@ -86,6 +86,7 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
   dates, counts, domain, verified/sensitive/spam/malware flags, logo, data-class tags and derived advice (`BreachAdvice`); paste findings list each paste;
   LeakCheck findings list every source+date and which FIELDS were exposed. **Leaked credential VALUES are never displayed or stored** (v2 entries
   contain them; the mapper reads only source names/dates/field names — tested).
+- LeakCheck keyed v2 (paid; user has a key): parsed tolerantly into per-leak detail (source name/date, per-leak FIELD NAMES, unverified/combo/passwordless flags, `quota`). Shape is from LeakCheck's docs and NOT verified live (no key in the cloud env). The finding's RAW section shows the response with every string masked, so the user can paste a real shape for me to fix parsers + fixture. Values (passwords, emails, IPs…) are never extracted. An opt-in 'reveal values' mode was offered to the user, not built.
 - Map camera: pins stream in while a search runs, so the camera only auto-fits until the user pans/zooms (`userMoved`); pinch zooms around the fingers,
   double-tap zooms in, and inline maps claim two-finger gestures only (one finger scrolls the page) — `oneFingerPan=true` only in the full-screen map.
 
@@ -117,5 +118,5 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Registry findings are shown live only: `ScanController` strips them before saving history (tested). Never cache.
 - Failure policy: a failing sub-check becomes an INFO "… unavailable" finding (breach/domain); an inconclusive site probe
   is counted, never treated as "not found".
-- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 137 tests at last count.
+- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 143 tests at last count.
 - Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.

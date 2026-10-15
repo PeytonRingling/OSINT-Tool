@@ -1,3 +1,4 @@
-{"success":true,"quota":395,"found":2,"result":[
- {"email":"a@b.com","source":{"name":"Collection #1","breach_date":"2019-01","unverified":0},"first_name":"A","fields":["email","password"]},
- {"email":"a@b.com","source":{"name":"Naz.API","breach_date":null},"fields":["email","username"]}]}
+{"success":true,"quota":395,"found":3,"result":[
+ {"email":"a@b.com","password":"hunter2-FAKE","username":"neo","source":{"name":"Collection #1","breach_date":"2019-01","unverified":0,"passwordless":0,"compilation":1},"fields":["email","password","username"]},
+ {"email":"a@b.com","ip":"203.0.113.7","source":{"name":"Naz.API","breach_date":null,"unverified":1,"compilation":0,"passwordless":1},"fields":["email","ip"]},
+ {"email":"a@b.com","password":"another-FAKE","source":{"name":"Collection #1","breach_date":"2019-01","unverified":0,"compilation":1},"fields":["email","password"]}]}
