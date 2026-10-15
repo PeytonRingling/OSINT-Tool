@@ -130,6 +130,15 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Share any text into Recon (share sheet) to search it; `SearchWidget` is a launcher shortcut only (no data shown).
 - Unverifiable here (need the user's keys/phone): HIBP account endpoints, LeakCheck v2, Veriphone, Twilio, biometric prompt and widget on a real device.
 
+## Intel expansion (added 2026-10-15)
+- New input types (auto-detected before phone/domain/username): **IP** (v4/v6) and crypto **wallet** (BTC legacy/bech32, ETH 0x). Pivots from other modules can feed them.
+- `NETWORK` (IpSource): RDAP (org, CIDR, abuse contact), approximate geo/ASN via ipinfo (LOW confidence, labeled approximate), reverse DNS (DoH PTR), Shodan InternetDB, Tor exit list, reputation links. Private/reserved IPs short-circuit.
+- `CRYPTO` (WalletSource): Blockstream (BTC) and Blockscout (ETH) public APIs for balance/activity/ENS/creator + scam-report and clustering links. Addresses are pseudonymous: no identity claims.
+- `CODE` (GithubSource, username): profile, orgs, SSH-key count, and e-mails in public PushEvent commit authors (noreply filtered; labeled as leads). Optional GitHub token only raises the rate limit. Shapes authored from GitHub docs (api.github.com is blocked from the cloud sandbox): verify live.
+- `EMAILINTEL`: offline analysis (disposable blocklist asset `disposable_domains.txt`, CC0 disposable-email-domains; free/role flags; +tag and Gmail-dot canonicalisation; MX provider via DoH) with pivots to username/breach/domain.
+- `DORKS`: ready-made search operators per input type (pure links, no network). Domain also gets urlscan.io public scan history.
+- Tests: `IntelTest.kt` (+ fixtures `rdap_ip.json` live, `urlscan.json` live). 185 tests.
+
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.
@@ -147,5 +156,5 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Registry findings are shown live only: `ScanController` strips them before saving history (tested). Never cache.
 - Failure policy: a failing sub-check becomes an INFO "… unavailable" finding (breach/domain); an inconclusive site probe
   is counted, never treated as "not found".
-- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 170 tests at last count.
+- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 185 tests at last count.
 - Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.

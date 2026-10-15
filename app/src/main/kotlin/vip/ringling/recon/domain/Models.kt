@@ -11,6 +11,8 @@ enum class InputType(val label: String) {
     ZIP("ZIP"),
     /** Never auto-detected: raw is a content URI picked by the user. */
     IMAGE("Photo"),
+    IP("IP"),
+    WALLET("Wallet"),
 }
 
 @Serializable
@@ -31,6 +33,11 @@ enum class ModuleId(val label: String, val tagline: String) {
     DOMAIN("Domain recon", "DNS · mail auth · RDAP"),
     REGISTRY("Offender registry", "Idaho · live lookup"),
     IMAGE("Photo metadata", "EXIF · GPS · camera · hashes"),
+    NETWORK("Network intel", "RDAP · reverse DNS · ports · Tor"),
+    CRYPTO("Crypto wallet", "On-chain activity · scam reports"),
+    CODE("Code footprint", "GitHub profile · commit emails"),
+    EMAILINTEL("Email intel", "Provider · disposable · pivots"),
+    DORKS("Search dorks", "Ready-made operators"),
 }
 
 @Serializable

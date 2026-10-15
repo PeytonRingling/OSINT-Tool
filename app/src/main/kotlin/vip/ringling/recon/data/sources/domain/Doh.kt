@@ -10,7 +10,7 @@ import vip.ringling.recon.data.net.HttpException
 @Serializable private data class DohResponse(val Status: Int = 0, val Answer: List<DohAnswer> = emptyList())
 @Serializable private data class DohAnswer(val name: String = "", val type: Int = 0, val TTL: Int = 0, val data: String = "")
 
-enum class DnsType(val code: Int) { A(1), NS(2), MX(15), TXT(16), AAAA(28) }
+enum class DnsType(val code: Int) { A(1), NS(2), PTR(12), MX(15), TXT(16), AAAA(28) }
 
 data class DnsRecord(val name: String, val type: Int, val data: String)
 

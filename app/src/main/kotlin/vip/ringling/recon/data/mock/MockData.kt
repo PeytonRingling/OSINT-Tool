@@ -108,7 +108,7 @@ object MockData {
         ModuleId.BREACH -> breach(input)
         ModuleId.IDENTITY -> identity(input)
         ModuleId.PHONE -> emptyList()
-        ModuleId.IMAGE -> emptyList()
+        ModuleId.IMAGE, ModuleId.NETWORK, ModuleId.CRYPTO, ModuleId.CODE, ModuleId.EMAILINTEL, ModuleId.DORKS -> emptyList()
         ModuleId.DOMAIN -> domain(input)
         ModuleId.REGISTRY -> registry(input)
     }
@@ -139,5 +139,7 @@ object MockData {
         InputType.DOMAIN -> setOf(ModuleId.DOMAIN)
         InputType.ZIP -> setOf(ModuleId.REGISTRY)
         InputType.IMAGE -> setOf(ModuleId.IMAGE)
+        InputType.IP -> setOf(ModuleId.NETWORK)
+        InputType.WALLET -> setOf(ModuleId.CRYPTO)
     }
 }

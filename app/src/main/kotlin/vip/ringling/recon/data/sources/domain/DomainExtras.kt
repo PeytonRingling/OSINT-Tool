@@ -48,6 +48,30 @@ object DomainExtras {
         )
     }
 
+    /** urlscan.io public scan history for a domain: how often it was scanned, from where it was hosted, what it was titled. */
+    fun urlscan(domain: String, body: String): Finding? = runCatching {
+        val root = json.parseToJsonElement(body).jsonObject
+        val total = root["total"]?.jsonPrimitive?.contentOrNull?.toIntOrNull() ?: 0
+        val results = root["results"]?.jsonArray?.mapNotNull { it as? JsonObject }.orEmpty()
+        if (results.isEmpty()) return null
+        fun page(r: JsonObject, k: String) = r["page"]?.jsonObject?.get(k)?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+        val ips = results.mapNotNull { page(it, "ip") }.distinct(); val countries = results.mapNotNull { page(it, "country") }.distinct()
+        val asns = results.mapNotNull { page(it, "asnname") }.distinct(); val titles = results.mapNotNull { page(it, "title") }.distinct()
+        val times = results.mapNotNull { it["task"]?.jsonObject?.get("time")?.jsonPrimitive?.contentOrNull?.take(10) }.sorted()
+        Finding(
+            "DOMAIN-urlscan", ModuleId.DOMAIN, "urlscan.io · $total public scan${if (total == 1) "" else "s"}",
+            "Other people have scanned this domain; the scans show where it was hosted and what it served.", Severity.INFO, confidence = Confidence.MEDIUM,
+            url = "https://urlscan.io/search/#domain:$domain",
+            facts = listOfNotNull(
+                times.lastOrNull()?.let { Fact("Most recent scan", it) }, ips.takeIf { it.isNotEmpty() }?.let { Fact("IPs seen", it.joinToString("\n")) },
+                asns.takeIf { it.isNotEmpty() }?.let { Fact("Hosting networks", it.joinToString("\n")) }, countries.takeIf { it.isNotEmpty() }?.let { Fact("Server countries", it.joinToString(", ")) },
+                titles.takeIf { it.isNotEmpty() }?.let { Fact("Page titles", it.take(5).joinToString("\n")) },
+            ),
+            pivots = ips.take(4).map { Pivot("IP intel $it", it) },
+            links = listOf(Link("urlscan.io results", "https://urlscan.io/search/#domain:$domain")) + results.take(3).mapNotNull { r -> r["result"]?.jsonPrimitive?.contentOrNull?.let { Link("Scan ${r["task"]?.jsonObject?.get("time")?.jsonPrimitive?.contentOrNull?.take(10).orEmpty()}", it.replace("/api/v1/result/", "/result/")) } },
+        )
+    }.getOrNull()
+
     /** Shodan InternetDB entry for one IP. Returns null when the IP is unknown to the index. */
     fun internetDb(ip: String, body: String): Finding? = runCatching {
         val o: JsonObject = json.parseToJsonElement(body).jsonObject

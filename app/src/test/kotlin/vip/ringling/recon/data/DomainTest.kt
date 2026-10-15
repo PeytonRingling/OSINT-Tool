@@ -108,11 +108,12 @@ class DomainSourceTest {
             "/rdap/domain/northwind.io" to { json(fixture("rdap.json")) },
             "/archive/wayback/available" to { json("""{"archived_snapshots":{"closest":{"available":true,"url":"http://web.archive.org/web/20200101000000/http://northwind.io/","timestamp":"20200101000000"}}}""") },
             "/idb/" to { MockResponse().setResponseCode(404) },
+            "/urlscan/api/v1/search/" to { json(fixture("urlscan.json")) },
         )
         srv.use {
             val f = DomainSource(Http(), srv.endpoints()).collect(ScanInput("northwind.io", InputType.DOMAIN))
             val byId = f.associateBy { it.id }
-            assertEquals(11, f.size, f.map { it.id }.toString())
+            assertEquals(12, f.size, f.map { it.id }.toString())
             assertTrue("104.21.44.9" in byId.getValue("DOMAIN-a").detail)
             assertEquals(Severity.INFO, byId.getValue("DOMAIN-spf").severity)
             assertEquals(Severity.EXPOSED, byId.getValue("DOMAIN-dmarc").severity)

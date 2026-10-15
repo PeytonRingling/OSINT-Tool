@@ -15,7 +15,12 @@ import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Code
+import androidx.compose.material.icons.outlined.CurrencyBitcoin
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.MarkEmailRead
+import androidx.compose.material.icons.outlined.Router
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Pin
@@ -43,6 +48,11 @@ fun ModuleId.icon(): ImageVector = when (this) {
     ModuleId.DOMAIN -> Icons.Outlined.Dns
     ModuleId.REGISTRY -> Icons.Outlined.Gavel
     ModuleId.IMAGE -> Icons.Outlined.Image
+    ModuleId.NETWORK -> Icons.Outlined.Router
+    ModuleId.CRYPTO -> Icons.Outlined.CurrencyBitcoin
+    ModuleId.CODE -> Icons.Outlined.Code
+    ModuleId.EMAILINTEL -> Icons.Outlined.MarkEmailRead
+    ModuleId.DORKS -> Icons.Outlined.Search
 }
 
 fun InputType.icon(): ImageVector = when (this) {
@@ -52,6 +62,8 @@ fun InputType.icon(): ImageVector = when (this) {
     InputType.DOMAIN -> Icons.Outlined.Language
     InputType.ZIP -> Icons.Outlined.Pin
     InputType.IMAGE -> Icons.Outlined.Image
+    InputType.IP -> Icons.Outlined.Router
+    InputType.WALLET -> Icons.Outlined.CurrencyBitcoin
 }
 
 @Composable

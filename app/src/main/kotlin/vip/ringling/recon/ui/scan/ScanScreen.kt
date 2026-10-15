@@ -67,6 +67,11 @@ val defaultReadiness = mapOf(
     ModuleId.IDENTITY to Readiness("Ready · curated site list", true),
     ModuleId.PHONE to Readiness("Ready · offline analysis + public spam reports", true),
     ModuleId.IMAGE to Readiness("Ready · on-device EXIF + hashes", true),
+    ModuleId.NETWORK to Readiness("Ready · RDAP, reverse DNS, InternetDB, Tor list", true),
+    ModuleId.CRYPTO to Readiness("Ready · public block explorers", true),
+    ModuleId.CODE to Readiness("Ready · GitHub public API (token optional)", true),
+    ModuleId.EMAILINTEL to Readiness("Ready · offline checks + DNS", true),
+    ModuleId.DORKS to Readiness("Ready · no network", true),
     ModuleId.DOMAIN to Readiness("Ready · passive only", true),
     ModuleId.REGISTRY to Readiness("Ready · live ZIP lookup", true),
 )

@@ -16,6 +16,13 @@ import vip.ringling.recon.data.sources.breach.BreachSource
 import vip.ringling.recon.data.sources.domain.DomainSource
 import vip.ringling.recon.data.sources.phone.PhoneSource
 import vip.ringling.recon.data.sources.image.ImageSource
+import vip.ringling.recon.data.sources.network.IpSource
+import vip.ringling.recon.data.sources.crypto.WalletSource
+import vip.ringling.recon.data.sources.code.GithubSource
+import vip.ringling.recon.data.sources.dorks.DorkSource
+import vip.ringling.recon.data.sources.emailintel.EmailIntelSource
+import vip.ringling.recon.data.sources.emailintel.AssetDisposableDomains
+import vip.ringling.recon.data.sources.emailintel.DisposableDomains
 import vip.ringling.recon.data.sources.identity.AssetSiteList
 import vip.ringling.recon.data.sources.identity.IdentitySource
 import vip.ringling.recon.data.sources.identity.SiteListProvider
@@ -36,6 +43,12 @@ abstract class AppModule {
     @Binds @Singleton abstract fun siteList(s: AssetSiteList): SiteListProvider
     @Binds @IntoSet abstract fun phone(s: PhoneSource): OsintSource
     @Binds @IntoSet abstract fun image(s: ImageSource): OsintSource
+    @Binds @IntoSet abstract fun ip(s: IpSource): OsintSource
+    @Binds @IntoSet abstract fun wallet(s: WalletSource): OsintSource
+    @Binds @IntoSet abstract fun github(s: GithubSource): OsintSource
+    @Binds @IntoSet abstract fun dorks(s: DorkSource): OsintSource
+    @Binds @IntoSet abstract fun emailIntel(s: EmailIntelSource): OsintSource
+    @Binds abstract fun disposable(s: AssetDisposableDomains): DisposableDomains
     @Binds @IntoSet abstract fun domain(s: DomainSource): OsintSource
     @Binds @IntoSet abstract fun registry(s: RegistrySource): OsintSource
     @Binds @IntoSet abstract fun idaho(a: IdahoRegistryAdapter): RegistryAdapter

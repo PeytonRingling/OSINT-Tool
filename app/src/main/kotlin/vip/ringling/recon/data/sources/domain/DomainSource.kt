@@ -52,6 +52,11 @@ class DomainSource @Inject constructor(
                 send(DomainExtras.wayback(d, first.await(), latest.await()))
             }
         }
+        check("urlscan", "urlscan.io") {
+            val req = Request.Builder().url("${endpoints.urlscan}/api/v1/search/?q=domain:$d&size=20").build()
+            val body = http.execute(req) { r -> if (r.code != 200) throw HttpException(r.code, "urlscan.io returned HTTP ${r.code}") else r.body.string() }
+            DomainExtras.urlscan(d, body)?.let { send(it) }
+        }
         check("idb", "Shodan InternetDB") {
             val ips = doh.query(d, DnsType.A).map { it.data }.filter { Regex("""\d+\.\d+\.\d+\.\d+""").matches(it) }.distinct().take(3)
             coroutineScope {
