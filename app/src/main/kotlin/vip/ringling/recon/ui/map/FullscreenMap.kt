@@ -58,7 +58,7 @@ fun FullscreenMapContent(
     onOpen: (Finding) -> Unit,
 ) {
     val located = findings.filter { it.geo != null }
-    var selectedId by remember { mutableStateOf(initialSelectedId) }
+    var selectedId by remember { mutableStateOf(vip.ringling.recon.domain.MapMemory.selectedId ?: initialSelectedId) }
     val selected = located.firstOrNull { it.id == selectedId }
     val ins = androidx.compose.foundation.layout.WindowInsets.safeDrawing.asPaddingValues()
     val ltr = androidx.compose.ui.unit.LayoutDirection.Ltr
@@ -69,7 +69,8 @@ fun FullscreenMapContent(
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         TileMap(
             pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title) },
-            me = me, selectedId = selectedId, onPinClick = { selectedId = it.id },
+            me = me, selectedId = selectedId, onPinClick = { selectedId = it.id; vip.ringling.recon.domain.MapMemory.selectedId = it.id },
+            camera = vip.ringling.recon.domain.MapMemory.camera("full"),
             modifier = Modifier.fillMaxSize(), onClose = onDismiss, oneFingerPan = true, clipShape = androidx.compose.ui.graphics.RectangleShape, controlsPadding = controlsPadding,
         )
         Column(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(12.dp).widthIn(max = 560.dp)) {

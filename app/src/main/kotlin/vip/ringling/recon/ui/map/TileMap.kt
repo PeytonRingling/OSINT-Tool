@@ -93,6 +93,8 @@ fun TileMap(
     onClose: (() -> Unit)? = null,
     /** True for a full-screen map; false inside a scrolling page, where one finger should scroll the page. */
     oneFingerPan: Boolean = false,
+    /** When given, the camera is restored from it and written back, so the view survives navigation. */
+    camera: vip.ringling.recon.domain.MapCamera? = null,
     clipShape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.medium,
     /** Keeps the buttons and attribution clear of system bars or a card laid over the map. */
     controlsPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -112,11 +114,13 @@ fun TileMap(
         val fitW = (wPx - 2 * insetX).coerceAtLeast(80.0); val fitH = (hPx - 2 * insetY).coerceAtLeast(80.0)
         val fallback = listOf(GeoPoint(43.6, -116.2))
         val first = remember { Geo.fit(fitPoints.ifEmpty { fallback }, fitW, fitH) }
-        var zoom by remember { mutableDoubleStateOf(first.second) }
-        var cx by remember { mutableDoubleStateOf(Geo.worldX(first.first.lng, first.second)) }
-        var cy by remember { mutableDoubleStateOf(Geo.worldY(first.first.lat, first.second)) }
+        val restored = camera?.takeIf { it.saved }
+        var zoom by remember { mutableDoubleStateOf(restored?.zoom ?: first.second) }
+        var cx by remember { mutableDoubleStateOf(restored?.cx ?: Geo.worldX(first.first.lng, first.second)) }
+        var cy by remember { mutableDoubleStateOf(restored?.cy ?: Geo.worldY(first.first.lat, first.second)) }
         // Once the user pans or zooms, new results streaming in must NOT yank the camera back.
-        var userMoved by remember { mutableStateOf(false) }
+        var userMoved by remember { mutableStateOf(restored?.userMoved ?: false) }
+        androidx.compose.runtime.SideEffect { camera?.let { it.zoom = zoom; it.cx = cx; it.cy = cy; it.userMoved = userMoved } }
 
         fun fitAll() {
             val (c, z) = Geo.fit(fitPoints.ifEmpty { fallback }, fitW, fitH)

@@ -27,6 +27,14 @@ object Geo {
         return 2 * EARTH_M * asin(min(1.0, sqrt(h)))
     }
 
+    /** Points farther than [maxKm] from the median position, or null when there are too few to judge ([minPoints]). The registry's own geocoder occasionally lands an address in the wrong city. */
+    fun outliers(points: List<GeoPoint>, maxKm: Double = 100.0, minPoints: Int = 4): Set<GeoPoint> {
+        if (points.size < minPoints) return emptySet()
+        fun median(v: List<Double>) = v.sorted().let { if (it.size % 2 == 1) it[it.size / 2] else (it[it.size / 2 - 1] + it[it.size / 2]) / 2 }
+        val m = GeoPoint(median(points.map { it.lat }), median(points.map { it.lng }))
+        return points.filter { distanceMeters(m, it) > maxKm * 1000 }.toSet()
+    }
+
     /** US-style: feet under a tenth of a mile, then tenths, then whole miles. */
     fun formatDistance(meters: Double): String {
         val miles = meters / METERS_PER_MILE

@@ -23,6 +23,7 @@ import vip.ringling.recon.domain.InputDetector
 import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.ScanInput
 import vip.ringling.recon.domain.Severity
+import vip.ringling.recon.domain.apply
 
 class InputDetectionTest {
     @Test fun ipsAndWalletsAreDetectedBeforePhonesAndUsernames() {
@@ -181,5 +182,31 @@ class EmailAndDorksTest {
         val f = assertNotNull(DomainExtras.urlscan("example.com", fixture("urlscan.json")))
         assertTrue(f.title.contains("public scan") && f.facts.any { it.label == "IPs seen" } && f.pivots.isNotEmpty())
         assertNull(DomainExtras.urlscan("x.com", """{"total":0,"results":[]}"""))
+    }
+}
+
+class MapRobustnessTest {
+    private fun reg(id: String, lat: Double, lng: Double) = vip.ringling.recon.domain.Finding(id, vip.ringling.recon.domain.ModuleId.REGISTRY, id, "d", Severity.INFO, geo = vip.ringling.recon.domain.GeoPoint(lat, lng))
+
+    @Test fun farAwayPinsAreDroppedButRecordsKept() {
+        var s = vip.ringling.recon.domain.ScanSession(ScanInput("83646", InputType.ZIP))
+        listOf(reg("a", 43.60, -116.40), reg("b", 43.61, -116.41), reg("c", 43.62, -116.39), reg("far", 47.68, -116.78), reg("d", 43.59, -116.42)).forEach {
+            s = s.apply(vip.ringling.recon.domain.ScanEvent.Found(it))
+        }
+        val far = s.findings.first { it.id == "far" }
+        assertEquals(null, far.geo); assertTrue("Location unverified" in far.tags)
+        assertEquals(4, s.findings.count { it.geo != null })
+        assertEquals(5, s.findings.size, "the record itself stays")
+    }
+
+    @Test fun fewPointsAreNeverJudged() {
+        assertTrue(vip.ringling.recon.domain.Geo.outliers(listOf(vip.ringling.recon.domain.GeoPoint(43.0, -116.0), vip.ringling.recon.domain.GeoPoint(47.0, -116.0))).isEmpty())
+    }
+
+    @Test fun markerPositionBeatsMapCentre() {
+        val html = "center: new google.maps.LatLng(43.0000000, -116.0000000) }; var m = new google.maps.Marker({ position: new google.maps.LatLng(43.6150000, -116.2020000) });"
+        val g = vip.ringling.recon.data.sources.registry.IdahoRegistryAdapter.parseGeo(html)!!
+        assertEquals(43.615, g.lat, 1e-6)
+        assertEquals(43.0, vip.ringling.recon.data.sources.registry.IdahoRegistryAdapter.parseGeo("new google.maps.LatLng(43.0000000, -116.0000000)")!!.lat, 1e-6)
     }
 }

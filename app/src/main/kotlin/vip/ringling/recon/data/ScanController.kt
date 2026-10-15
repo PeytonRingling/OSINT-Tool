@@ -54,6 +54,7 @@ class ScanController @Inject constructor(
 
     fun start(input: ScanInput, enabled: Set<ModuleId>? = _enabled.value) {
         job?.cancel()
+        vip.ringling.recon.domain.MapMemory.reset()
         _session.value = ScanSession(input)
         job = scope.launch {
             var last = ScanSession(input)

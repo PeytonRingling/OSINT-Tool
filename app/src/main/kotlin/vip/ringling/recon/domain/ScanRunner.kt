@@ -39,10 +39,18 @@ class ScanRunner @Inject constructor(private val sources: Set<@JvmSuppressWildca
 
 fun ScanSession.apply(e: ScanEvent): ScanSession = when (e) {
     is ScanEvent.Started -> copy(statuses = statuses + (e.module to ModuleStatus.RUNNING))
-    is ScanEvent.Found -> copy(findings = findings + e.finding)
+    is ScanEvent.Found -> copy(findings = dropMislocated(findings + e.finding, e.finding))
     is ScanEvent.Finished -> copy(statuses = statuses + (e.module to ModuleStatus.DONE))
     is ScanEvent.Failed -> copy(
         statuses = statuses + (e.module to ModuleStatus.FAILED),
         errors = errors + (e.module to e.message),
     )
+}
+
+/** A registry record whose coordinates are far from all the others in the same search was geocoded to the wrong place: keep the record, drop the bad pin. */
+private fun dropMislocated(all: List<Finding>, added: Finding): List<Finding> {
+    if (added.module != ModuleId.REGISTRY || added.geo == null) return all
+    val bad = Geo.outliers(all.filter { it.module == ModuleId.REGISTRY }.mapNotNull { it.geo })
+    if (bad.isEmpty()) return all
+    return all.map { if (it.module == ModuleId.REGISTRY && it.geo in bad) it.copy(geo = null, tags = it.tags + "Location unverified") else it }
 }

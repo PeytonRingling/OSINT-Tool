@@ -213,8 +213,10 @@ class IdahoRegistryAdapter @Inject constructor(
             return IdahoPage(m?.groupValues?.get(1)?.toInt() ?: rows.size, m?.groupValues?.get(2)?.takeIf { it.isNotEmpty() }?.toInt() ?: 1, rows)
         }
 
-        /** First LatLng on the registry's map page is the address marker/center. Out-of-range values are rejected. */
-        fun parseGeo(html: String): GeoPoint? = latLngRe.find(html)?.let { m ->
+        /** The marker's LatLng (else the first one) on the registry's map page is the address. Out-of-range values are rejected. */
+        private val markerRe = Regex("""Marker\(\s*\{[^}]*?google\.maps\.LatLng\(\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\)""")
+
+        fun parseGeo(html: String): GeoPoint? = (markerRe.find(html) ?: latLngRe.find(html))?.let { m ->
             val lat = m.groupValues[1].toDouble(); val lng = m.groupValues[2].toDouble()
             if (lat in -90.0..90.0 && lng in -180.0..180.0 && !(lat == 0.0 && lng == 0.0)) GeoPoint(lat, lng) else null
         }

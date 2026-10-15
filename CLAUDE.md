@@ -139,6 +139,12 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - `DORKS`: ready-made search operators per input type (pure links, no network). Domain also gets urlscan.io public scan history.
 - Tests: `IntelTest.kt` (+ fixtures `rdap_ip.json` live, `urlscan.json` live). 185 tests.
 
+## Map state + bad pins (added 2026-10-15)
+- `domain/MapMemory`: in-memory only (cleared on every new scan) camera for the inline ("inline") and full-screen ("full") maps, the selected pin, and `reopenFullscreen`. "Details" from the full-screen map
+  sets it on phones so Back reopens the map exactly where it was (not in the two-pane layout, where the record shows beside the list).
+- `ScanSession.apply` drops the pin (keeps the record, adds tag "Location unverified") of a registry entry >100 km from the median of the others (needs ≥4 located); the registry's own geocoder sometimes lands in the wrong city.
+  `parseGeo` prefers the Marker's LatLng over the map centre.
+
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.

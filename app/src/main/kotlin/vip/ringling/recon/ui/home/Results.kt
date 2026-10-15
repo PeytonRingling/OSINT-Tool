@@ -130,16 +130,23 @@ private fun RegistryMapPanel(
 ) {
     val cs = MaterialTheme.colorScheme
     val located = findings.filter { it.geo != null }
-    var fullscreen by remember { mutableStateOf(false) }
+    // On phones "Details" leaves this screen; remember to reopen the full-screen map, camera and pin intact, when the user comes back.
+    val twoPane = vip.ringling.recon.ui.components.LocalSharedScopes.current == null
+    var fullscreen by remember { mutableStateOf(vip.ringling.recon.domain.MapMemory.reopenFullscreen) }
+    androidx.compose.runtime.LaunchedEffect(Unit) { vip.ringling.recon.domain.MapMemory.reopenFullscreen = false }
     if (fullscreen) {
-        FullscreenMap(findings, me, selectedId, onDismiss = { fullscreen = false }, onOpen = { fullscreen = false; onFindingClick(it) })
+        FullscreenMap(findings, me, selectedId, onDismiss = { fullscreen = false; vip.ringling.recon.domain.MapMemory.selectedId = null }, onOpen = {
+            vip.ringling.recon.domain.MapMemory.reopenFullscreen = !twoPane
+            fullscreen = false
+            onFindingClick(it)
+        })
     }
     Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         TileMap(
             pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title) },
             me = me, selectedId = selectedId,
             onPinClick = { pin -> located.firstOrNull { it.id == pin.id }?.let(onFindingClick) },
-            modifier = Modifier.fillMaxWidth().height(280.dp),
+            modifier = Modifier.fillMaxWidth().height(280.dp), camera = vip.ringling.recon.domain.MapMemory.camera("inline"),
             onExpand = { fullscreen = true },
         )
         if (me == null) {
