@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -70,6 +71,7 @@ data class RadarActions(
     val onLoadout: () -> Unit = {},
     val onPhoto: () -> Unit = {},
     val onNewCase: () -> Unit = {},
+    val onPassword: () -> Unit = {},
 )
 
 private val shortNames = mapOf(
@@ -184,6 +186,7 @@ private fun ActionButtons(actions: RadarActions) {
         SignalButton("Photo meta", actions.onPhoto, Modifier.weight(1f), icon = Icons.Outlined.Image)
         SignalButton("New case", actions.onNewCase, Modifier.weight(1f), icon = Icons.Outlined.AddCircleOutline)
     }
+    SignalButton("Password check", actions.onPassword, Modifier.fillMaxWidth(), icon = Icons.Outlined.Lock, mono = true)
 }
 
 @Composable

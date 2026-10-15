@@ -285,12 +285,14 @@ private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingVa
     val main: MainViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
     val vm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
     val st by vm.state.collectAsStateWithLifecycle()
+    var showPassword by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    if (showPassword) vip.ringling.recon.ui.radar.PasswordCheckDialog(vm::passwordCount) { showPassword = false }
     val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> uri?.let { vm.analyzePhoto(it.toString()) } }
     vip.ringling.recon.ui.radar.RadarScreen(
         st,
         vip.ringling.recon.ui.radar.RadarActions(
             onQuery = vm::onQueryChange, onSubmit = vm::submit, onTarget = vm::open, onLoadout = onLoadout,
-            onPhoto = { pickPhoto.launch("image/*") }, onNewCase = { main.requestNewCase(); nav.goTab(Tab.CASES) },
+            onPhoto = { pickPhoto.launch("image/*") }, onNewCase = { main.requestNewCase(); nav.goTab(Tab.CASES) }, onPassword = { showPassword = true },
         ),
         contentPadding = pad, wide = expanded,
     )

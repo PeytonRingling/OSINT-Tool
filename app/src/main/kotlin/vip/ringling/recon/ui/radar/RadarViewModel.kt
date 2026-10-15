@@ -49,7 +49,10 @@ class RadarViewModel @Inject constructor(
     private val controller: ScanController,
     private val history: HistoryRepository,
     private val snapshots: vip.ringling.recon.data.SnapshotRepository,
+    private val pwned: vip.ringling.recon.data.sources.breach.PwnedPasswords,
 ) : ViewModel() {
+    suspend fun passwordCount(pw: String): Long = pwned.count(pw)
+
     private val query = MutableStateFlow("")
     private val _events = MutableSharedFlow<RadarEvent>(extraBufferCapacity = 4, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     val events: SharedFlow<RadarEvent> = _events
