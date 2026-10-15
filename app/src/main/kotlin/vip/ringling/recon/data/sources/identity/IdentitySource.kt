@@ -235,6 +235,7 @@ class IdentitySource @Inject constructor(
         val checks = listOf<Triple<String, Confidence, suspend () -> Probe>>(
             Triple("Gravatar", Confidence.HIGH) { gravatar(email) },
             Triple("Spotify", Confidence.MEDIUM) { spotify(email) },
+            Triple("Duolingo", Confidence.MEDIUM) { duolingo(email) },
         )
         coroutineScope { checks.forEach { (name, conf, fn) ->
             launch {
@@ -264,6 +265,16 @@ class IdentitySource @Inject constructor(
         val req = Request.Builder().url("${endpoints.gravatar}/$hash.json").build()
         return http.execute(req) { r ->
             when (r.code) { 200 -> Probe.Found; 404 -> Probe.Absent; 429 -> Probe.Inconclusive("rate-limited"); else -> Probe.Inconclusive("HTTP ${r.code}") }
+        }
+    }
+
+    /** Public user-search endpoint: a non-empty `users` list means an account uses this address. Unofficial; may change. */
+    internal suspend fun duolingo(email: String): Probe {
+        val req = Request.Builder().url("${endpoints.duolingo}/2017-06-30/users?email=${URLEncoder.encode(email, "UTF-8")}").build()
+        return http.execute(req) { r ->
+            if (r.code != 200) return@execute Probe.Inconclusive("HTTP ${r.code}")
+            val users = runCatching { Json.parseToJsonElement(r.body.string()).jsonObject["users"] as? kotlinx.serialization.json.JsonArray }.getOrNull()
+            when { users == null -> Probe.Inconclusive("unexpected response"); users.isEmpty() -> Probe.Absent; else -> Probe.Found }
         }
     }
 

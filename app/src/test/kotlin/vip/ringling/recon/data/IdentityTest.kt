@@ -140,12 +140,14 @@ class IdentityTest {
         val (srv, router) = server(
             "/gravatar/$md5.json" to { MockResponse().setResponseCode(200).setBody("{}") },
             "/spotify/signup/public/v1/account" to { json("""{"status":20,"errors":{"email":"That email is already registered."}}""") },
+            "/duo/2017-06-30/users" to { json("""{"users":[{"id":0,"name":""}]}""") },
         )
         srv.use {
             val f = IdentitySource(Http(), srv.endpoints(), { emptyList() }).also { it.limiter = RateLimiter(2, 0) }
                 .collect(ScanInput("A@B.com", InputType.EMAIL).let { it.copy(raw = "a@b.com") })
             assertEquals(Confidence.HIGH, f.first { it.title == "Gravatar" }.confidence)
             assertEquals(Confidence.MEDIUM, f.first { it.title == "Spotify" }.confidence)
+            assertEquals(Confidence.MEDIUM, f.first { it.title == "Duolingo" }.confidence)
             assertTrue(router.seen.any { it.path!!.contains("email=a%40b.com") })
         }
     }
@@ -154,13 +156,14 @@ class IdentityTest {
         val (srv, _) = server(
             "/gravatar/" to { MockResponse().setResponseCode(404) },
             "/spotify/" to { json("""{"status":999}""") },
+            "/duo/" to { json("""{"users":[]}""") },
         )
         srv.use {
             val f = IdentitySource(Http(), srv.endpoints(), { emptyList() }).also { it.limiter = RateLimiter(2, 0) }
                 .collect(ScanInput("a@b.com", InputType.EMAIL))
             val s = f.single()
             assertEquals("IDENTITY-email-summary", s.id)
-            assertTrue("Not registered on: Gravatar" in s.detail && "Spotify (unexpected response)" in s.detail, s.detail)
+            assertTrue("Not registered on: " in s.detail && "Gravatar" in s.detail && "Duolingo" in s.detail && "Spotify (unexpected response)" in s.detail, s.detail)
         }
     }
 

@@ -106,11 +106,13 @@ class DomainSourceTest {
             },
             "/crt/" to { json(fixture("crtsh.json")) },
             "/rdap/domain/northwind.io" to { json(fixture("rdap.json")) },
+            "/archive/wayback/available" to { json("""{"archived_snapshots":{"closest":{"available":true,"url":"http://web.archive.org/web/20200101000000/http://northwind.io/","timestamp":"20200101000000"}}}""") },
+            "/idb/" to { MockResponse().setResponseCode(404) },
         )
         srv.use {
             val f = DomainSource(Http(), srv.endpoints()).collect(ScanInput("northwind.io", InputType.DOMAIN))
             val byId = f.associateBy { it.id }
-            assertEquals(10, f.size, f.map { it.id }.toString())
+            assertEquals(11, f.size, f.map { it.id }.toString())
             assertTrue("104.21.44.9" in byId.getValue("DOMAIN-a").detail)
             assertEquals(Severity.INFO, byId.getValue("DOMAIN-spf").severity)
             assertEquals(Severity.EXPOSED, byId.getValue("DOMAIN-dmarc").severity)
@@ -145,5 +147,27 @@ class DomainSourceTest {
             assertTrue("RCODE 2" in f.first { it.id == "DOMAIN-spf-error" }.detail)
             assertTrue(f.none { it.id == "DOMAIN-spf" }, "must not claim 'no SPF' when DNS failed")
         }
+    }
+}
+
+class DomainExtrasTest {
+    @Test fun waybackSnapshotsAndAbsence() {
+        val body = """{"url":"example.com","archived_snapshots":{"closest":{"status":"200","available":true,"url":"http://web.archive.org/web/19961219/http://example.com/","timestamp":"19961219012345"}}}"""
+        val snap = vip.ringling.recon.data.sources.domain.DomainExtras.snapshot(body)!!
+        assertEquals("1996-12-19", snap.date); assertTrue(snap.url.startsWith("https://"))
+        assertEquals(null, vip.ringling.recon.data.sources.domain.DomainExtras.snapshot("""{"url":"x","archived_snapshots":{}}"""))
+        val none = vip.ringling.recon.data.sources.domain.DomainExtras.wayback("x.com", null, null)
+        assertEquals("No Wayback snapshots", none.title)
+        val f = vip.ringling.recon.data.sources.domain.DomainExtras.wayback("example.com", snap, snap)
+        assertTrue(f.title.contains("1996-12-19") && f.links.size == 3)
+    }
+
+    @Test fun internetDbFlagsCvesAndPivotsHostnames() {
+        val d = vip.ringling.recon.data.sources.domain.DomainExtras
+        val f = d.internetDb("1.1.1.1", """{"cpes":["cpe:/a:cloudflare:cloudflare"],"hostnames":["one.one.one.one"],"ip":"1.1.1.1","ports":[53,80],"tags":[],"vulns":["CVE-2020-1"]}""")!!
+        assertEquals(Severity.EXPOSED, f.severity); assertTrue(f.pivots.single().query == "one.one.one.one")
+        assertEquals(Severity.INFO, d.internetDb("1.1.1.1", """{"ports":[80],"vulns":[],"hostnames":[]}""")!!.severity)
+        assertEquals(null, d.internetDb("1.1.1.1", """{"detail":"No information available"}"""))
+        assertEquals(null, d.internetDb("1.1.1.1", "<<garbage"))
     }
 }

@@ -14,6 +14,9 @@ data class Endpoints(
     val notes800: String = "https://800notes.com",
     val veriphone: String = "https://api.veriphone.io/v2",
     val twilio: String = "https://lookups.twilio.com/v2",
+    val archive: String = "https://archive.org",
+    val internetDb: String = "https://internetdb.shodan.io",
+    val duolingo: String = "https://www.duolingo.com",
     val updateRepo: String = "testuser/OSINT-Tool",
     val idahoSor: String = "https://apps.isp.idaho.gov/sor_id",
 )

@@ -39,6 +39,29 @@ class DomainSource @Inject constructor(
                 send(DomainAnalysis.addresses(a.await(), aaaa.await()))
             }
         }
+        check("wayback", "Wayback Machine") {
+            suspend fun snap(ts: String?): DomainExtras.Snapshot? {
+                val q = if (ts == null) "" else "&timestamp=$ts"
+                val req = Request.Builder().url("${endpoints.archive}/wayback/available?url=$d$q").build()
+                val body = http.execute(req) { r -> if (r.code != 200) throw HttpException(r.code, "Wayback returned HTTP ${r.code}") else r.body.string() }
+                return DomainExtras.snapshot(body)
+            }
+            coroutineScope {
+                val first = async { snap("19960101") }
+                val latest = async { snap(null) }
+                send(DomainExtras.wayback(d, first.await(), latest.await()))
+            }
+        }
+        check("idb", "Shodan InternetDB") {
+            val ips = doh.query(d, DnsType.A).map { it.data }.filter { Regex("""\d+\.\d+\.\d+\.\d+""").matches(it) }.distinct().take(3)
+            coroutineScope {
+                ips.map { ip -> async {
+                    val req = Request.Builder().url("${endpoints.internetDb}/$ip").build()
+                    val body = http.execute(req) { r -> if (r.code == 404) "{\"detail\":\"none\"}" else if (r.code != 200) throw HttpException(r.code, "InternetDB returned HTTP ${r.code}") else r.body.string() }
+                    DomainExtras.internetDb(ip, body)
+                } }.awaitAll().filterNotNull().forEach { send(it) }
+            }
+        }
         check("mx", "MX") { send(DomainAnalysis.mx(doh.query(d, DnsType.MX))) }
         check("ns", "NS") { send(DomainAnalysis.ns(doh.query(d, DnsType.NS))) }
         check("spf", "SPF") { send(DomainAnalysis.spf(doh.txt(d))) }
