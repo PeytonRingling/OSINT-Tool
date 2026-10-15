@@ -43,3 +43,14 @@ fun MockWebServer.endpoints(): Endpoints {
 }
 
 suspend fun OsintSource.collect(input: ScanInput): List<Finding> = run(input).toList()
+
+/** In-memory snapshot table for tests that need a ScanController. */
+class FakeSnapshotDao : vip.ringling.recon.data.db.SnapshotDao {
+    private val state = kotlinx.coroutines.flow.MutableStateFlow(emptyList<vip.ringling.recon.data.db.SnapshotEntity>())
+    override fun all() = state
+    override suspend fun snapshot() = state.value
+    override suspend fun insert(e: vip.ringling.recon.data.db.SnapshotEntity) { state.value = state.value.filterNot { it.id == e.id } + e }
+    override suspend fun insertAll(e: List<vip.ringling.recon.data.db.SnapshotEntity>) { e.forEach { insert(it) } }
+    override suspend fun clear() { state.value = emptyList() }
+    override suspend fun deleteTarget(type: String, value: String) { state.value = state.value.filterNot { it.targetType == type && it.targetValue == value } }
+}

@@ -139,12 +139,34 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
     private fun home(state: HomeUiState, selected: vip.ringling.recon.domain.Finding? = null): @Composable (Boolean, PaddingValues) -> Unit =
         { expanded, pad -> HomePane(state, HomeActions(), selected, noActions, expanded, pad) }
 
-    @Test fun home_idle() = shot("01_home_idle", content = home(HomeUiState(recents = recents)))
-
-    @Test fun home_typing() = shot(
-        "02_home_typing",
-        content = home(HomeUiState(query = "alex.moreno@proton.me", detected = InputType.EMAIL, recents = recents)),
+    private val radarTargets = listOf(
+        vip.ringling.recon.domain.RadarTarget(ScanInput("test.user@example.com", InputType.EMAIL), 100, null, NOW - 7 * 60_000, 4, "a"),
+        vip.ringling.recon.domain.RadarTarget(ScanInput("5555550123", InputType.PHONE), 12, null, NOW - 9 * 60_000, 2, "b"),
+        vip.ringling.recon.domain.RadarTarget(ScanInput("testuser", InputType.USERNAME), 10, null, NOW - 12 * 3_600_000, 1, "c"),
+        vip.ringling.recon.domain.RadarTarget(ScanInput("test.user2@example.com", InputType.EMAIL), 0, null, NOW - 11 * 3_600_000, 1, "d"),
+        vip.ringling.recon.domain.RadarTarget(ScanInput("83338", InputType.ZIP), 0, 68, NOW - 11 * 60_000, 3, null),
+        vip.ringling.recon.domain.RadarTarget(ScanInput("83301", InputType.ZIP), 0, 0, NOW - 11 * 3_600_000, 1, null),
     )
+
+    @Test fun radar_idle() = shot("01_radar_idle") { expanded, pad ->
+        vip.ringling.recon.ui.radar.RadarScreen(vip.ringling.recon.ui.radar.RadarUiState(targets = radarTargets), vip.ringling.recon.ui.radar.RadarActions(), contentPadding = pad, wide = expanded)
+    }
+
+    @Test fun radar_typing() = shot("02_radar_typing") { expanded, pad ->
+        vip.ringling.recon.ui.radar.RadarScreen(
+            vip.ringling.recon.ui.radar.RadarUiState(
+                query = "test.user@example.com", detected = InputType.EMAIL,
+                modules = listOf(ModuleId.BREACH, ModuleId.IDENTITY, ModuleId.EMAILINTEL, ModuleId.CODE), targets = radarTargets,
+            ),
+            vip.ringling.recon.ui.radar.RadarActions(), contentPadding = pad, wide = expanded,
+        )
+    }
+
+    @Test fun loadout_sheet() = shot("02b_loadout", tab = null) { _, pad ->
+        Box(Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color(0xFF070A08)).padding(pad)) {
+            vip.ringling.recon.ui.radar.LoadoutContent(ModuleId.entries.toSet(), true, { _, _ -> }, {}, {})
+        }
+    }
 
     @Test fun home_streaming() = shot(
         "03_home_streaming",

@@ -27,6 +27,7 @@ import vip.ringling.recon.domain.ScanSession
 class ScanController @Inject constructor(
     private val runner: ScanRunner,
     private val history: HistoryRepository,
+    private val snapshots: SnapshotRepository,
     private val paidLookups: Set<@JvmSuppressWildcards vip.ringling.recon.domain.PaidLookups>,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -42,7 +43,18 @@ class ScanController @Inject constructor(
     private val _enabled = MutableStateFlow(ModuleId.entries.toSet())
     /** Modules the user has switched on in the Scan tab. */
     val enabled: StateFlow<Set<ModuleId>> = _enabled.asStateFlow()
-    fun setEnabled(module: ModuleId, on: Boolean) = _enabled.update { if (on) it + module else it - module }
+    fun setEnabled(module: ModuleId, on: Boolean) {
+        _autoPick.value = false
+        _enabled.update { if (on) it + module else it - module }
+    }
+
+    private val _autoPick = MutableStateFlow(true)
+    /** Auto-pick arms every module (each input then runs the ones that apply to it); Manual runs only the armed ones. */
+    val autoPick: StateFlow<Boolean> = _autoPick.asStateFlow()
+    fun setAutoPick(on: Boolean) {
+        _autoPick.value = on
+        if (on) _enabled.value = ModuleId.entries.toSet()
+    }
 
     private val _pendingQuery = MutableStateFlow<String?>(null)
     /** A search requested from elsewhere (e.g. a "Search next" pivot); Home consumes it and runs it. */
@@ -64,7 +76,9 @@ class ScanController @Inject constructor(
             // query in history, drop the findings.
             val storable = last.findings.filter { it.module != ModuleId.REGISTRY && it.paid == null }
             if (last.findings.isNotEmpty()) {
-                history.add(ScanRecord(UUID.randomUUID().toString(), input, System.currentTimeMillis(), storable))
+                val id = UUID.randomUUID().toString(); val now = System.currentTimeMillis()
+                history.add(ScanRecord(id, input, now, storable))
+                snapshots.add(vip.ringling.recon.domain.ScanSnapshot.of(id, input, last.findings, now))
             }
             _completed.emit(Unit)
         }

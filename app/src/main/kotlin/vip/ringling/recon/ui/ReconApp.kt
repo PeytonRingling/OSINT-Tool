@@ -122,6 +122,12 @@ fun ReconApp() {
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val topLevel = Tab.entries.firstOrNull { it.route == currentRoute }
+    var showLoadout by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    val radarVm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
+    val radarState by radarVm.state.collectAsStateWithLifecycle()
+    if (showLoadout) {
+        vip.ringling.recon.ui.radar.LoadoutSheet(radarState.enabled, radarState.autoPick, radarVm::toggle, radarVm::setAuto, onDismiss = { showLoadout = false })
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val width = maxWidth
@@ -137,6 +143,9 @@ fun ReconApp() {
                     popExitTransition = { fadeOut(tween(90)) },
                 ) {
                     composable(Tab.HOME.route) {
+                        RadarRoute(nav, expanded, pad, onLoadout = { showLoadout = true })
+                    }
+                    composable("results") {
                         CompositionLocalProvider(LocalSharedScopes provides if (expanded) null else SharedScopes(this@SharedTransitionLayout, this)) {
                             HomeRoute(nav, expanded, actions, pad)
                         }
@@ -209,7 +218,7 @@ fun ReconApp() {
 
         AppShell(
             selected = topLevel, useRail = useRail, snackbar = snackbar,
-            onTab = { nav.goTab(it) }, content = content,
+            onTab = { nav.goTab(it) }, armed = radarState.armed, onLoadout = { showLoadout = true }, content = content,
         )
     }
 }
@@ -250,6 +259,29 @@ private fun NavHostController.goTab(tab: Tab) = navigate(tab.route) {
 
 fun recordStatuses(r: vip.ringling.recon.domain.ScanRecord) =
     r.findings.map { it.module }.distinct().sortedBy { it.ordinal }.associateWith { ModuleStatus.DONE }
+
+@Composable
+private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingValues, onLoadout: () -> Unit) {
+    val vm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
+    val st by vm.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) {
+        vm.events.collect { e ->
+            when (e) {
+                vip.ringling.recon.ui.radar.RadarEvent.OpenLive -> nav.navigate("results") { launchSingleTop = true }
+                is vip.ringling.recon.ui.radar.RadarEvent.OpenRecord -> nav.navigate("record/${e.id}")
+            }
+        }
+    }
+    val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> uri?.let { vm.analyzePhoto(it.toString()) } }
+    vip.ringling.recon.ui.radar.RadarScreen(
+        st,
+        vip.ringling.recon.ui.radar.RadarActions(
+            onQuery = vm::onQueryChange, onSubmit = vm::submit, onTarget = vm::open, onLoadout = onLoadout,
+            onPhoto = { pickPhoto.launch("image/*") }, onNewCase = { nav.goTab(Tab.CASES) },
+        ),
+        contentPadding = pad, wide = expanded,
+    )
+}
 
 @Composable
 private fun HomeRoute(nav: NavHostController, expanded: Boolean, actions: ReconActions, pad: PaddingValues) {

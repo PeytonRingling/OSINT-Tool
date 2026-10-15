@@ -265,7 +265,7 @@ class RegistrySourceTest {
             }
         }
         val history = InMemoryHistoryRepository()
-        val controller = ScanController(ScanRunner(setOf(registry)), history, emptySet())
+        val controller = ScanController(ScanRunner(setOf(registry)), history, SnapshotRepository(FakeSnapshotDao()), emptySet())
         val done = async(start = CoroutineStart.UNDISPATCHED) { controller.completed.first() }
         controller.start(zip)
         withTimeout(10_000) { done.await() }

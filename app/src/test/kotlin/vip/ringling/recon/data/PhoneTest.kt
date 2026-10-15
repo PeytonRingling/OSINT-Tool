@@ -171,7 +171,7 @@ class PhoneSourceTest {
         val lookups = object : PaidLookups {
             override suspend fun runPaid(actionId: String, input: ScanInput): List<Finding> { gate.await(); return listOf(Finding("PHONE-twilio", ModuleId.PHONE, "ACME", "d", Severity.INFO)) }
         }
-        val controller = ScanController(ScanRunner(emptySet()), InMemoryHistoryRepository(), setOf(lookups))
+        val controller = ScanController(ScanRunner(emptySet()), InMemoryHistoryRepository(), SnapshotRepository(FakeSnapshotDao()), setOf(lookups))
         val field = ScanController::class.java.getDeclaredField("_session").also { it.isAccessible = true }
         @Suppress("UNCHECKED_CAST") val state = field.get(controller) as kotlinx.coroutines.flow.MutableStateFlow<vip.ringling.recon.domain.ScanSession?>
         state.value = vip.ringling.recon.domain.ScanSession(phone, findings = listOf(offer))
@@ -190,7 +190,7 @@ class PhoneSourceTest {
     }
 
     @Test fun pivotRequestsAreHeldUntilConsumed() = runTest {
-        val controller = ScanController(vip.ringling.recon.domain.ScanRunner(emptySet()), InMemoryHistoryRepository(), emptySet())
+        val controller = ScanController(vip.ringling.recon.domain.ScanRunner(emptySet()), InMemoryHistoryRepository(), SnapshotRepository(FakeSnapshotDao()), emptySet())
         assertNull(controller.pendingQuery.value)
         controller.requestSearch("someone@example.com"); assertEquals("someone@example.com", controller.pendingQuery.value)
         controller.consumePending(); assertNull(controller.pendingQuery.value)

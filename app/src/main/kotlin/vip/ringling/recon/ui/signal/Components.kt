@@ -25,7 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -62,13 +62,19 @@ fun Tone.textColor(): Color = with(ReconTheme.signal) { when (this@textColor) { 
 
 fun Severity.tone(): Tone = when (this) { Severity.EXPOSED -> Tone.ALERT; Severity.INFO -> Tone.INFO; Severity.CLEAN -> Tone.SAFE }
 
-/** Two-pixel signal-coloured L-shaped corners at the top-left and bottom-right. */
-fun Modifier.cornerBrackets(color: Color, length: Dp = 12.dp, stroke: Dp = 2.dp): Modifier = drawBehind {
-    val l = length.toPx(); val w = stroke.toPx(); val h = w / 2
-    val s = Stroke(w, cap = StrokeCap.Butt)
-    val tl = Path().apply { moveTo(h, l); lineTo(h, h); lineTo(l, h) }
-    val br = Path().apply { moveTo(size.width - h, size.height - l); lineTo(size.width - h, size.height - h); lineTo(size.width - l, size.height - h) }
-    drawPath(tl, color, style = s); drawPath(br, color, style = s)
+/** Two-pixel signal-coloured L-shaped corners at the top-left and bottom-right, following the panel's rounded corner. Draws over content, unclipped. */
+fun Modifier.cornerBrackets(color: Color, length: Dp = 14.dp, stroke: Dp = 2.dp, radius: Dp = 10.dp): Modifier = drawWithContent {
+    drawContent()
+    val l = length.toPx(); val w = stroke.toPx(); val h = w / 2; val r = radius.toPx()
+    val st = Stroke(w, cap = StrokeCap.Butt)
+    val tl = Path().apply {
+        moveTo(h, l); lineTo(h, r); arcTo(androidx.compose.ui.geometry.Rect(h, h, 2 * r - h, 2 * r - h), 180f, 90f, false); lineTo(l, h)
+    }
+    val br = Path().apply {
+        moveTo(size.width - h, size.height - l); lineTo(size.width - h, size.height - r)
+        arcTo(androidx.compose.ui.geometry.Rect(size.width - 2 * r + h, size.height - 2 * r + h, size.width - h, size.height - h), 0f, 90f, false); lineTo(size.width - l, size.height - h)
+    }
+    drawPath(tl, color, style = st); drawPath(br, color, style = st)
 }
 
 /** Key panel: 1dp hairline border, panel fill and (optionally) corner brackets. */
@@ -76,8 +82,8 @@ fun Modifier.cornerBrackets(color: Color, length: Dp = 12.dp, stroke: Dp = 2.dp)
 fun BracketPanel(modifier: Modifier = Modifier, brackets: Boolean = true, content: @Composable () -> Unit) {
     val sig = ReconTheme.signal
     Box(
-        modifier.clip(RoundedCornerShape(10.dp)).background(sig.panel.copy(alpha = 0.78f)).border(1.dp, sig.hairline, RoundedCornerShape(10.dp))
-            .let { if (brackets) it.cornerBrackets(sig.signal) else it },
+        modifier.let { if (brackets) it.cornerBrackets(sig.signal) else it }
+            .clip(RoundedCornerShape(10.dp)).background(sig.panel.copy(alpha = 0.78f)).border(1.dp, sig.hairline, RoundedCornerShape(10.dp)),
     ) { content() }
 }
 
