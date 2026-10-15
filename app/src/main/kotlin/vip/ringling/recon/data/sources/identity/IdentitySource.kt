@@ -236,6 +236,7 @@ class IdentitySource @Inject constructor(
             Triple("Gravatar", Confidence.HIGH) { gravatar(email) },
             Triple("Spotify", Confidence.MEDIUM) { spotify(email) },
             Triple("Duolingo", Confidence.MEDIUM) { duolingo(email) },
+            Triple("WordPress.com", Confidence.MEDIUM) { wordpress(email) },
         )
         coroutineScope { checks.forEach { (name, conf, fn) ->
             launch {
@@ -265,6 +266,20 @@ class IdentitySource @Inject constructor(
         val req = Request.Builder().url("${endpoints.gravatar}/$hash.json").build()
         return http.execute(req) { r ->
             when (r.code) { 200 -> Probe.Found; 404 -> Probe.Absent; 429 -> Probe.Inconclusive("rate-limited"); else -> Probe.Inconclusive("HTTP ${r.code}") }
+        }
+    }
+
+    /** auth-options answers 403 "email_login_not_allowed" for a registered address and 404 "unknown_user" otherwise. Unofficial. */
+    internal suspend fun wordpress(email: String): Probe {
+        val req = Request.Builder().url("${endpoints.wordpress}/rest/v1.1/users/${URLEncoder.encode(email, "UTF-8")}/auth-options").build()
+        return http.execute(req) { r ->
+            val body = r.body.string()
+            when {
+                r.code == 403 && "email_login_not_allowed" in body -> Probe.Found
+                r.code == 404 && "unknown_user" in body -> Probe.Absent
+                r.code == 429 -> Probe.Inconclusive("rate-limited")
+                else -> Probe.Inconclusive("HTTP ${r.code}")
+            }
         }
     }
 

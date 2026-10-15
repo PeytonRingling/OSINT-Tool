@@ -140,6 +140,7 @@ class IdentityTest {
         val (srv, router) = server(
             "/gravatar/$md5.json" to { MockResponse().setResponseCode(200).setBody("{}") },
             "/spotify/signup/public/v1/account" to { json("""{"status":20,"errors":{"email":"That email is already registered."}}""") },
+            "/wp/rest/v1.1/users/" to { MockResponse().setResponseCode(403).setBody("""{"error":"email_login_not_allowed"}""") },
             "/duo/2017-06-30/users" to { json("""{"users":[{"id":0,"name":""}]}""") },
         )
         srv.use {
@@ -148,6 +149,7 @@ class IdentityTest {
             assertEquals(Confidence.HIGH, f.first { it.title == "Gravatar" }.confidence)
             assertEquals(Confidence.MEDIUM, f.first { it.title == "Spotify" }.confidence)
             assertEquals(Confidence.MEDIUM, f.first { it.title == "Duolingo" }.confidence)
+            assertEquals(Confidence.MEDIUM, f.first { it.title == "WordPress.com" }.confidence)
             assertTrue(router.seen.any { it.path!!.contains("email=a%40b.com") })
         }
     }
@@ -157,13 +159,14 @@ class IdentityTest {
             "/gravatar/" to { MockResponse().setResponseCode(404) },
             "/spotify/" to { json("""{"status":999}""") },
             "/duo/" to { json("""{"users":[]}""") },
+            "/wp/" to { MockResponse().setResponseCode(404).setBody("""{"error":"unknown_user"}""") },
         )
         srv.use {
             val f = IdentitySource(Http(), srv.endpoints(), { emptyList() }).also { it.limiter = RateLimiter(2, 0) }
                 .collect(ScanInput("a@b.com", InputType.EMAIL))
             val s = f.single()
             assertEquals("IDENTITY-email-summary", s.id)
-            assertTrue("Not registered on: " in s.detail && "Gravatar" in s.detail && "Duolingo" in s.detail && "Spotify (unexpected response)" in s.detail, s.detail)
+            assertTrue("Not registered on: " in s.detail && "Gravatar" in s.detail && "Duolingo" in s.detail && "WordPress.com" in s.detail && "Spotify (unexpected response)" in s.detail, s.detail)
         }
     }
 
