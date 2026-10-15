@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import vip.ringling.recon.data.HistoryRepository
@@ -35,6 +36,8 @@ class MainViewModel @Inject constructor(
     fun checkForUpdateQuietly() = updates.checkQuietly()
     fun requestSearch(query: String) = controller.requestSearch(query)
     fun setMapSatellite(on: Boolean) { viewModelScope.launch { settingsRepo.setMapSatellite(on) } }
+    /** Synchronous read of the lock setting for the very first frame (DataStore is fast but async). */
+    fun appLockNow(): Boolean = kotlinx.coroutines.runBlocking { settingsRepo.settings.first().appLock }
     val me: StateFlow<GeoPoint?> = userLocation.location
     fun hasLocationPermission() = userLocation.hasPermission()
     fun refreshLocation() { viewModelScope.launch { userLocation.refresh() } }

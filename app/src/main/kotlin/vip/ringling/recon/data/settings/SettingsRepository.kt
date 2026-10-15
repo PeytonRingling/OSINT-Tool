@@ -3,6 +3,8 @@ package vip.ringling.recon.data.settings
 import android.content.Context
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import vip.ringling.recon.data.net.ProxyMode
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,6 +22,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     private val dynamicKey = booleanPreferencesKey("dynamic")
     private val hapticsKey = booleanPreferencesKey("haptics")
     private val satelliteKey = booleanPreferencesKey("map_satellite")
+    private val proxyModeKey = stringPreferencesKey("proxy_mode")
+    private val proxyHostKey = stringPreferencesKey("proxy_host")
+    private val proxyPortKey = intPreferencesKey("proxy_port")
+    private val lockKey = booleanPreferencesKey("app_lock")
 
     val settings: Flow<AppSettings> = context.store.data.map { p ->
         AppSettings(
@@ -27,6 +33,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             dynamicColor = p[dynamicKey] ?: false,
             haptics = p[hapticsKey] ?: true,
             mapSatellite = p[satelliteKey] ?: false,
+            proxyMode = p[proxyModeKey]?.let { runCatching { ProxyMode.valueOf(it) }.getOrNull() } ?: ProxyMode.OFF,
+            proxyHost = p[proxyHostKey].orEmpty(),
+            proxyPort = p[proxyPortKey] ?: 1080,
+            appLock = p[lockKey] ?: false,
         )
     }
 
@@ -34,4 +44,8 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     suspend fun setDynamic(on: Boolean) = context.store.edit { it[dynamicKey] = on }
     suspend fun setHaptics(on: Boolean) = context.store.edit { it[hapticsKey] = on }
     suspend fun setMapSatellite(on: Boolean) = context.store.edit { it[satelliteKey] = on }
+    suspend fun setProxyMode(m: ProxyMode) = context.store.edit { it[proxyModeKey] = m.name }
+    suspend fun setProxyHost(h: String) = context.store.edit { it[proxyHostKey] = h }
+    suspend fun setProxyPort(p: Int) = context.store.edit { it[proxyPortKey] = p }
+    suspend fun setAppLock(on: Boolean) = context.store.edit { it[lockKey] = on }
 }

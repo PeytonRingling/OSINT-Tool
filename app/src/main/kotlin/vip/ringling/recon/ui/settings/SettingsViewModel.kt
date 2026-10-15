@@ -31,6 +31,10 @@ class SettingsViewModel @Inject constructor(
     fun setTheme(m: ThemeMode) = viewModelScope.launch { repo.setTheme(m) }
     fun setDynamic(on: Boolean) = viewModelScope.launch { repo.setDynamic(on) }
     fun setHaptics(on: Boolean) = viewModelScope.launch { repo.setHaptics(on) }
+    fun setProxyMode(m: vip.ringling.recon.data.net.ProxyMode) = viewModelScope.launch { repo.setProxyMode(m) }
+    fun setProxyHost(h: String) = viewModelScope.launch { repo.setProxyHost(h) }
+    fun setProxyPort(p: Int) = viewModelScope.launch { repo.setProxyPort(p) }
+    fun setAppLock(on: Boolean) = viewModelScope.launch { repo.setAppLock(on) }
     fun setKey(id: ApiKeyId, v: String) = apiKeys.set(id, v)
     fun checkUpdate() = updates.check()
     fun installUpdate() = updates.downloadAndInstall()

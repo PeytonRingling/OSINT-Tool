@@ -159,3 +159,16 @@ class PhoneSourceTest {
         controller.consumePending(); assertNull(controller.pendingQuery.value)
     }
 }
+
+class ProxyStateTest {
+    @Test fun modesMapToSocksAndFailClosed() {
+        val s = vip.ringling.recon.data.net.ProxyState
+        val m = vip.ringling.recon.data.net.ProxyMode.entries.associateBy { it.name }
+        s.apply(m.getValue("OFF"), "", 0); assertEquals(java.net.Proxy.NO_PROXY, s.selector.select(null).single())
+        s.apply(m.getValue("TOR"), "", 0); val tor = s.selector.select(null).single()
+        assertEquals(java.net.Proxy.Type.SOCKS, tor.type()); assertEquals(9050, (tor.address() as java.net.InetSocketAddress).port)
+        s.apply(m.getValue("CUSTOM"), "10.0.0.2", 1080); assertEquals("10.0.0.2", (s.selector.select(null).single().address() as java.net.InetSocketAddress).hostString)
+        s.apply(m.getValue("CUSTOM"), "", 0); assertEquals(java.net.Proxy.Type.SOCKS, s.selector.select(null).single().type(), "invalid custom proxy must fail closed")
+        s.apply(m.getValue("OFF"), "", 0)
+    }
+}

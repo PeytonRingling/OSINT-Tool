@@ -71,6 +71,10 @@ data class SettingsActions(
     val onCheckUpdate: () -> Unit = {},
     val onInstallUpdate: () -> Unit = {},
     val onDismissUpdateError: () -> Unit = {},
+    val onProxyMode: (vip.ringling.recon.data.net.ProxyMode) -> Unit = {},
+    val onProxyHost: (String) -> Unit = {},
+    val onProxyPort: (Int) -> Unit = {},
+    val onAppLock: (Boolean) -> Unit = {},
 )
 
 @Composable
@@ -92,7 +96,7 @@ fun SettingsScreen(
             if (wide) {
                 Row(Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        UpdatesSection(state, actions); AppearanceSection(state, actions); DataSection(state, actions)
+                        UpdatesSection(state, actions); AppearanceSection(state, actions); PrivacySection(state, actions); DataSection(state, actions)
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         KeysSection(state, actions); LegalSection(state)
@@ -100,7 +104,7 @@ fun SettingsScreen(
                 }
             } else {
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                    UpdatesSection(state, actions); AppearanceSection(state, actions); KeysSection(state, actions); DataSection(state, actions); LegalSection(state)
+                    UpdatesSection(state, actions); AppearanceSection(state, actions); PrivacySection(state, actions); KeysSection(state, actions); DataSection(state, actions); LegalSection(state)
                 }
             }
         }
@@ -154,6 +158,56 @@ private fun AppearanceSection(state: SettingsUiState, a: SettingsActions) {
         ToggleRow("Dynamic color", "Use Material You colors from your wallpaper. Dark surfaces stay true black.", state.settings.dynamicColor, a.onDynamic)
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
         ToggleRow("Haptics", "Vibrate when a scan completes.", state.settings.haptics, a.onHaptics)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PrivacySection(state: SettingsUiState, a: SettingsActions) {
+    val cs = MaterialTheme.colorScheme
+    val modes = vip.ringling.recon.data.net.ProxyMode.entries
+    Section("Privacy & network") {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Route lookups through a proxy", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                modes.forEachIndexed { i, m ->
+                    SegmentedButton(
+                        selected = state.settings.proxyMode == m, onClick = { a.onProxyMode(m) },
+                        shape = SegmentedButtonDefaults.itemShape(i, modes.size), modifier = Modifier.heightIn(min = 48.dp),
+                    ) { Text(m.label, maxLines = 1) }
+                }
+            }
+            when (state.settings.proxyMode) {
+                vip.ringling.recon.data.net.ProxyMode.OFF -> Text("Requests go straight from this phone.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                vip.ringling.recon.data.net.ProxyMode.TOR -> Text(
+                    "Uses Orbot's SOCKS proxy at 127.0.0.1:9050 (start Orbot first). If it isn't running, lookups fail rather than leaking. Map tiles and photos are not proxied.",
+                    style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
+                )
+                vip.ringling.recon.data.net.ProxyMode.CUSTOM -> {
+                    ProxyField("Host", state.settings.proxyHost, KeyboardType.Uri) { a.onProxyHost(it) }
+                    ProxyField("Port", state.settings.proxyPort.toString(), KeyboardType.Number) { it.toIntOrNull()?.let(a.onProxyPort) }
+                    Text("SOCKS5 only. Invalid settings fail closed.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                }
+            }
+        }
+        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = cs.outlineVariant.copy(alpha = 0.5f))
+        ToggleRow("App lock", "Ask for fingerprint, face or device PIN when opening the app, and hide it from the recents screen.", state.settings.appLock, a.onAppLock)
+    }
+}
+
+@Composable
+private fun ProxyField(label: String, value: String, type: KeyboardType, onChange: (String) -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Surface(shape = MaterialTheme.shapes.small, color = cs.surfaceContainerHigh, border = BorderStroke(1.dp, cs.outlineVariant)) {
+        Row(Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, Modifier.padding(end = 12.dp), style = MaterialTheme.typography.labelLarge, color = cs.onSurfaceVariant)
+            BasicTextField(
+                value = value, onValueChange = onChange, singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(color = cs.onSurface), cursorBrush = SolidColor(cs.primary),
+                keyboardOptions = KeyboardOptions(keyboardType = type, autoCorrectEnabled = false),
+                modifier = Modifier.weight(1f).padding(vertical = 14.dp).semantics { contentDescription = "Proxy $label" },
+            )
+        }
     }
 }
 

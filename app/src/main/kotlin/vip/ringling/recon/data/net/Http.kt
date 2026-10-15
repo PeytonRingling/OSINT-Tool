@@ -18,6 +18,7 @@ fun buildHttpClient(): OkHttpClient = OkHttpClient.Builder()
     .readTimeout(20, TimeUnit.SECONDS)
     .callTimeout(40, TimeUnit.SECONDS)
     .followRedirects(true)
+    .proxySelector(ProxyState.selector)
     // Deliberately no logging interceptor: request headers carry API keys.
     .build()
 

@@ -160,7 +160,7 @@ fun ReconApp() {
                         val st by vm.state.collectAsStateWithLifecycle()
                         SettingsScreen(
                             st,
-                            SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError),
+                            SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock),
                             contentPadding = pad,
                         )
                     }
