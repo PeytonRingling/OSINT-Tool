@@ -7,6 +7,8 @@ import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -16,6 +18,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.CenterFocusStrong
+import androidx.compose.material.icons.rounded.Fullscreen
+import androidx.compose.material.icons.rounded.FullscreenExit
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.material.icons.rounded.Satellite
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -23,6 +29,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,6 +65,10 @@ import vip.ringling.recon.ui.components.severityColor
 
 data class MapPin(val id: String, val geo: GeoPoint, val severity: Severity, val label: String)
 
+/** Street = OpenStreetMap; Satellite = Esri World Imagery. The choice is remembered in settings. */
+class MapLayerState(val satellite: Boolean, val onChange: (Boolean) -> Unit)
+val LocalMapLayer = compositionLocalOf { MapLayerState(false) {} }
+
 private const val TILE_PX = 256.0
 
 /**
@@ -71,10 +82,17 @@ fun TileMap(
     selectedId: String?,
     onPinClick: (MapPin) -> Unit,
     modifier: Modifier = Modifier,
+    onExpand: (() -> Unit)? = null,
+    onClose: (() -> Unit)? = null,
+    clipShape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.medium,
+    /** Keeps the buttons and attribution clear of system bars or a card laid over the map. */
+    controlsPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(0.dp),
 ) {
     val cs = MaterialTheme.colorScheme
+    val layer = LocalMapLayer.current
+    val satellite = layer.satellite
     val dark = isSystemInDarkTheme() || cs.background.red < 0.2f
-    BoxWithConstraints(modifier.clip(MaterialTheme.shapes.medium).background(cs.surfaceContainerHigh)) {
+    BoxWithConstraints(modifier.clip(clipShape).background(cs.surfaceContainerHigh)) {
         val density = LocalDensity.current
         val wPx = with(density) { maxWidth.toPx() }.toDouble()
         val hPx = with(density) { maxHeight.toPx() }.toDouble()
@@ -108,7 +126,7 @@ fun TileMap(
             val n = Geo.tileCount(z0)
             val xs = Geo.tileRange(cx, wPx / 2, tilePx, n)
             val ys = Geo.tileRange(cy, hPx / 2, tilePx, n)
-            val filter = if (dark) ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
+            val filter = if (dark && !satellite) ColorFilter.colorMatrix(ColorMatrix(floatArrayOf(
                 -0.8f, 0f, 0f, 0f, 215f,
                 0f, -0.8f, 0f, 0f, 215f,
                 0f, 0f, -0.8f, 0f, 225f,
@@ -121,7 +139,7 @@ fun TileMap(
                 val top = (ty * tilePx - cy + hPx / 2).roundToInt()
                 if (imagesOn) {
                     AsyncImage(
-                        model = ImageRequest.Builder(context).data("https://tile.openstreetmap.org/$z0/$tx/$ty.png").diskCachePolicy(CachePolicy.DISABLED).build(),
+                        model = ImageRequest.Builder(context).data(if (satellite) "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/$z0/$ty/$tx" else "https://tile.openstreetmap.org/$z0/$tx/$ty.png").diskCachePolicy(CachePolicy.DISABLED).build(),
                         contentDescription = null, contentScale = ContentScale.FillBounds, colorFilter = filter,
                         modifier = Modifier.offset(left, top).size(with(density) { (tilePx.roundToInt() + 1).toDp() }),
                     )
@@ -146,32 +164,39 @@ fun TileMap(
             pins.forEach { p ->
                 val o = screen(p.geo)
                 val selected = p.id == selectedId
-                val size = if (selected) 34.dp else 26.dp
+                val size = if (selected) 34.dp else if (pins.size > 25) 18.dp else 26.dp
                 val half = with(density) { size.roundToPx() / 2 }
                 Box(
                     Modifier.offset(o.x.roundToInt() - half, o.y.roundToInt() - half).size(size)
-                        .clip(CircleShape).background(Color.White).padding(if (selected) 4.dp else 3.dp)
+                        .clip(CircleShape).background(Color.White).padding(if (selected) 4.dp else if (pins.size > 25) 2.dp else 3.dp)
                         .clip(CircleShape).background(severityColor(p.severity))
                         .clickable(onClickLabel = "Open ${p.label}") { onPinClick(p) }
                         .semantics { contentDescription = "Pin: ${p.label}" },
                 )
             }
         }
-        Column(Modifier.align(Alignment.TopEnd).padding(6.dp)) {
-            val btn = IconButtonDefaults.filledTonalIconButtonColors(containerColor = cs.surface.copy(alpha = 0.85f), contentColor = cs.onSurface)
+        val btn = IconButtonDefaults.filledTonalIconButtonColors(containerColor = cs.surface.copy(alpha = 0.88f), contentColor = cs.onSurface)
+        Row(Modifier.align(Alignment.TopEnd).padding(controlsPadding).padding(6.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            IconButton(onClick = { layer.onChange(!satellite) }, colors = btn, modifier = Modifier.size(48.dp)) {
+                Icon(if (satellite) Icons.Rounded.Map else Icons.Rounded.Satellite, if (satellite) "Switch to street map" else "Switch to satellite")
+            }
+            onExpand?.let { IconButton(onClick = it, colors = btn, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.Fullscreen, "Expand map to full screen") } }
+            onClose?.let { IconButton(onClick = it, colors = btn, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.FullscreenExit, "Close full screen map") } }
+        }
+        Column(Modifier.align(Alignment.CenterEnd).padding(end = controlsPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)).padding(6.dp)) {
             IconButton(onClick = { zoomTo(zoom + 1) }, colors = btn, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.Add, "Zoom in") }
             IconButton(onClick = { zoomTo(zoom - 1) }, colors = btn, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.Remove, "Zoom out") }
-            IconButton(
-                onClick = {
-                    val (c, z) = Geo.fit(fitPoints.ifEmpty { listOf(GeoPoint(43.6, -116.2)) }, fitW, fitH)
-                    zoom = z; cx = Geo.worldX(c.lng, z); cy = Geo.worldY(c.lat, z)
-                },
-                colors = btn, modifier = Modifier.size(48.dp),
-            ) { Icon(Icons.Rounded.CenterFocusStrong, "Fit all") }
         }
+        IconButton(
+            onClick = {
+                val (c, z) = Geo.fit(fitPoints.ifEmpty { listOf(GeoPoint(43.6, -116.2)) }, fitW, fitH)
+                zoom = z; cx = Geo.worldX(c.lng, z); cy = Geo.worldY(c.lat, z)
+            },
+            colors = btn, modifier = Modifier.align(Alignment.BottomEnd).padding(controlsPadding).padding(6.dp).size(48.dp),
+        ) { Icon(Icons.Rounded.CenterFocusStrong, "Fit all") }
         Text(
-            "© OpenStreetMap contributors", style = MaterialTheme.typography.labelSmall, color = cs.onSurface,
-            modifier = Modifier.align(Alignment.BottomStart).padding(6.dp).background(cs.surface.copy(alpha = 0.75f), MaterialTheme.shapes.extraSmall).padding(horizontal = 6.dp, vertical = 2.dp),
+            if (satellite) "Imagery © Esri, Vantor, Earthstar Geographics" else "© OpenStreetMap contributors", style = MaterialTheme.typography.labelSmall, color = cs.onSurface,
+            modifier = Modifier.align(Alignment.BottomStart).padding(controlsPadding).padding(6.dp).background(cs.surface.copy(alpha = 0.75f), MaterialTheme.shapes.extraSmall).padding(horizontal = 6.dp, vertical = 2.dp),
         )
     }
 }

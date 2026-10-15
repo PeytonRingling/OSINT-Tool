@@ -6,4 +6,5 @@ data class AppSettings(
     val themeMode: ThemeMode = ThemeMode.DARK,
     val dynamicColor: Boolean = false,
     val haptics: Boolean = true,
+    val mapSatellite: Boolean = false,
 )

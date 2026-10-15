@@ -9,6 +9,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.rounded.MyLocation
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -35,6 +39,7 @@ import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.ui.components.LegalNotice
 import vip.ringling.recon.ui.components.LocalUserLocation
 import vip.ringling.recon.ui.components.distanceMeters
+import vip.ringling.recon.ui.map.FullscreenMap
 import vip.ringling.recon.ui.map.MapPin
 import vip.ringling.recon.ui.map.TileMap
 import vip.ringling.recon.ui.components.ModuleCard
@@ -107,6 +112,7 @@ fun LazyListScope.scanResults(
                 onFindingClick = onFindingClick,
                 modifier = Modifier.padding(horizontal = 16.dp),
                 gate = if (gated) ({ LegalNotice(onAckRegistry) }) else null,
+                collapseAfter = if (module == ModuleId.REGISTRY) 6 else null,
                 extra = if (module == ModuleId.REGISTRY && mine.any { it.geo != null }) ({ RegistryMapPanel(mine, me, selectedId, onFindingClick, onRequestLocation) }) else null,
             )
         }
@@ -124,12 +130,17 @@ private fun RegistryMapPanel(
 ) {
     val cs = MaterialTheme.colorScheme
     val located = findings.filter { it.geo != null }
+    var fullscreen by remember { mutableStateOf(false) }
+    if (fullscreen) {
+        FullscreenMap(findings, me, selectedId, onDismiss = { fullscreen = false }, onOpen = { fullscreen = false; onFindingClick(it) })
+    }
     Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         TileMap(
             pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title) },
             me = me, selectedId = selectedId,
             onPinClick = { pin -> located.firstOrNull { it.id == pin.id }?.let(onFindingClick) },
-            modifier = Modifier.fillMaxWidth().height(240.dp),
+            modifier = Modifier.fillMaxWidth().height(280.dp),
+            onExpand = { fullscreen = true },
         )
         if (me == null) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {

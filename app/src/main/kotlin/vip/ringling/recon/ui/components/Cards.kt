@@ -26,7 +26,12 @@ import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -55,7 +60,9 @@ fun ModuleCard(
     modifier: Modifier = Modifier,
     gate: (@Composable () -> Unit)? = null,
     extra: (@Composable () -> Unit)? = null,
+    collapseAfter: Int? = null,
 ) {
+    var showAll by rememberSaveable { mutableStateOf(false) }
     val cs = MaterialTheme.colorScheme
     Surface(
         modifier.fillMaxWidth().animateContentSize(ReconMotion.spatial()),
@@ -95,9 +102,16 @@ fun ModuleCard(
                 gate()
             } else {
                 extra?.invoke()
-                findings.forEachIndexed { i, f ->
+                val limit = if (collapseAfter != null && !showAll) collapseAfter else Int.MAX_VALUE
+                findings.take(limit).forEachIndexed { i, f ->
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = cs.outlineVariant.copy(alpha = 0.5f))
                     FindingRow(f, selected = f.id == selectedId, onClick = { onFindingClick(f) })
+                }
+                if (collapseAfter != null && findings.size > collapseAfter) {
+                    HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = cs.outlineVariant.copy(alpha = 0.5f))
+                    TextButton(onClick = { showAll = !showAll }, Modifier.fillMaxWidth().heightIn(min = 52.dp)) {
+                        Text(if (showAll) "Show fewer" else "Show all ${findings.size} results")
+                    }
                 }
                 if (status == ModuleStatus.RUNNING || status == ModuleStatus.QUEUED) {
                     repeat(if (findings.isEmpty()) 3 else 1) {

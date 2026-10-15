@@ -4,6 +4,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.coroutineScope
 import okhttp3.FormBody
 import okhttp3.HttpUrl
@@ -35,8 +38,8 @@ data class IdahoDetail(val regStatus: String?, val lastRegistered: String?, val 
  *  - detail: GET SOR?id=N&sz=400 (labels td#sor_detail_lead, offenses table, full photo img)
  *  - map page: jsp/sor_map_display.jsp?… embeds the registry's own geocoded coordinates as google.maps.LatLng(lat, lng);
  *    we read those numbers only, so no address is ever sent to a geocoder.
- * Both adult (rad=A) and juvenile (rad=J) databases are queried, first results page only, for the query the user typed.
- * Nothing is cached or stored. Date of birth, physical description and aliases are deliberately not read.
+ * Both adult (rad=A) and juvenile (rad=J) databases are queried for the query the user typed; every results page of THAT query is
+ * followed (pager links, `&page=N`), bounded by maxPagesPerDatabase/maxEnriched. Nothing is cached or stored. Date of birth, physical description and aliases are deliberately not read.
  */
 class IdahoRegistryAdapter @Inject constructor(
     private val http: Http,
@@ -49,20 +52,59 @@ class IdahoRegistryAdapter @Inject constructor(
     private val limiter = RateLimiter(maxConcurrent = 4, minIntervalMs = 100)
     private val base: HttpUrl get() = "${endpoints.idahoSor}/".toHttpUrl()
 
-    override suspend fun search(query: RegistryQuery): RegistryResult = coroutineScope {
-        // Adult ("A") and juvenile ("J") are separate databases on the same site; each gets one first-page query.
-        val dbs = listOf("A" to "Adult", "J" to "Juvenile").map { (code, label) ->
-            async { label to runCatching { searchDatabase(query, code, label) } }
-        }.awaitAll()
-        val ok = dbs.mapNotNull { (_, r) -> r.getOrNull() }
-        if (ok.isEmpty()) throw dbs.first().second.exceptionOrNull() ?: AdapterUnavailable("Idaho registry unavailable")
-        val notes = dbs.filter { it.second.isFailure }.map { (label, r) -> "$label registry unavailable: ${r.exceptionOrNull()?.message}" }
-        RegistryResult(ok.sumOf { it.total }, ok.flatMap { it.entries }, "${endpoints.idahoSor}/search_zip.html", notes)
+    /** Bounds for very large searches (e.g. a whole county). A typical ZIP is well under both. */
+    internal var maxPagesPerDatabase = 20
+    internal var maxEnriched = 200
+
+    private class Listing(val label: String, val rows: List<IdahoRow>, val total: Int, val pagesMissed: Int, val pageCapped: Boolean)
+
+    override fun search(query: RegistryQuery): Flow<RegistryEvent> = channelFlow {
+        // 1) First page of the adult and juvenile databases, concurrently.
+        val first = coroutineScope {
+            listOf("A" to "Adult", "J" to "Juvenile").map { (code, label) ->
+                async { Triple(code, label, runCatching { postSearch(query, code) }) }
+            }.awaitAll()
+        }
+        val ok = first.filter { it.third.isSuccess }
+        if (ok.isEmpty()) throw first.first().third.exceptionOrNull() ?: AdapterUnavailable("Idaho registry unavailable")
+        val notes = first.filter { it.third.isFailure }.map { (_, label, r) -> "$label registry unavailable: ${r.exceptionOrNull()?.message}" }.toMutableList()
+
+        // 2) The remaining pages of each database — only the pages of this very query, up to the cap.
+        val listings = coroutineScope {
+            ok.map { (_, label, r) ->
+                async {
+                    val (page1, template) = r.getOrThrow()
+                    val rows = page1.rows.toMutableList()
+                    var missed = 0
+                    val lastPage = minOf(page1.pages, maxPagesPerDatabase)
+                    if (template != null) for (n in 2..lastPage) {
+                        val page = optional { limiter.run { fetch(template.replace("page=2", "page=$n")) { parseResults(it) } } }
+                        if (page == null) missed++ else rows += page.rows
+                    }
+                    Listing(label, rows.distinctBy { it.id }, page1.totalMatches, missed, page1.pages > maxPagesPerDatabase)
+                }
+            }.awaitAll()
+        }
+        val total = listings.sumOf { it.total }
+        val rows = listings.flatMap { l -> l.rows.map { l.label to it } }
+        listings.filter { it.pagesMissed > 0 }.forEach { notes += "${it.label} registry: ${it.pagesMissed} results page(s) could not be loaded." }
+        send(RegistryEvent.Header(total, rows.size, capped = rows.size < total, searchUrl = "${endpoints.idahoSor}/search_zip.html", notes = notes))
+
+        // 3) Details and coordinates, streamed as each record completes. Beyond the cap a row is shown without them.
+        coroutineScope {
+            rows.forEachIndexed { i, (label, row) ->
+                launch {
+                    val enrich = i < maxEnriched
+                    val detail = if (enrich) optional { limiter.run { fetch(row.href) { parseDetail(it) } } } else null
+                    val geo = if (enrich) row.mapHref?.let { href -> optional { limiter.run { fetch(href) { parseGeo(it) } } } } else null
+                    send(RegistryEvent.Entry(toEntry(row, detail, geo, label)))
+                }
+            }
+        }
     }
 
-    private class DbResult(val total: Int, val entries: List<RegistryEntry>)
-
-    private suspend fun searchDatabase(query: RegistryQuery, rad: String, label: String): DbResult {
+    /** First page of a database, plus the pager link template ("…&page=2") used to reach the rest. */
+    private suspend fun postSearch(query: RegistryQuery, rad: String): Pair<IdahoPage, String?> {
         val form = FormBody.Builder().add("sz", "400").add("rad", rad).apply {
             when {
                 query.zip != null -> { add("form", "5"); add("zip", query.zip) }
@@ -76,18 +118,7 @@ class IdahoRegistryAdapter @Inject constructor(
             if (r.code != 200) throw HttpException(r.code, "Idaho registry returned HTTP ${r.code}")
             r.body.string()
         }
-        val page = parseResults(html)
-        val entries = coroutineScope {
-            page.rows.map { row ->
-                async {
-                    // Detail and map are best-effort: a row is still useful without them.
-                    val detail = optional { limiter.run { fetch(row.href) { parseDetail(it) } } }
-                    val geo = row.mapHref?.let { href -> optional { limiter.run { fetch(href) { parseGeo(it) } } } }
-                    toEntry(row, detail, geo, label)
-                }
-            }.awaitAll()
-        }
-        return DbResult(page.totalMatches, entries)
+        return parseResults(html) to parsePagerTemplate(html)
     }
 
     private suspend fun <T> optional(block: suspend () -> T): T? = try {
@@ -134,6 +165,7 @@ class IdahoRegistryAdapter @Inject constructor(
         }.filter { it.isNotBlank() }
         fun abs(href: String?) = href?.let { base.resolve(it)?.toString() }
         return RegistryEntry(
+            key = "${label.first()}-${row.id}",
             name = row.name,
             summary = lines.joinToString("\n"),
             sourceUrl = abs(row.href) ?: "${endpoints.idahoSor}/",
@@ -151,6 +183,10 @@ class IdahoRegistryAdapter @Inject constructor(
         private val latLngRe = Regex("""google\.maps\.LatLng\(\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\)""")
 
         private fun clean(s: String?) = s.orEmpty().replace(' ', ' ').replace(Regex("\\s+"), " ").trim()
+
+        /** The pager's "page=2" link, used as a template for the other pages of the same search. */
+        fun parsePagerTemplate(html: String): String? =
+            Jsoup.parse(html).select("a[href*=page=]").map { it.attr("href") }.firstOrNull { Regex("""[?&]page=2\b""").containsMatchIn(it) }
 
         fun parseResults(html: String): IdahoPage {
             val doc = Jsoup.parse(html)

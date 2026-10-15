@@ -86,12 +86,14 @@ object MockData {
                 geo = GeoPoint(lat, lng), tags = tags,
             )
         return listOf(
-            Finding("REGISTRY-summary", ModuleId.REGISTRY, "4 matches in ${input.raw}", "Matches are by location only. The registry warns that records may not relate to the person you have in mind; verify before relying on any of this.", Severity.INFO, "https://apps.isp.idaho.gov/sor_id/search_zip.html"),
+            Finding("REGISTRY-summary", ModuleId.REGISTRY, "12 matches in ${input.raw}", "Matches are by location only. The registry warns that records may not relate to the person you have in mind; verify before relying on any of this.", Severity.INFO, "https://apps.isp.idaho.gov/sor_id/search_zip.html"),
             r(0, "SAMPLE, RECORD A", "100 FICTION AVE", "Compliant", listOf("18-0000 – FICTIONAL OFFENSE ONE – Jun 01, 2010 – ADA CO", "18-0001 – FICTIONAL OFFENSE TWO – Aug 12, 2014 – ADA CO"), listOf("Adult registry", "Multiple convictions"), Severity.EXPOSED, 43.6150, -116.2020, "Convictions on 2 separate dates. The registry does not state whether this is a repeat offence; this is inferred from the dates."),
             r(1, "EXAMPLE, RECORD B", "200 PLACEHOLDER ST", "Non Comp", listOf("18-0002 – FICTIONAL OFFENSE THREE – Feb 03, 2009 – ADA CO"), listOf("Adult registry", "Non-compliant"), Severity.EXPOSED, 43.6090, -116.2200),
             r(2, "PLACEHOLDER, RECORD C", "300 SAMPLE BLVD", "Compliant", listOf("18-0003 – FICTIONAL OFFENSE FOUR – Nov 20, 2016 – ADA CO"), listOf("Adult registry"), Severity.INFO, 43.6260, -116.1900),
             r(3, "FICTIONAL, RECORD D", "400 EXAMPLE CT", "Compliant", listOf("18-0004 – FICTIONAL OFFENSE FIVE – May 09, 2018 – ADA CO"), listOf("Juvenile registry"), Severity.INFO, 43.5900, -116.2500),
-        )
+        ) + (4..11).map { i ->
+            r(i, "SAMPLE, RECORD ${('A' + i)}", "${100 * i} MOCK ST", "Compliant", listOf("18-00${i.toString().padStart(2, '0')} – FICTIONAL OFFENSE – Jan 0${i % 9 + 1}, 20${10 + i} – ADA CO"), listOf("Adult registry"), Severity.INFO, 43.58 + i * 0.006, -116.30 + (i % 5) * 0.035)
+        }
     }
 
     fun forModule(module: ModuleId, input: ScanInput): List<Finding> = when (module) {

@@ -61,6 +61,8 @@ import androidx.navigation.compose.rememberNavController
 import vip.ringling.recon.domain.ModuleStatus
 import vip.ringling.recon.ui.components.LocalSharedScopes
 import vip.ringling.recon.ui.components.LocalUserLocation
+import vip.ringling.recon.ui.map.LocalMapLayer
+import vip.ringling.recon.ui.map.MapLayerState
 import vip.ringling.recon.ui.components.SharedScopes
 import vip.ringling.recon.ui.detail.EmptyDetailPane
 import vip.ringling.recon.ui.detail.FindingDetail
@@ -101,7 +103,7 @@ fun ReconRoot(vm: MainViewModel = hiltViewModel()) {
             }
         }
         val me by vm.me.collectAsStateWithLifecycle()
-        CompositionLocalProvider(LocalUserLocation provides me) {
+        CompositionLocalProvider(LocalUserLocation provides me, LocalMapLayer provides MapLayerState(settings.mapSatellite, vm::setMapSatellite)) {
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { ReconApp() }
         }
     }

@@ -31,6 +31,9 @@ import vip.ringling.recon.data.update.UpdateState
 import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.ui.components.LocalImagesEnabled
+import vip.ringling.recon.ui.map.FullscreenMapContent
+import vip.ringling.recon.ui.map.LocalMapLayer
+import vip.ringling.recon.ui.map.MapLayerState
 import vip.ringling.recon.ui.components.LocalUserLocation
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.ModuleStatus
@@ -177,6 +180,12 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
         "06c_home_registry_results_no_location",
         content = home(HomeUiState(query = zip.raw, detected = InputType.ZIP, session = zipDone, registryAck = true)),
     )
+
+    @Test fun registry_fullscreen_map_satellite_selected() = shot("06d_registry_fullscreen_map", tab = null, me = GeoPoint(43.6125, -116.2105)) { _, _ ->
+        androidx.compose.runtime.CompositionLocalProvider(LocalMapLayer provides MapLayerState(true) {}) {
+            FullscreenMapContent(zipDone.findings, GeoPoint(43.6125, -116.2105), "REGISTRY-ID-1", onDismiss = {}, onOpen = {})
+        }
+    }
 
     @Test fun detail_registry() = shot("07b_detail_registry", tab = null, me = GeoPoint(43.6125, -116.2105)) { _, pad ->
         FindingDetail(zipDone.findings.first { it.id == "REGISTRY-ID-0" }, DetailActions(), onBack = {}, contentPadding = pad)

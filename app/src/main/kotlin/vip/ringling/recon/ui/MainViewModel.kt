@@ -25,6 +25,7 @@ import vip.ringling.recon.domain.ScanRecord
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
+    private val settingsRepo: SettingsRepository,
     settings: SettingsRepository,
     controller: ScanController,
     private val userLocation: UserLocation,
@@ -32,6 +33,7 @@ class MainViewModel @Inject constructor(
 ) : ViewModel() {
     val update: StateFlow<UpdateState> = updates.state
     fun checkForUpdateQuietly() = updates.checkQuietly()
+    fun setMapSatellite(on: Boolean) { viewModelScope.launch { settingsRepo.setMapSatellite(on) } }
     val me: StateFlow<GeoPoint?> = userLocation.location
     fun hasLocationPermission() = userLocation.hasPermission()
     fun refreshLocation() { viewModelScope.launch { userLocation.refresh() } }

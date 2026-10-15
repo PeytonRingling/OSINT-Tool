@@ -19,16 +19,19 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     private val themeKey = stringPreferencesKey("theme")
     private val dynamicKey = booleanPreferencesKey("dynamic")
     private val hapticsKey = booleanPreferencesKey("haptics")
+    private val satelliteKey = booleanPreferencesKey("map_satellite")
 
     val settings: Flow<AppSettings> = context.store.data.map { p ->
         AppSettings(
             themeMode = p[themeKey]?.let { runCatching { ThemeMode.valueOf(it) }.getOrNull() } ?: ThemeMode.DARK,
             dynamicColor = p[dynamicKey] ?: false,
             haptics = p[hapticsKey] ?: true,
+            mapSatellite = p[satelliteKey] ?: false,
         )
     }
 
     suspend fun setTheme(mode: ThemeMode) = context.store.edit { it[themeKey] = mode.name }
     suspend fun setDynamic(on: Boolean) = context.store.edit { it[dynamicKey] = on }
     suspend fun setHaptics(on: Boolean) = context.store.edit { it[hapticsKey] = on }
+    suspend fun setMapSatellite(on: Boolean) = context.store.edit { it[satelliteKey] = on }
 }
