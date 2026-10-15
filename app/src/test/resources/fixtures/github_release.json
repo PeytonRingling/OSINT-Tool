@@ -1,0 +1,3 @@
+{"url":"https://api.github.com/repos/testuser/OSINT-Tool/releases/1","html_url":"https://github.com/testuser/OSINT-Tool/releases/tag/latest","tag_name":"latest","name":"Latest build","prerelease":true,"published_at":"2026-10-15T00:24:28Z",
+ "body":"Rolling build of `905728a` — sideload Recon.apk.\nbuild: 7\nsha256: SHA_PLACEHOLDER\n",
+ "assets":[{"url":"https://api.github.com/repos/testuser/OSINT-Tool/releases/assets/42","id":42,"name":"Recon.apk","content_type":"application/vnd.android.package-archive","size":SIZE_PLACEHOLDER,"state":"uploaded","browser_download_url":"https://github.com/testuser/OSINT-Tool/releases/download/latest/Recon.apk"}]}

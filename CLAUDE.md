@@ -80,6 +80,17 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Registry findings can't be exported (`Export.exportable`): no Export JSON button, excluded from export-all; still stripped from history.
   Copy/Share of a single record remains.
 
+## In-app updates (added 2026-10-15)
+- Settings → Updates (+ a quiet launch-time check and snackbar when a token is set). Source = the rolling `latest` GitHub release.
+  The repo is PRIVATE, so the user adds a fine-grained GitHub token (this repo, **Contents: read**) under Settings → API keys
+  (`ApiKeyId.GITHUB`, Keystore-encrypted like the others). Token only goes to api.github.com; OkHttp drops it on the storage redirect (tested).
+- CI writes `build: <run number>` and `sha256: <hex>` lines into the release body; `versionCode` = `GITHUB_RUN_NUMBER` (local builds = 1).
+  The app compares build vs `BuildConfig.VERSION_CODE`, downloads to `cacheDir/updates/Recon.apk`, verifies size + SHA-256 (bad file deleted),
+  installs via `PackageInstaller` (needs REQUEST_INSTALL_PACKAGES / "Install unknown apps" for Recon). Android itself enforces same-signature,
+  so the shared `ci/debug.keystore` must never change or updates stop installing.
+- Code: `data/update/{UpdateRepository,ApkInstaller,UpdateManager}.kt`; tests `UpdateTest` (MockWebServer; release JSON fixture authored from GitHub docs).
+- Local/dev APKs have versionCode 1, so they can't update over a CI build; always install the release build first.
+
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.
@@ -97,5 +108,5 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Registry findings are shown live only: `ScanController` strips them before saving history (tested). Never cache.
 - Failure policy: a failing sub-check becomes an INFO "… unavailable" finding (breach/domain); an inconclusive site probe
   is counted, never treated as "not found".
-- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 109 tests at last count.
+- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 115 tests at last count.
 - Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.

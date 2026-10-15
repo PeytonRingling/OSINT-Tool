@@ -26,6 +26,8 @@ import vip.ringling.recon.data.mock.MockData
 import vip.ringling.recon.data.settings.AppSettings
 import vip.ringling.recon.data.settings.ThemeMode
 import androidx.compose.runtime.CompositionLocalProvider
+import vip.ringling.recon.data.update.ReleaseInfo
+import vip.ringling.recon.data.update.UpdateState
 import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.ui.components.LocalImagesEnabled
@@ -199,6 +201,14 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
         } else {
             HistoryScreen(st, {}, {}, {}, contentPadding = pad)
         }
+    }
+
+    @Test fun settings_update_available() = shot("10b_settings_update_available", tab = Tab.SETTINGS) { _, pad ->
+        val info = ReleaseInfo(12, "u", "Recon.apk", 4_057_192, null, "2026-10-15T01:02:03Z", null)
+        SettingsScreen(
+            SettingsUiState(AppSettings(), mapOf(ApiKeyId.HIBP to "demo-hibp-key-0000", ApiKeyId.GITHUB to "github_pat_demo"), history.size, "0.1.11", 11, UpdateState.Available(info)),
+            SettingsActions(), contentPadding = pad,
+        )
     }
 
     @Test fun settings() = shot("10_settings", tab = Tab.SETTINGS) { _, pad ->

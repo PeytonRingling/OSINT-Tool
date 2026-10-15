@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import vip.ringling.recon.BuildConfig
 import vip.ringling.recon.data.HistoryRepository
 import vip.ringling.recon.data.secret.ApiKeys
+import vip.ringling.recon.data.update.UpdateManager
 import vip.ringling.recon.data.settings.SettingsRepository
 import vip.ringling.recon.data.settings.ThemeMode
 import vip.ringling.recon.domain.ApiKeyId
@@ -21,14 +22,18 @@ class SettingsViewModel @Inject constructor(
     private val repo: SettingsRepository,
     private val history: HistoryRepository,
     private val apiKeys: ApiKeys,
+    private val updates: UpdateManager,
 ) : ViewModel() {
-    val state: StateFlow<SettingsUiState> = combine(repo.settings, apiKeys.keys, history.records) { s, k, h ->
-        SettingsUiState(s, k, h.size, BuildConfig.VERSION_NAME)
+    val state: StateFlow<SettingsUiState> = combine(repo.settings, apiKeys.keys, history.records, updates.state) { s, k, h, u ->
+        SettingsUiState(s, k, h.size, BuildConfig.VERSION_NAME, updates.installedBuild, u)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     fun setTheme(m: ThemeMode) = viewModelScope.launch { repo.setTheme(m) }
     fun setDynamic(on: Boolean) = viewModelScope.launch { repo.setDynamic(on) }
     fun setHaptics(on: Boolean) = viewModelScope.launch { repo.setHaptics(on) }
     fun setKey(id: ApiKeyId, v: String) = apiKeys.set(id, v)
+    fun checkUpdate() = updates.check()
+    fun installUpdate() = updates.downloadAndInstall()
+    fun dismissUpdateError() = updates.dismissError()
     fun clearHistory() = viewModelScope.launch { history.clear() }
 }

@@ -2,5 +2,6 @@ package vip.ringling.recon.domain
 
 enum class ApiKeyId(val label: String, val hint: String) {
     HIBP("Have I Been Pwned", "Required for email breach lookups (hibp-api-key)."),
-    LEAKCHECK("LeakCheck", "Optional for email; required for phone and username lookups."),
+    LEAKCHECK("LeakCheck", "Optional: raises limits. Without it the public endpoint is used."),
+    GITHUB("GitHub (app updates)", "Fine-grained token, this repo only, Contents: read. Lets the app find and download new builds."),
 }

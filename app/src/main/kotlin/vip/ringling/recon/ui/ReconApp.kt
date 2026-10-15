@@ -64,6 +64,7 @@ import vip.ringling.recon.ui.components.LocalUserLocation
 import vip.ringling.recon.ui.components.SharedScopes
 import vip.ringling.recon.ui.detail.EmptyDetailPane
 import vip.ringling.recon.ui.detail.FindingDetail
+import vip.ringling.recon.data.update.UpdateState
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.ScanRecord
 import vip.ringling.recon.ui.history.HistoryScreen
@@ -112,6 +113,14 @@ fun ReconApp() {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val actions = rememberReconActions(snackbar)
+    val main: MainViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
+    val updateState by main.update.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { main.checkForUpdateQuietly() }
+    LaunchedEffect((updateState as? UpdateState.Available)?.info?.build) {
+        val u = updateState as? UpdateState.Available ?: return@LaunchedEffect
+        val r = snackbar.showSnackbar("Update available: build ${u.info.build}", actionLabel = "View", withDismissAction = true)
+        if (r == androidx.compose.material3.SnackbarResult.ActionPerformed) nav.navigate(Tab.SETTINGS.route) { launchSingleTop = true }
+    }
     val backStack by nav.currentBackStackEntryAsState()
     val currentRoute = backStack?.destination?.route
     val topLevel = Tab.entries.firstOrNull { it.route == currentRoute }
@@ -149,7 +158,7 @@ fun ReconApp() {
                         val st by vm.state.collectAsStateWithLifecycle()
                         SettingsScreen(
                             st,
-                            SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory),
+                            SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError),
                             contentPadding = pad,
                         )
                     }

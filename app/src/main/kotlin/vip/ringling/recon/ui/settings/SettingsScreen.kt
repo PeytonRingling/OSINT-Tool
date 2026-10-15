@@ -21,6 +21,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import vip.ringling.recon.data.settings.AppSettings
 import vip.ringling.recon.data.settings.ThemeMode
+import vip.ringling.recon.data.update.UpdateState
 import vip.ringling.recon.domain.ApiKeyId
 import vip.ringling.recon.ui.theme.ReconTheme
 
@@ -56,6 +58,8 @@ data class SettingsUiState(
     val keys: Map<ApiKeyId, String> = emptyMap(),
     val historyCount: Int = 0,
     val versionName: String = "0.1.0",
+    val installedBuild: Int = 1,
+    val update: UpdateState = UpdateState.Idle,
 )
 
 data class SettingsActions(
@@ -64,6 +68,9 @@ data class SettingsActions(
     val onHaptics: (Boolean) -> Unit = {},
     val onKeyChange: (ApiKeyId, String) -> Unit = { _, _ -> },
     val onClearHistory: () -> Unit = {},
+    val onCheckUpdate: () -> Unit = {},
+    val onInstallUpdate: () -> Unit = {},
+    val onDismissUpdateError: () -> Unit = {},
 )
 
 @Composable
@@ -85,7 +92,7 @@ fun SettingsScreen(
             if (wide) {
                 Row(Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        AppearanceSection(state, actions); DataSection(state, actions)
+                        UpdatesSection(state, actions); AppearanceSection(state, actions); DataSection(state, actions)
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         KeysSection(state, actions); LegalSection(state)
@@ -93,7 +100,7 @@ fun SettingsScreen(
                 }
             } else {
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                    AppearanceSection(state, actions); KeysSection(state, actions); DataSection(state, actions); LegalSection(state)
+                    UpdatesSection(state, actions); AppearanceSection(state, actions); KeysSection(state, actions); DataSection(state, actions); LegalSection(state)
                 }
             }
         }
@@ -236,6 +243,48 @@ private fun LegalSection(state: SettingsUiState) {
                     "registry records can't be exported, and your location is used only on this device to show distances.",
                 style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
             )
+        }
+    }
+}
+
+@Composable
+private fun UpdatesSection(state: SettingsUiState, a: SettingsActions) {
+    val cs = MaterialTheme.colorScheme
+    val u = state.update
+    val busy = u is UpdateState.Checking || u is UpdateState.Downloading || u is UpdateState.Installing
+    Section("Updates") {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Installed: v${state.versionName} · build ${state.installedBuild}", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+            when (u) {
+                UpdateState.Idle -> Text(
+                    if (state.keys[ApiKeyId.GITHUB].isNullOrBlank()) "Add a GitHub token under API keys, then check for a newer build."
+                    else "Check whether a newer build has been published.",
+                    style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
+                )
+                UpdateState.Checking -> { Text("Checking GitHub…", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant); LinearProgressIndicator(Modifier.fillMaxWidth()) }
+                is UpdateState.UpToDate -> Text("You're on the latest build.", style = MaterialTheme.typography.bodyMedium, color = ReconTheme.severity.clean)
+                is UpdateState.Available -> {
+                    Text(
+                        "Build ${u.info.build} is available · ${"%.1f".format(u.info.sizeBytes / 1_048_576.0)} MB" + (u.info.publishedAt?.let { " · ${it.take(10)}" } ?: ""),
+                        style = MaterialTheme.typography.bodyMedium, color = cs.primary,
+                    )
+                    Button(onClick = a.onInstallUpdate, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Download and install") }
+                }
+                is UpdateState.Downloading -> {
+                    Text("Downloading build ${u.info.build}… ${(u.progress * 100).toInt()}%", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                    LinearProgressIndicator(progress = { u.progress }, Modifier.fillMaxWidth())
+                }
+                is UpdateState.NeedsPermission -> {
+                    Text("Android needs your OK before Recon can install updates. Allow it in the screen that opened, come back, and tap install again.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                    Button(onClick = a.onInstallUpdate, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Install build ${u.info.build}") }
+                }
+                is UpdateState.Installing -> { Text("Installing build ${u.info.build}… Recon will restart.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant); LinearProgressIndicator(Modifier.fillMaxWidth()) }
+                is UpdateState.Failed -> {
+                    Text(u.message, style = MaterialTheme.typography.bodySmall, color = cs.error)
+                    TextButton(onClick = a.onDismissUpdateError, Modifier.heightIn(min = 48.dp)) { Text("Dismiss") }
+                }
+            }
+            OutlinedButton(onClick = a.onCheckUpdate, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Check for updates") }
         }
     }
 }

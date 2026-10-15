@@ -40,6 +40,10 @@ jobs:
       - name: Name the APK
         run: cp app/build/outputs/apk/release/app-release.apk Recon.apk
 
+      - name: Checksum
+        id: meta
+        run: echo "sha=$(sha256sum Recon.apk | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
       - name: Move the rolling tag
         run: |
           git config user.name "github-actions[bot]"
@@ -56,4 +60,6 @@ jobs:
           make_latest: false
           files: Recon.apk
           body: |
-            Rolling build of `${{ github.sha }}` — sideload `Recon.apk`; it installs over the previous build.
+            Rolling build of `${{ github.sha }}` — sideload `Recon.apk`; it installs over the previous build, or use Settings → Updates in the app.
+            build: ${{ github.run_number }}
+            sha256: ${{ steps.meta.outputs.sha }}

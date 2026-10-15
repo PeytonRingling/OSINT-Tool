@@ -15,6 +15,8 @@ import vip.ringling.recon.data.HistoryRepository
 import kotlinx.coroutines.launch
 import vip.ringling.recon.data.ScanController
 import vip.ringling.recon.data.location.UserLocation
+import vip.ringling.recon.data.update.UpdateManager
+import vip.ringling.recon.data.update.UpdateState
 import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.data.settings.AppSettings
 import vip.ringling.recon.data.settings.SettingsRepository
@@ -26,7 +28,10 @@ class MainViewModel @Inject constructor(
     settings: SettingsRepository,
     controller: ScanController,
     private val userLocation: UserLocation,
+    private val updates: UpdateManager,
 ) : ViewModel() {
+    val update: StateFlow<UpdateState> = updates.state
+    fun checkForUpdateQuietly() = updates.checkQuietly()
     val me: StateFlow<GeoPoint?> = userLocation.location
     fun hasLocationPermission() = userLocation.hasPermission()
     fun refreshLocation() { viewModelScope.launch { userLocation.refresh() } }
