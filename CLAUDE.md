@@ -82,8 +82,8 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 
 ## In-app updates (added 2026-10-15)
 - Settings → Updates (+ a quiet launch-time check and snackbar when a token is set). Source = the rolling `latest` GitHub release.
-  The repo is PRIVATE, so the user adds a fine-grained GitHub token (this repo, **Contents: read**) under Settings → API keys
-  (`ApiKeyId.GITHUB`, Keystore-encrypted like the others). Token only goes to api.github.com; OkHttp drops it on the storage redirect (tested).
+  While the repo is PRIVATE the user adds a fine-grained GitHub token (this repo, **Contents: read**) under Settings → API keys
+  (`ApiKeyId.GITHUB`, Keystore-encrypted like the others); if the repo is made public no token is needed (it's optional everywhere). Token only goes to api.github.com; OkHttp drops it on the storage redirect (tested).
 - CI writes `build: <run number>` and `sha256: <hex>` lines into the release body; `versionCode` = `GITHUB_RUN_NUMBER` (local builds = 1).
   The app compares build vs `BuildConfig.VERSION_CODE`, downloads to `cacheDir/updates/Recon.apk`, verifies size + SHA-256 (bad file deleted),
   installs via `PackageInstaller` (needs REQUEST_INSTALL_PACKAGES / "Install unknown apps" for Recon). Android itself enforces same-signature,

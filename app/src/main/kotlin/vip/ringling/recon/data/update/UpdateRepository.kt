@@ -54,7 +54,7 @@ class UpdateRepository @Inject constructor(private val http: Http, private val e
                 401 -> throw UpdateException("GitHub rejected the token. Check it in Settings → API keys.")
                 403, 429 -> throw UpdateException("GitHub refused or rate-limited the request (HTTP ${r.code}). Try again later.")
                 404 -> throw UpdateException(
-                    if (token == null) "No release visible. The repo is private, so add a GitHub token (Contents: read) in Settings."
+                    if (token == null) "No release visible. If the repo is private, add a GitHub token (Contents: read) in Settings → API keys."
                     else "No 'latest' release found, or the token can't see this repo. It needs Contents: read on ${endpoints.updateRepo}.",
                 )
                 else -> throw HttpException(r.code, "GitHub returned HTTP ${r.code}")

@@ -256,11 +256,7 @@ private fun UpdatesSection(state: SettingsUiState, a: SettingsActions) {
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text("Installed: v${state.versionName} · build ${state.installedBuild}", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
             when (u) {
-                UpdateState.Idle -> Text(
-                    if (state.keys[ApiKeyId.GITHUB].isNullOrBlank()) "Add a GitHub token under API keys, then check for a newer build."
-                    else "Check whether a newer build has been published.",
-                    style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
-                )
+                UpdateState.Idle -> Text("Check whether a newer build has been published.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
                 UpdateState.Checking -> { Text("Checking GitHub…", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant); LinearProgressIndicator(Modifier.fillMaxWidth()) }
                 is UpdateState.UpToDate -> Text("You're on the latest build.", style = MaterialTheme.typography.bodyMedium, color = ReconTheme.severity.clean)
                 is UpdateState.Available -> {

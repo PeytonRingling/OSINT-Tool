@@ -42,7 +42,7 @@ class UpdateTest {
         val notFound = server("/gh/" to { MockResponse().setResponseCode(404) })
         notFound.first.use {
             val repo = UpdateRepository(Http(), it.endpoints())
-            assertTrue("add a GitHub token" in assertFailsWith<UpdateException> { repo.latest(null) }.message!!)
+            assertTrue("GitHub token" in assertFailsWith<UpdateException> { repo.latest(null) }.message!!)
             assertTrue("Contents: read" in assertFailsWith<UpdateException> { repo.latest("t") }.message!!)
         }
         val unauthorized = server("/gh/" to { MockResponse().setResponseCode(401) })

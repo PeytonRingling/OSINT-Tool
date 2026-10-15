@@ -66,7 +66,8 @@ class UpdateManager @Inject constructor(
 
     /** Check without surfacing errors — used once at launch when a token is configured. */
     fun checkQuietly() {
-        if (keys.get(ApiKeyId.GITHUB) == null || _state.value !is UpdateState.Idle) return
+        // Token is optional: a public repo needs none, and a private one just fails quietly here.
+        if (_state.value !is UpdateState.Idle) return
         scope.launch {
             _state.value = try {
                 val info = repo.latest(keys.get(ApiKeyId.GITHUB))
