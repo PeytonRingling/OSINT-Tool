@@ -101,6 +101,13 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Code: `data/update/{UpdateRepository,ApkInstaller,UpdateManager}.kt`; tests `UpdateTest` (MockWebServer; release JSON fixture authored from GitHub docs).
 - Local/dev APKs have versionCode 1, so they can't update over a CI build; always install the release build first.
 
+## Phone intel (added 2026-10-15)
+- `ModuleId.PHONE`, `data/sources/phone/`: offline libphonenumber analysis (region, carrier, line type, formats, timezones), 800notes community reports
+  (page 1 parsed, count approximated from pager), one-tap lookup links (search engines, Truecaller, Telegram, WhatsApp...; NO people-search brokers),
+  optional keyed Veriphone and Twilio Lookup v2 (caller_name = owner/CNAM, paid, billed to the user's own account; response shapes authored from docs, unverified).
+- Free sources cannot name a number's owner. Findings gained `links` ("Open in browser") and `pivots` ("Search next" -> `ScanController.requestSearch`).
+- 800notes/Veriphone/Twilio shapes: fixtures only; verify live on the phone.
+
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.

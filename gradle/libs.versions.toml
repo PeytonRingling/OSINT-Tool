@@ -22,6 +22,9 @@ roborazzi = "1.76.0"
 robolectric = "4.17"
 junit = "4.13.2"
 coil = "3.6.3"
+libphonenumber = "9.0.41"
+phoneGeocoder = "3.41"
+phoneCarrier = "2.41"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -58,6 +61,9 @@ roborazzi = { module = "io.github.takahirom.roborazzi:roborazzi", version.ref = 
 roborazzi-compose = { module = "io.github.takahirom.roborazzi:roborazzi-compose", version.ref = "roborazzi" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 junit = { module = "junit:junit", version.ref = "junit" }
+libphonenumber = { module = "com.googlecode.libphonenumber:libphonenumber", version.ref = "libphonenumber" }
+phone-geocoder = { module = "com.googlecode.libphonenumber:geocoder", version.ref = "phoneGeocoder" }
+phone-carrier = { module = "com.googlecode.libphonenumber:carrier", version.ref = "phoneCarrier" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil" }
 

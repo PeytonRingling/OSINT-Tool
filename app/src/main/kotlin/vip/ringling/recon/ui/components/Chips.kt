@@ -38,6 +38,7 @@ import vip.ringling.recon.ui.theme.ReconTheme
 fun ModuleId.icon(): ImageVector = when (this) {
     ModuleId.BREACH -> Icons.Outlined.LockOpen
     ModuleId.IDENTITY -> Icons.Outlined.Fingerprint
+    ModuleId.PHONE -> Icons.Outlined.Phone
     ModuleId.DOMAIN -> Icons.Outlined.Dns
     ModuleId.REGISTRY -> Icons.Outlined.Gavel
 }

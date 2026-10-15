@@ -34,6 +34,7 @@ internal fun readiness(keys: Map<ApiKeyId, String>) = mapOf(
         else -> Readiness("Ready · HIBP key set", true)
     },
     ModuleId.IDENTITY to Readiness("Ready · curated sites + email checks", true),
+    ModuleId.PHONE to Readiness("Ready · offline analysis + public spam reports", true),
     ModuleId.DOMAIN to Readiness("Ready · passive only", true),
     ModuleId.REGISTRY to Readiness("Ready · Idaho adult + juvenile, live ZIP lookup", true),
 )

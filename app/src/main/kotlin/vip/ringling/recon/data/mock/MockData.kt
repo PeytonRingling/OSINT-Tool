@@ -107,6 +107,7 @@ object MockData {
     fun forModule(module: ModuleId, input: ScanInput): List<Finding> = when (module) {
         ModuleId.BREACH -> breach(input)
         ModuleId.IDENTITY -> identity(input)
+        ModuleId.PHONE -> emptyList()
         ModuleId.DOMAIN -> domain(input)
         ModuleId.REGISTRY -> registry(input)
     }
@@ -132,7 +133,7 @@ object MockData {
 
     fun modulesFor(type: InputType): Set<ModuleId> = when (type) {
         InputType.EMAIL -> setOf(ModuleId.BREACH, ModuleId.IDENTITY)
-        InputType.PHONE -> setOf(ModuleId.BREACH, ModuleId.IDENTITY)
+        InputType.PHONE -> setOf(ModuleId.BREACH, ModuleId.PHONE)
         InputType.USERNAME -> setOf(ModuleId.BREACH, ModuleId.IDENTITY)
         InputType.DOMAIN -> setOf(ModuleId.DOMAIN)
         InputType.ZIP -> setOf(ModuleId.REGISTRY)

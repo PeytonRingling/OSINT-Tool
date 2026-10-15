@@ -43,6 +43,12 @@ class ScanController @Inject constructor(
     val enabled: StateFlow<Set<ModuleId>> = _enabled.asStateFlow()
     fun setEnabled(module: ModuleId, on: Boolean) = _enabled.update { if (on) it + module else it - module }
 
+    private val _pendingQuery = MutableStateFlow<String?>(null)
+    /** A search requested from elsewhere (e.g. a "Search next" pivot); Home consumes it and runs it. */
+    val pendingQuery: StateFlow<String?> = _pendingQuery.asStateFlow()
+    fun requestSearch(query: String) { _pendingQuery.value = query }
+    fun consumePending() { _pendingQuery.value = null }
+
     fun modulesFor(input: ScanInput) = runner.modulesFor(input.type)
     fun rescan() { _session.value?.input?.let { start(it) } }
 

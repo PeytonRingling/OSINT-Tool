@@ -27,12 +27,13 @@ import vip.ringling.recon.domain.ScanRecord
 class MainViewModel @Inject constructor(
     private val settingsRepo: SettingsRepository,
     settings: SettingsRepository,
-    controller: ScanController,
+    private val controller: ScanController,
     private val userLocation: UserLocation,
     private val updates: UpdateManager,
 ) : ViewModel() {
     val update: StateFlow<UpdateState> = updates.state
     fun checkForUpdateQuietly() = updates.checkQuietly()
+    fun requestSearch(query: String) = controller.requestSearch(query)
     fun setMapSatellite(on: Boolean) { viewModelScope.launch { settingsRepo.setMapSatellite(on) } }
     val me: StateFlow<GeoPoint?> = userLocation.location
     fun hasLocationPermission() = userLocation.hasPermission()

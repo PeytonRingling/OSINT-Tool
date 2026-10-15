@@ -11,6 +11,9 @@ data class Endpoints(
     val spotify: String = "https://spclient.wg.spotify.com",
     val gravatar: String = "https://gravatar.com",
     val github: String = "https://api.github.com",
+    val notes800: String = "https://800notes.com",
+    val veriphone: String = "https://api.veriphone.io/v2",
+    val twilio: String = "https://lookups.twilio.com/v2",
     val updateRepo: String = "testuser/OSINT-Tool",
     val idahoSor: String = "https://apps.isp.idaho.gov/sor_id",
 )

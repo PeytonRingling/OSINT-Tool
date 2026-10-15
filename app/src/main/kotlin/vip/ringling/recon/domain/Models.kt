@@ -25,12 +25,21 @@ enum class Confidence(val label: String) { LOW("Low"), MEDIUM("Medium"), HIGH("H
 enum class ModuleId(val label: String, val tagline: String) {
     BREACH("Breach check", "HIBP · LeakCheck"),
     IDENTITY("Identity", "Accounts across sites"),
+    PHONE("Phone intel", "Region · carrier · spam reports"),
     DOMAIN("Domain recon", "DNS · mail auth · RDAP"),
     REGISTRY("Offender registry", "Idaho · live lookup"),
 }
 
 @Serializable
 data class GeoPoint(val lat: Double, val lng: Double)
+
+/** An external page to open in the browser (a search, a profile, a reverse-image lookup). */
+@Serializable
+data class Link(val label: String, val url: String)
+
+/** A follow-up search the user can launch with one tap; [query] is typed into the search field and auto-detected. */
+@Serializable
+data class Pivot(val label: String, val query: String)
 
 /** One labelled line in a detail screen's fact table (e.g. "Breach date" → "Oct 4, 2013"). */
 @Serializable
@@ -54,6 +63,8 @@ data class Finding(
     /** Tags to draw in the warning colour. */
     val hotTags: Set<String> = emptySet(),
     val facts: List<Fact> = emptyList(),
+    val links: List<Link> = emptyList(),
+    val pivots: List<Pivot> = emptyList(),
 )
 
 data class ScanInput(val raw: String, val type: InputType)

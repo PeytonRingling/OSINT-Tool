@@ -65,6 +65,7 @@ data class ScanUiState(
 val defaultReadiness = mapOf(
     ModuleId.BREACH to Readiness("HIBP key missing · LeakCheck free tier", false),
     ModuleId.IDENTITY to Readiness("Ready · curated site list", true),
+    ModuleId.PHONE to Readiness("Ready · offline analysis + public spam reports", true),
     ModuleId.DOMAIN to Readiness("Ready · passive only", true),
     ModuleId.REGISTRY to Readiness("Ready · live ZIP lookup", true),
 )

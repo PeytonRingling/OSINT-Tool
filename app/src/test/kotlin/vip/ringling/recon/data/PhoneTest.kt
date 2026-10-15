@@ -1,0 +1,161 @@
+package vip.ringling.recon.data
+
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlin.test.assertTrue
+import kotlinx.coroutines.test.runTest
+import okhttp3.mockwebserver.MockResponse
+import vip.ringling.recon.data.net.Http
+import vip.ringling.recon.data.secret.InMemoryApiKeys
+import vip.ringling.recon.data.sources.phone.Notes800
+import vip.ringling.recon.data.sources.phone.PhoneAnalyzer
+import vip.ringling.recon.data.sources.phone.PhoneSource
+import vip.ringling.recon.domain.ApiKeyId
+import vip.ringling.recon.domain.InputType
+import vip.ringling.recon.domain.ScanInput
+import vip.ringling.recon.domain.Severity
+
+class PhoneAnalyzerTest {
+    private fun ok(raw: String, region: String = "US") = (PhoneAnalyzer.analyze(raw, region) as PhoneAnalyzer.Result.Ok).info
+
+    @Test fun usNumberIsAnalyzedOffline() {
+        val i = ok("+1 650 253 0000")
+        assertTrue(i.valid && i.nanp); assertEquals("+16502530000", i.e164); assertEquals("US", i.regionCode); assertEquals("United States", i.countryName)
+        assertEquals("(650) 253-0000", i.national); assertEquals("+1 650-253-0000", i.international)
+        assertTrue(i.lineType.startsWith("Landline or mobile"), i.lineType)
+        assertTrue(i.place.contains("Mountain View") || i.place.contains("CA"), "geocoder: '${i.place}'")
+        assertTrue(i.timeZones.any { it.startsWith("America/") }, i.timeZones.toString())
+        assertEquals("", i.carrier, "US numbers are portable: the numbering plan has no carrier")
+    }
+
+    @Test fun nationalFormatUsesTheDefaultRegion() {
+        assertEquals("+16502530000", ok("(650) 253-0000", "US").e164)
+        val uk = ok("07400 123456", "GB")
+        assertEquals("GB", uk.regionCode); assertEquals("Mobile", uk.lineType); assertEquals("+447400123456", uk.e164); assertEquals("United Kingdom", uk.countryName)
+    }
+
+    @Test fun nonUsNumbersGetCountryDetail() {
+        val uk = ok("+44 20 7946 0958")
+        assertEquals("GB", uk.regionCode); assertTrue(uk.valid); assertTrue(!uk.nanp)
+        assertTrue(uk.place.contains("London"), uk.place)
+    }
+
+    @Test fun invalidAndUnparseableNumbers() {
+        val bad = ok("+1 123 456 7890")
+        assertTrue(!bad.valid); assertEquals("", bad.place); assertEquals("", bad.carrier)
+        assertTrue(PhoneAnalyzer.analyze("abc", "US") is PhoneAnalyzer.Result.Unparseable)
+        assertTrue((PhoneAnalyzer.analyze("+999 123 4567", "US") as PhoneAnalyzer.Result.Unparseable).reason.contains("country code"))
+        assertTrue((PhoneAnalyzer.analyze("+1 2", "US") as? PhoneAnalyzer.Result.Unparseable) != null)
+    }
+}
+
+class Notes800Test {
+    @Test fun parsesReportsCallersDatesAndPageCount() {
+        val n = Notes800.parse(fixture("800notes_reports.html"))
+        assertEquals(19, n.pages); assertEquals(3, n.reports.size, "ad rows are skipped")
+        assertEquals(listOf("Bank Alert"), n.reports[0].callers); assertEquals("2024-03-02", n.reports[0].date)
+        assertTrue(n.reports[0].text.startsWith("Automated robocall"))
+        assertEquals(listOf("Warranty Dept"), n.reports[2].callers, "only 'Caller:' lines count as callers")
+    }
+
+    @Test fun noCommentsMeansNoReports() {
+        val n = Notes800.parse(fixture("800notes_none.html")); assertEquals(0, n.pages); assertTrue(n.reports.isEmpty())
+    }
+
+    @Test fun urlOnlyForNanpNumbers() {
+        assertEquals("https://800notes.com/Phone.aspx/1-208-555-0142", Notes800.urlFor("https://800notes.com", "+12085550142"))
+        assertNull(Notes800.urlFor("https://800notes.com", "+447400123456"))
+    }
+}
+
+class PhoneSourceTest {
+    private val phone = ScanInput("+16502530000", InputType.PHONE)
+    private fun source(srv: okhttp3.mockwebserver.MockWebServer, keys: Map<ApiKeyId, String> = emptyMap()) =
+        PhoneSource(Http(), srv.endpoints(), InMemoryApiKeys(keys)).also { it.defaultRegion = { "US" } }
+
+    @Test fun offlineAnalysisAndLinksWorkWithNoKeysAndNoNetwork() = runTest {
+        val (srv, _) = server("/notes/" to { MockResponse().setResponseCode(503) })
+        srv.use {
+            val f = source(srv).collect(phone)
+            val a = f.first { it.id == "PHONE-analysis" }
+            assertEquals("(650) 253-0000", a.title); assertTrue("Valid United States number" in a.detail, a.detail)
+            assertEquals("+16502530000", a.facts.first { it.label == "E.164" }.value)
+            val links = f.first { it.id == "PHONE-links" }.links
+            assertTrue(links.any { it.url.startsWith("https://www.google.com/search?q=") && "%22%28650%29+253-0000%22" in it.url })
+            assertTrue(links.any { it.url == "https://wa.me/16502530000" } && links.any { it.url == "https://t.me/+16502530000" })
+            assertTrue(links.none { listOf("spokeo", "whitepages", "beenverified", "intelius", "radaris").any { b -> b in it.url } }, "no people-search brokers")
+            assertEquals("800notes unavailable", f.first { it.id == "PHONE-notes-error" }.title)
+        }
+    }
+
+    @Test fun spamReportsAreSummarizedAndFlagged() = runTest {
+        val (srv, router) = server("/notes/Phone.aspx/1-650-253-0000" to { MockResponse().setResponseCode(200).setBody(fixture("800notes_reports.html")) })
+        srv.use {
+            val n = source(srv).collect(phone).first { it.id == "PHONE-notes" }
+            assertEquals(Severity.EXPOSED, n.severity); assertEquals("363+ community reports", n.title)
+            assertTrue("Claimed callers: Bank Alert (2×)" in n.detail && "scam, spam or telemarketing" in n.detail && "unverified" in n.detail, n.detail)
+            assertTrue("Spam/scam reports" in n.tags && "Spam/scam reports" in n.hotTags)
+            assertEquals("2024-03-02 → 2024-03-09", n.facts.first { it.label == "Reports shown span" }.value)
+            assertTrue(router.seen.single().getHeader("User-Agent")!!.startsWith("Mozilla/5.0"))
+        }
+    }
+
+    @Test fun nobodyHasReportedItIsClean() = runTest {
+        val (srv, _) = server("/notes/" to { MockResponse().setResponseCode(200).setBody(fixture("800notes_none.html")) })
+        srv.use { assertEquals(Severity.CLEAN, source(srv).collect(phone).first { it.id == "PHONE-notes" }.severity) }
+    }
+
+    @Test fun veriphoneFlagsVoip() = runTest {
+        val (srv, router) = server(
+            "/notes/" to { MockResponse().setResponseCode(404) },
+            "/veriphone/verify" to { json("""{"status":"success","phone_valid":true,"phone_type":"voip","carrier":"Bandwidth","phone_region":"California","country":"United States","local_number":"(650) 253-0000"}""") },
+        )
+        srv.use {
+            val v = source(srv, mapOf(ApiKeyId.VERIPHONE to "vk")).collect(phone).first { it.id == "PHONE-veriphone" }
+            assertEquals(Severity.EXPOSED, v.severity); assertTrue("VoIP" in v.tags && "Bandwidth" in v.title)
+            assertEquals("Bandwidth", v.facts.first { it.label == "Current carrier" }.value)
+            assertTrue(router.seen.any { "key=vk" in it.path!! && "phone=%2B16502530000" in it.path!! })
+        }
+    }
+
+    @Test fun twilioReturnsTheRegisteredNameWithBasicAuth() = runTest {
+        val (srv, router) = server(
+            "/notes/" to { MockResponse().setResponseCode(404) },
+            "/twilio/PhoneNumbers/" to { json("""{"phone_number":"+16502530000","valid":true,"caller_name":{"caller_name":"ACME CORP","caller_type":"BUSINESS","error_code":null},"line_type_intelligence":{"type":"landline","carrier_name":"Example Telecom"}}""") },
+        )
+        srv.use {
+            val t = source(srv, mapOf(ApiKeyId.TWILIO_SID to "ACxxxx", ApiKeyId.TWILIO_TOKEN to "tok")).collect(phone).first { it.id == "PHONE-twilio" }
+            assertEquals("ACME CORP", t.title)
+            assertTrue("Caller-ID name registered for this number: ACME CORP (business)" in t.detail && "Current carrier: Example Telecom" in t.detail, t.detail)
+            val req = router.seen.first { it.path!!.startsWith("/twilio/") }
+            assertEquals("Basic " + java.util.Base64.getEncoder().encodeToString("ACxxxx:tok".toByteArray()), req.getHeader("Authorization"))
+            assertTrue("Fields=caller_name,line_type_intelligence" in req.path!!)
+        }
+    }
+
+    @Test fun twilioNeedsBothCredentialsAndExplainsErrors() = runTest {
+        val (srv, router) = server("/notes/" to { MockResponse().setResponseCode(404) }, "/twilio/" to { MockResponse().setResponseCode(401) })
+        srv.use {
+            assertTrue(source(srv, mapOf(ApiKeyId.TWILIO_SID to "AC")).collect(phone).none { it.id.startsWith("PHONE-twilio") }, "half a credential does nothing")
+            assertTrue(router.seen.none { it.path!!.startsWith("/twilio") })
+            val err = source(srv, mapOf(ApiKeyId.TWILIO_SID to "AC", ApiKeyId.TWILIO_TOKEN to "bad")).collect(phone).first { it.id == "PHONE-twilio-error" }
+            assertTrue("rejected the Account SID" in err.detail, err.detail)
+        }
+    }
+
+    @Test fun unreadableNumbersAreReportedNotCrashed() = runTest {
+        val (srv, _) = server("/notes/" to { MockResponse().setResponseCode(404) })
+        srv.use {
+            val f = source(srv).collect(ScanInput("+999", InputType.PHONE))
+            assertEquals("Can't read this number", f.single().title)
+        }
+    }
+
+    @Test fun pivotRequestsAreHeldUntilConsumed() = runTest {
+        val controller = ScanController(vip.ringling.recon.domain.ScanRunner(emptySet()), InMemoryHistoryRepository())
+        assertNull(controller.pendingQuery.value)
+        controller.requestSearch("someone@example.com"); assertEquals("someone@example.com", controller.pendingQuery.value)
+        controller.consumePending(); assertNull(controller.pendingQuery.value)
+    }
+}

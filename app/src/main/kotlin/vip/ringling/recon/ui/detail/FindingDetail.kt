@@ -18,6 +18,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material3.FilledTonalButton
@@ -59,6 +61,7 @@ data class DetailActions(
     val onExport: (Finding) -> Unit = {},
     val onOpenUrl: (String) -> Unit = {},
     val onOpenMap: (vip.ringling.recon.domain.GeoPoint) -> Unit = {},
+    val onPivot: (String) -> Unit = {},
 )
 
 private fun Finding.weight() = when (severity) {
@@ -140,6 +143,8 @@ fun FindingDetail(
         item {
             DetailText(finding.detail, Modifier.padding(horizontal = 8.dp))
         }
+        if (finding.pivots.isNotEmpty()) item { PivotsCard(finding.pivots, actions.onPivot) }
+        if (finding.links.isNotEmpty()) item { LinksCard(finding.links, actions.onOpenUrl) }
         if (finding.facts.isNotEmpty()) item { FactsCard(finding.facts) }
         finding.geo?.let { g ->
             item {
@@ -238,6 +243,46 @@ private fun DetailText(detail: String, modifier: Modifier = Modifier) {
                 }
                 i == 0 -> Text(line, style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
                 else -> Text(line, style = MaterialTheme.typography.bodyLarge, color = cs.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+private fun PivotsCard(pivots: List<vip.ringling.recon.domain.Pivot>, onPivot: (String) -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("SEARCH NEXT", style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            pivots.forEach { p ->
+                androidx.compose.material3.AssistChip(
+                    onClick = { onPivot(p.query) }, label = { Text(p.label) },
+                    leadingIcon = { Icon(Icons.Rounded.Search, null, Modifier.size(18.dp)) },
+                    modifier = Modifier.heightIn(min = 48.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LinksCard(links: List<vip.ringling.recon.domain.Link>, onOpen: (String) -> Unit) {
+    val cs = MaterialTheme.colorScheme
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("OPEN IN BROWSER", style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
+        Surface(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, color = cs.surfaceContainer) {
+            Column {
+                links.forEachIndexed { i, l ->
+                    if (i > 0) androidx.compose.material3.HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = cs.outlineVariant.copy(alpha = 0.4f))
+                    Row(
+                        Modifier.fillMaxWidth().clickable(onClickLabel = "Open ${l.label}") { onOpen(l.url) }.heightIn(min = 52.dp).padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(l.label, Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, color = cs.onSurface)
+                        Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(18.dp), tint = cs.onSurfaceVariant)
+                    }
+                }
             }
         }
     }

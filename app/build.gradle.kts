@@ -99,6 +99,9 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.jsoup)
+    implementation(libs.libphonenumber)
+    implementation(libs.phone.geocoder)
+    implementation(libs.phone.carrier)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
 

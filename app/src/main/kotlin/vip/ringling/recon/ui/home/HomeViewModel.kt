@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import vip.ringling.recon.data.HistoryRepository
 import vip.ringling.recon.data.ScanController
 import vip.ringling.recon.domain.InputDetector
@@ -25,6 +26,18 @@ class HomeViewModel @Inject constructor(
     private val query = MutableStateFlow("")
     private val override = MutableStateFlow<InputType?>(null)
     private val registryAck = MutableStateFlow(false)
+
+    init {
+        viewModelScope.launch {
+            controller.pendingQuery.collect { q ->
+                if (q != null) {
+                    controller.consumePending()
+                    onQueryChange(q); override.value = null
+                    submit()
+                }
+            }
+        }
+    }
     private val selectedId = MutableStateFlow<String?>(null)
 
     val state: StateFlow<HomeUiState> = combine(
