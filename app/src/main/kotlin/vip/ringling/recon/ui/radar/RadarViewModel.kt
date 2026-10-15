@@ -83,6 +83,9 @@ class RadarViewModel @Inject constructor(
         if (t.recordId == null) { controller.start(t.input); _events.tryEmit(RadarEvent.OpenLive) } else _events.tryEmit(RadarEvent.OpenRecord(t.recordId))
     }
 
+    /** Re-runs a scan of [input] (used for ZIP targets, whose registry results are never stored). */
+    fun rerun(input: ScanInput) { controller.start(input); _events.tryEmit(RadarEvent.OpenLive) }
+
     fun analyzePhoto(uri: String) { controller.start(ScanInput(uri, InputType.IMAGE)); _events.tryEmit(RadarEvent.OpenLive) }
 
     fun toggle(m: ModuleId, on: Boolean) = controller.setEnabled(m, on)

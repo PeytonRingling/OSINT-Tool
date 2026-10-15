@@ -67,3 +67,23 @@ class RadarTest {
         assertEquals(null, ScanSnapshot.fromRecord(ScanRecord("z", ScanInput("83301", InputType.ZIP), 1, emptyList())).records, "older rows have no count")
     }
 }
+
+class LogMathTest {
+    private fun s(id: String, v: String, t: InputType, ts: Long, risk: Int, info: Int = 0) = ScanSnapshot(id, t, v, ts, risk, 0, info, emptyList())
+
+    @Test fun targetsGroupScansAndDeltaIsAgainstTheFirstScan() {
+        val snaps = listOf(s("1", "a@b.com", InputType.EMAIL, 10, 34), s("2", "a@b.com", InputType.EMAIL, 20, 100), s("3", "a@b.com", InputType.EMAIL, 30, 100), s("4", "9.9.9.9", InputType.IP, 25, 4))
+        val t = vip.ringling.recon.domain.LogMath.targets(snaps)
+        assertEquals(listOf("a@b.com", "9.9.9.9"), t.map { it.value }.let { listOf(it[0], it[1]) }, "newest-scanned target first")
+        val email = t.first { it.value == "a@b.com" }
+        assertEquals(listOf(34, 100, 100), email.risks); assertEquals(66, email.delta); assertEquals("▲ 66 · 100", vip.ringling.recon.domain.LogMath.deltaLabel(email))
+        assertEquals(null, t.first { it.value == "9.9.9.9" }.delta); assertEquals("4", vip.ringling.recon.domain.LogMath.deltaLabel(t.first { it.value == "9.9.9.9" }))
+        val better = vip.ringling.recon.domain.LogMath.targets(listOf(s("1", "x", InputType.USERNAME, 1, 60), s("2", "x", InputType.USERNAME, 2, 20)))[0]
+        assertEquals("▼ 40 · 20", vip.ringling.recon.domain.LogMath.deltaLabel(better))
+    }
+
+    @Test fun areasShowCountsNotRisk() {
+        val z = vip.ringling.recon.domain.LogMath.targets(listOf(s("1", "83338", InputType.ZIP, 1, 0, 68), s("2", "83338", InputType.ZIP, 2, 0, 70)))[0]
+        assertTrue(z.isArea); assertTrue(z.risks.isEmpty()); assertEquals(null, z.delta); assertEquals(70, z.latest.records)
+    }
+}

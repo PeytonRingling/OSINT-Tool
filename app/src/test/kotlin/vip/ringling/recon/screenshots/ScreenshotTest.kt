@@ -41,10 +41,12 @@ import vip.ringling.recon.domain.ModuleStatus
 import vip.ringling.recon.domain.ScanInput
 import vip.ringling.recon.domain.ScanSession
 import vip.ringling.recon.ui.AppShell
-import vip.ringling.recon.ui.HistoryPane
-import vip.ringling.recon.ui.HomePane
 import vip.ringling.recon.ui.ReconActions
 import vip.ringling.recon.ui.signal.Tab
+import vip.ringling.recon.ui.log.LogActions
+import vip.ringling.recon.ui.log.LogMode
+import vip.ringling.recon.ui.log.LogScreen
+import vip.ringling.recon.ui.log.LogUiState
 import vip.ringling.recon.ui.results.AreaScreen
 import vip.ringling.recon.ui.results.ExposureScreen
 import vip.ringling.recon.ui.results.FindingsList
@@ -52,12 +54,6 @@ import vip.ringling.recon.ui.results.ResultsActions
 import vip.ringling.recon.ui.results.ResultsUiState
 import vip.ringling.recon.ui.detail.DetailActions
 import vip.ringling.recon.ui.detail.FindingDetail
-import vip.ringling.recon.ui.history.HistoryScreen
-import vip.ringling.recon.ui.history.HistoryUiState
-import vip.ringling.recon.ui.home.HomeActions
-import vip.ringling.recon.ui.home.HomeUiState
-import vip.ringling.recon.ui.scan.ScanScreen
-import vip.ringling.recon.ui.scan.ScanUiState
 import vip.ringling.recon.domain.ApiKeyId
 import vip.ringling.recon.ui.settings.SettingsActions
 import vip.ringling.recon.ui.settings.SettingsScreen
@@ -141,9 +137,6 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
         rule.onRoot().captureRoboImage("../docs/screenshots/${device.dir}-${if (dark) "dark" else "light"}/$name.png")
     }
 
-    private fun home(state: HomeUiState, selected: vip.ringling.recon.domain.Finding? = null): @Composable (Boolean, PaddingValues) -> Unit =
-        { expanded, pad -> HomePane(state, HomeActions(), selected, noActions, expanded, pad) }
-
     private val radarTargets = listOf(
         vip.ringling.recon.domain.RadarTarget(ScanInput("test.user@example.com", InputType.EMAIL), 100, null, NOW - 7 * 60_000, 4, "a"),
         vip.ringling.recon.domain.RadarTarget(ScanInput("5555550123", InputType.PHONE), 12, null, NOW - 9 * 60_000, 2, "b"),
@@ -212,64 +205,28 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
         FindingDetail(zipDone.findings.first { it.id == "REGISTRY-ID-0" }, DetailActions(), onBack = {}, contentPadding = pad)
     }
 
-    @Test fun detail() = shot("07_detail", tab = if (device.expanded) Tab.HOME else null) { expanded, pad ->
-        if (expanded) {
-            HomePane(HomeUiState(query = email.raw, detected = InputType.EMAIL, session = streaming, selectedId = adobe.id), HomeActions(), adobe, noActions, true, pad)
-        } else {
-            FindingDetail(adobe, DetailActions(), onBack = {}, contentPadding = pad)
-        }
+    @Test fun detail() = shot("07_detail", tab = null) { _, pad ->
+        FindingDetail(adobe, DetailActions(), onBack = {}, contentPadding = pad)
     }
 
-    @Test fun breach_two_line_titles() = shot("05b_breach_two_line_titles") { _, pad ->
-        val samples = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
-            .decodeFromString<List<vip.ringling.recon.data.sources.breach.HibpBreach>>(vip.ringling.recon.data.fixture("hibp_samples.json"))
-        val findings = listOf("Suno", "Estonia", "Cocospy", "Adobe").map { n -> vip.ringling.recon.data.sources.breach.HibpMapper.breachFinding(samples.first { it.name == n }) }
-        androidx.compose.foundation.layout.Column(Modifier.padding(pad).padding(16.dp)) {
-            vip.ringling.recon.ui.components.ModuleCard(ModuleId.BREACH, ModuleStatus.DONE, findings, null, null, {})
-        }
+    private fun snap(id: String, input: ScanInput, ago: Long, risk: Int, exposed: Int = 0, info: Int = 0) =
+        vip.ringling.recon.domain.ScanSnapshot(id, input.type, input.raw, NOW - ago, risk, exposed, info, emptyList())
+
+    private val logSnapshots = listOf(
+        snap("e1", email, 12 * 3_600_000, 34, 3, 5), snap("e2", email, 11 * 3_600_000, 100, 12, 10), snap("e3", email, 3 * 3_600_000, 100, 12, 10), snap("e4", email, 7 * 60_000, 100, 12, 10),
+        snap("p1", ScanInput("5555550123", InputType.PHONE), 9 * 60_000, 12, 0, 3), snap("p0", ScanInput("5555550123", InputType.PHONE), 20 * 3_600_000, 8, 0, 2),
+        snap("z1", zip, 11 * 60_000, 0, 0, 68), snap("z2", zip, 9 * 3_600_000, 0, 0, 68), snap("z3", zip, 30 * 3_600_000, 0, 0, 66),
+        snap("z4", ScanInput("83301", InputType.ZIP), 11 * 3_600_000, 0, 0, 0),
+        snap("c1", ScanInput("test.user2@example.com", InputType.EMAIL), 11 * 3_600_000, 0),
+        snap("u1", ScanInput("testuser", InputType.USERNAME), 12 * 3_600_000, 10, 1, 4),
+    )
+
+    @Test fun log_by_target() = shot("09_log", tab = Tab.HISTORY) { _, pad ->
+        LogScreen(LogUiState(vip.ringling.recon.domain.LogMath.targets(logSnapshots), logSnapshots.sortedByDescending { it.ts }, LogMode.BY_TARGET, NOW), LogActions(), contentPadding = pad)
     }
 
-    @Test fun registry_notice_expanded() = shot("06e_registry_notice_expanded") { _, pad ->
-        androidx.compose.foundation.layout.Column(Modifier.padding(pad).padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
-            androidx.compose.material3.Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer) {
-                androidx.compose.foundation.layout.Column {
-                    vip.ringling.recon.ui.components.LegalNoticeBanner(initiallyExpanded = true)
-                    vip.ringling.recon.ui.components.RegistrySummaryRow(zipDone.findings.first { it.id == "REGISTRY-summary" }, initiallyExpanded = true)
-                }
-            }
-            androidx.compose.material3.Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer) {
-                androidx.compose.foundation.layout.Column {
-                    vip.ringling.recon.ui.components.LegalNoticeBanner()
-                    vip.ringling.recon.ui.components.RegistrySummaryRow(zipDone.findings.first { it.id == "REGISTRY-summary" })
-                }
-            }
-        }
-    }
-
-    @Test fun paid_lookup_confirmation() = shot("07c_paid_lookup_confirmation", tab = null) { _, pad ->
-        val offer = vip.ringling.recon.data.sources.phone.PhoneSource(vip.ringling.recon.data.net.Http(), vip.ringling.recon.data.net.Endpoints(), vip.ringling.recon.data.secret.InMemoryApiKeys()).twilioOffer()
-        androidx.compose.foundation.layout.Column(Modifier.padding(pad).padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
-            vip.ringling.recon.ui.detail.PaidActionCard(offer.paid!!, onConfirmed = {})
-            androidx.compose.material3.Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                androidx.compose.foundation.layout.Column(Modifier.padding(24.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
-                    androidx.compose.material3.Text("Run a paid lookup?", style = MaterialTheme.typography.headlineSmall)
-                    vip.ringling.recon.ui.detail.PaidConfirmBody(offer.paid!!)
-                    androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.align(androidx.compose.ui.Alignment.End)) {
-                        androidx.compose.material3.TextButton(onClick = {}) { androidx.compose.material3.Text("Cancel") }
-                        androidx.compose.material3.TextButton(onClick = {}) { androidx.compose.material3.Text("Confirm and pay") }
-                    }
-                }
-            }
-        }
-    }
-
-    @Test fun history() = shot("09_history", tab = Tab.HISTORY) { expanded, pad ->
-        val st = HistoryUiState(history, selectedId = if (expanded) "h1" else null, now = NOW)
-        if (expanded) {
-            HistoryPane(st, history.first(), null, noActions, pad, {}, {}, {}, {})
-        } else {
-            HistoryScreen(st, {}, {}, {}, contentPadding = pad)
-        }
+    @Test fun log_timeline() = shot("09b_log_timeline", tab = Tab.HISTORY) { _, pad ->
+        LogScreen(LogUiState(vip.ringling.recon.domain.LogMath.targets(logSnapshots), logSnapshots.sortedByDescending { it.ts }, LogMode.TIMELINE, NOW), LogActions(), contentPadding = pad)
     }
 
     @Test fun settings_update_available() = shot("10b_settings_update_available", tab = Tab.SETTINGS) { _, pad ->

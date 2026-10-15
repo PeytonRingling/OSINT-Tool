@@ -69,16 +69,6 @@ import vip.ringling.recon.ui.detail.FindingDetail
 import vip.ringling.recon.data.update.UpdateState
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.ScanRecord
-import vip.ringling.recon.ui.history.HistoryScreen
-import vip.ringling.recon.ui.history.HistoryUiState
-import vip.ringling.recon.ui.history.HistoryViewModel
-import vip.ringling.recon.ui.home.HomeActions
-import vip.ringling.recon.ui.home.HomeScreen
-import vip.ringling.recon.ui.home.HomeUiState
-import vip.ringling.recon.ui.home.HomeViewModel
-import vip.ringling.recon.ui.home.scanResults
-import vip.ringling.recon.ui.scan.ScanScreen
-import vip.ringling.recon.ui.scan.ScanViewModel
 import vip.ringling.recon.ui.settings.SettingsActions
 import vip.ringling.recon.ui.settings.SettingsScreen
 import vip.ringling.recon.ui.settings.SettingsViewModel
@@ -125,6 +115,14 @@ fun ReconApp() {
     var showLoadout by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     val radarVm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
     val radarState by radarVm.state.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) {
+        radarVm.events.collect { e ->
+            when (e) {
+                vip.ringling.recon.ui.radar.RadarEvent.OpenLive -> nav.navigate("results") { launchSingleTop = true }
+                is vip.ringling.recon.ui.radar.RadarEvent.OpenRecord -> nav.navigate("results/${e.id}")
+            }
+        }
+    }
     if (showLoadout) {
         vip.ringling.recon.ui.radar.LoadoutSheet(radarState.enabled, radarState.autoPick, radarVm::toggle, radarVm::setAuto, onDismiss = { showLoadout = false })
     }
@@ -148,9 +146,18 @@ fun ReconApp() {
                     composable("results") { ResultsEntry(nav, actions, pad) }
                     composable("results/{id}") { ResultsEntry(nav, actions, pad) }
                     composable(Tab.HISTORY.route) {
-                        CompositionLocalProvider(LocalSharedScopes provides if (expanded) null else SharedScopes(this@SharedTransitionLayout, this)) {
-                            HistoryRoute(nav, expanded, actions, pad)
-                        }
+                        val vm: vip.ringling.recon.ui.log.LogViewModel = hiltViewModel()
+                        val st by vm.state.collectAsStateWithLifecycle()
+                        vip.ringling.recon.ui.log.LogScreen(
+                            st,
+                            vip.ringling.recon.ui.log.LogActions(
+                                onMode = vm::setMode,
+                                onOpenTarget = { t -> if (t.isArea) radarVm.rerun(vip.ringling.recon.domain.ScanInput(t.value, t.type)) else nav.navigate("results/${t.latest.id}") },
+                                onOpenScan = { sn -> if (sn.isArea) radarVm.rerun(vip.ringling.recon.domain.ScanInput(sn.value, sn.type)) else nav.navigate("results/${sn.id}") },
+                                onDelete = { vm.deleteTarget(it) }, onClearAll = vm::clearAll,
+                            ),
+                            contentPadding = pad,
+                        )
                     }
                     composable(Tab.SETTINGS.route) {
                         val vm: SettingsViewModel = hiltViewModel()
@@ -255,14 +262,6 @@ private fun ResultsEntry(nav: NavHostController, actions: ReconActions, pad: Pad
 private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingValues, onLoadout: () -> Unit) {
     val vm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
     val st by vm.state.collectAsStateWithLifecycle()
-    LaunchedEffect(Unit) {
-        vm.events.collect { e ->
-            when (e) {
-                vip.ringling.recon.ui.radar.RadarEvent.OpenLive -> nav.navigate("results") { launchSingleTop = true }
-                is vip.ringling.recon.ui.radar.RadarEvent.OpenRecord -> nav.navigate("results/${e.id}")
-            }
-        }
-    }
     val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> uri?.let { vm.analyzePhoto(it.toString()) } }
     vip.ringling.recon.ui.radar.RadarScreen(
         st,
@@ -271,88 +270,6 @@ private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingVa
             onPhoto = { pickPhoto.launch("image/*") }, onNewCase = { nav.goTab(Tab.CASES) },
         ),
         contentPadding = pad, wide = expanded,
-    )
-}
-
-@Composable
-private fun HomeRoute(nav: NavHostController, expanded: Boolean, actions: ReconActions, pad: PaddingValues) {
-    val vm: HomeViewModel = hiltViewModel()
-    val main: MainViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
-    val st by vm.state.collectAsStateWithLifecycle()
-    val selected by vm.selectedFinding.collectAsStateWithLifecycle(null)
-    val permission = androidx.activity.compose.rememberLauncherForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
-    ) { main.refreshLocation() }
-    // Registry results on screen + permission already granted → quietly fetch a position for distances.
-    val hasRegistry = st.session?.findings?.any { it.geo != null } == true
-    androidx.compose.runtime.LaunchedEffect(hasRegistry) { if (hasRegistry && main.hasLocationPermission()) main.refreshLocation() }
-    val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> uri?.let { vm.analyzePhoto(it.toString()) } }
-    val ha = HomeActions(
-        onPickPhoto = { pickPhoto.launch("image/*") }, onOpenCase = { nav.goTab(Tab.CASES) },
-        onQueryChange = vm::onQueryChange, onOverride = vm::onOverride, onSubmit = vm::submit, onStop = vm::stop,
-        onFindingClick = { f -> if (expanded) vm.select(f.id) else nav.navigate("finding/${f.id}") },
-        onAckRegistry = vm::ackRegistry, onRecent = vm::reuse,
-        onRequestLocation = {
-            if (main.hasLocationPermission()) main.refreshLocation()
-            else permission.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION))
-        },
-        onExportAll = { st.session?.let { actions.exportScan(it.input, it.findings) } },
-    )
-    HomePane(st, ha, selected, actions, expanded, pad)
-}
-
-@Composable
-fun HomePane(st: HomeUiState, ha: HomeActions, selected: Finding?, actions: ReconActions, expanded: Boolean, pad: PaddingValues) {
-    if (!expanded) {
-        HomeScreen(st, ha, contentPadding = pad)
-    } else {
-        ListDetail(
-            list = { HomeScreen(st, ha, contentPadding = pad) },
-            detail = {
-                AnimatedContent(selected, transitionSpec = paneTransition(), label = "pane") { f ->
-                    if (f == null) EmptyDetailPane() else FindingDetail(f, actions.detail, contentPadding = pad)
-                }
-            },
-        )
-    }
-}
-
-@Composable
-private fun HistoryRoute(nav: NavHostController, expanded: Boolean, actions: ReconActions, pad: PaddingValues) {
-    val vm: HistoryViewModel = hiltViewModel()
-    val st by vm.state.collectAsStateWithLifecycle()
-    val rec by vm.selectedRecord.collectAsStateWithLifecycle(null)
-    var findingId by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf<String?>(null) }
-    if (!expanded) {
-        HistoryScreen(st, { nav.navigate("results/${it.id}") }, vm::delete, vm::clearAll, contentPadding = pad)
-    } else {
-        HistoryPane(
-            st, rec, findingId, actions, pad,
-            onOpen = { findingId = null; vm.open(it) }, onDelete = vm::delete, onClearAll = vm::clearAll,
-            onFinding = { findingId = it },
-        )
-    }
-}
-
-@Composable
-fun HistoryPane(
-    st: HistoryUiState, rec: ScanRecord?, findingId: String?, actions: ReconActions, pad: PaddingValues,
-    onOpen: (ScanRecord) -> Unit, onDelete: (ScanRecord) -> Unit, onClearAll: () -> Unit, onFinding: (String?) -> Unit,
-) {
-    ListDetail(
-        list = { HistoryScreen(st, onOpen, onDelete, onClearAll, contentPadding = pad) },
-        detail = {
-            AnimatedContent(rec to findingId, transitionSpec = paneTransition(), label = "pane") { (r, fid) ->
-                val f = r?.findings?.firstOrNull { it.id == fid }
-                when {
-                    r == null -> EmptyDetailPane()
-                    f != null -> FindingDetail(f, actions.detail, onBack = { onFinding(null) }, contentPadding = pad)
-                    else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = pad.listInsets(), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
-                        scanResults(r.input, r.findings, recordStatuses(r), emptyMap(), null, true, {}, { onFinding(it.id) }, { actions.exportScan(r.input, r.findings) })
-                    }
-                }
-            }
-        },
     )
 }
 
