@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.ModuleStatus
+import vip.ringling.recon.domain.Severity
 
 import vip.ringling.recon.ui.theme.ReconMotion
 
@@ -53,6 +54,7 @@ fun ModuleCard(
     onFindingClick: (Finding) -> Unit,
     modifier: Modifier = Modifier,
     gate: (@Composable () -> Unit)? = null,
+    extra: (@Composable () -> Unit)? = null,
 ) {
     val cs = MaterialTheme.colorScheme
     Surface(
@@ -92,6 +94,7 @@ fun ModuleCard(
             if (gate != null) {
                 gate()
             } else {
+                extra?.invoke()
                 findings.forEachIndexed { i, f ->
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = cs.outlineVariant.copy(alpha = 0.5f))
                     FindingRow(f, selected = f.id == selectedId, onClick = { onFindingClick(f) })
@@ -118,6 +121,8 @@ fun FindingRow(finding: Finding, selected: Boolean, onClick: () -> Unit, modifie
     val cs = MaterialTheme.colorScheme
     val appear = remember { Animatable(0f) }
     LaunchedEffect(Unit) { appear.animateTo(1f, ReconMotion.spatial()) }
+    val distance = distanceLabel(finding)
+    val hasPortrait = finding.module == ModuleId.REGISTRY
     Row(
         modifier
             .graphicsLayer { alpha = appear.value.coerceIn(0f, 1f); translationY = (1f - appear.value) * 24f }
@@ -130,13 +135,23 @@ fun FindingRow(finding: Finding, selected: Boolean, onClick: () -> Unit, modifie
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Box(Modifier.size(10.dp).clip(CircleShape).background(severityColor(finding.severity)))
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(finding.title, style = MaterialTheme.typography.titleMedium, color = cs.onSurface, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text(finding.detail, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            finding.confidence?.let { ConfidenceMeter(it, Modifier.padding(top = 4.dp)) }
+        if (hasPortrait) {
+            RemoteImage(finding.imageUrl, "Photo of ${finding.title}", Modifier.size(56.dp).clip(MaterialTheme.shapes.small))
+        } else {
+            Box(Modifier.size(10.dp).clip(CircleShape).background(severityColor(finding.severity)))
         }
-        SeverityChip(finding.severity)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(finding.title, style = MaterialTheme.typography.titleMedium, color = cs.onSurface, maxLines = if (hasPortrait) 2 else 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(finding.detail, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            if (finding.tags.isNotEmpty()) {
+                Text(finding.tags.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = if (finding.severity == Severity.EXPOSED) severityColor(Severity.EXPOSED) else cs.onSurfaceVariant)
+            }
+            finding.confidence?.takeIf { !hasPortrait }?.let { ConfidenceMeter(it, Modifier.padding(top = 4.dp)) }
+        }
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            SeverityChip(finding.severity)
+            if (distance != null) Text(distance, style = MaterialTheme.typography.titleSmall, color = cs.primary)
+        }
         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = cs.onSurfaceVariant)
     }
 }

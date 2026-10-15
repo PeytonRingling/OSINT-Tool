@@ -25,7 +25,11 @@ import org.robolectric.annotation.GraphicsMode
 import vip.ringling.recon.data.mock.MockData
 import vip.ringling.recon.data.settings.AppSettings
 import vip.ringling.recon.data.settings.ThemeMode
+import androidx.compose.runtime.CompositionLocalProvider
+import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.domain.InputType
+import vip.ringling.recon.ui.components.LocalImagesEnabled
+import vip.ringling.recon.ui.components.LocalUserLocation
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.ModuleStatus
 import vip.ringling.recon.domain.ScanInput
@@ -105,9 +109,10 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
         RuntimeEnvironment.setQualifiers(device.qualifiers)
     }
 
-    private fun shot(name: String, tab: Tab? = Tab.HOME, content: @Composable (expanded: Boolean, pad: PaddingValues) -> Unit) {
+    private fun shot(name: String, tab: Tab? = Tab.HOME, me: GeoPoint? = null, content: @Composable (expanded: Boolean, pad: PaddingValues) -> Unit) {
         rule.setContent {
             ReconTheme(if (dark) ThemeMode.DARK else ThemeMode.LIGHT, dynamicColor = false) {
+              CompositionLocalProvider(LocalImagesEnabled provides false, LocalUserLocation provides me) {
                 Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                     BoxWithConstraints(Modifier.fillMaxSize()) {
                         val expanded = maxWidth >= 840.dp
@@ -117,6 +122,7 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
                         }
                     }
                 }
+              }
             }
         }
         rule.mainClock.autoAdvance = false
@@ -156,6 +162,23 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
         "06_home_registry_legal_notice",
         content = home(HomeUiState(query = zip.raw, detected = InputType.ZIP, session = zipDone, registryAck = false)),
     )
+
+    @Test fun home_registry_results() = shot(
+        "06b_home_registry_results_map_distance", me = GeoPoint(43.6125, -116.2105),
+        content = home(
+            HomeUiState(query = zip.raw, detected = InputType.ZIP, session = zipDone, registryAck = true, selectedId = "REGISTRY-ID-0"),
+            selected = zipDone.findings.first { it.id == "REGISTRY-ID-0" },
+        ),
+    )
+
+    @Test fun home_registry_results_no_location() = shot(
+        "06c_home_registry_results_no_location",
+        content = home(HomeUiState(query = zip.raw, detected = InputType.ZIP, session = zipDone, registryAck = true)),
+    )
+
+    @Test fun detail_registry() = shot("07b_detail_registry", tab = null, me = GeoPoint(43.6125, -116.2105)) { _, pad ->
+        FindingDetail(zipDone.findings.first { it.id == "REGISTRY-ID-0" }, DetailActions(), onBack = {}, contentPadding = pad)
+    }
 
     @Test fun detail() = shot("07_detail", tab = if (device.expanded) Tab.HOME else null) { expanded, pad ->
         if (expanded) {

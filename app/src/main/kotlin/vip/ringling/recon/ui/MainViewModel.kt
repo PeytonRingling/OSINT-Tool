@@ -12,7 +12,10 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import vip.ringling.recon.data.HistoryRepository
+import kotlinx.coroutines.launch
 import vip.ringling.recon.data.ScanController
+import vip.ringling.recon.data.location.UserLocation
+import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.data.settings.AppSettings
 import vip.ringling.recon.data.settings.SettingsRepository
 import vip.ringling.recon.domain.Finding
@@ -22,7 +25,12 @@ import vip.ringling.recon.domain.ScanRecord
 class MainViewModel @Inject constructor(
     settings: SettingsRepository,
     controller: ScanController,
+    private val userLocation: UserLocation,
 ) : ViewModel() {
+    val me: StateFlow<GeoPoint?> = userLocation.location
+    fun hasLocationPermission() = userLocation.hasPermission()
+    fun refreshLocation() { viewModelScope.launch { userLocation.refresh() } }
+
     val settings: StateFlow<AppSettings> = settings.settings
         .stateIn(viewModelScope, SharingStarted.Eagerly, AppSettings())
     val scanCompleted: SharedFlow<Unit> = controller.completed

@@ -2,6 +2,7 @@ package vip.ringling.recon.data.mock
 
 import vip.ringling.recon.domain.Confidence
 import vip.ringling.recon.domain.Finding
+import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.ScanInput
@@ -69,12 +70,29 @@ object MockData {
         f("rdap", ModuleId.DOMAIN, "RDAP", "Registrar: Cloudflare, Inc. · created 2019-03-11 · expires 2027-03-11 · privacy-redacted.", Severity.CLEAN, "https://rdap.org/domain/${input.raw}"),
     )
 
-    /** Fictional placeholder records; real registry data is only ever fetched live. */
-    fun registry(input: ScanInput): List<Finding> = listOf(
-        f("r1", ModuleId.REGISTRY, "SAMPLE, RECORD A", "Boise · ZIP ${input.raw} · Tier II · Offense: lewd conduct with a minor under 16 (sample).", Severity.INFO, "https://apps.isp.idaho.gov/sor_id/", conf = Confidence.HIGH),
-        f("r2", ModuleId.REGISTRY, "SAMPLE, RECORD B", "Boise · ZIP ${input.raw} · Tier I · Offense: failure to register (sample).", Severity.INFO, "https://apps.isp.idaho.gov/sor_id/", conf = Confidence.HIGH),
-        f("r3", ModuleId.REGISTRY, "2 records near ZIP ${input.raw}", "Results are a live per-query lookup and are not stored.", Severity.INFO),
-    )
+    /** Fictional placeholder records (no real people); real registry data is only ever fetched live. */
+    fun registry(input: ScanInput): List<Finding> {
+        fun r(i: Int, name: String, addr: String, status: String, offenses: List<String>, tags: List<String>, sev: Severity, lat: Double, lng: Double, note: String? = null) =
+            Finding(
+                id = "REGISTRY-ID-$i", module = ModuleId.REGISTRY, title = name,
+                detail = buildList {
+                    add("$addr, BOISE, ADA County, ${input.raw}")
+                    add("Status: $status · Last registered: Mar 15, 2026")
+                    add("Offenses (${offenses.size}):")
+                    offenses.forEach { add("• $it") }
+                    note?.let { add(it) }
+                }.joinToString("\n"),
+                severity = sev, url = "https://apps.isp.idaho.gov/sor_id/", raw = "", confidence = Confidence.HIGH,
+                geo = GeoPoint(lat, lng), tags = tags,
+            )
+        return listOf(
+            Finding("REGISTRY-summary", ModuleId.REGISTRY, "4 matches in ${input.raw}", "Matches are by location only. The registry warns that records may not relate to the person you have in mind; verify before relying on any of this.", Severity.INFO, "https://apps.isp.idaho.gov/sor_id/search_zip.html"),
+            r(0, "SAMPLE, RECORD A", "100 FICTION AVE", "Compliant", listOf("18-0000 – FICTIONAL OFFENSE ONE – Jun 01, 2010 – ADA CO", "18-0001 – FICTIONAL OFFENSE TWO – Aug 12, 2014 – ADA CO"), listOf("Adult registry", "Multiple convictions"), Severity.EXPOSED, 43.6150, -116.2020, "Convictions on 2 separate dates. The registry does not state whether this is a repeat offence; this is inferred from the dates."),
+            r(1, "EXAMPLE, RECORD B", "200 PLACEHOLDER ST", "Non Comp", listOf("18-0002 – FICTIONAL OFFENSE THREE – Feb 03, 2009 – ADA CO"), listOf("Adult registry", "Non-compliant"), Severity.EXPOSED, 43.6090, -116.2200),
+            r(2, "PLACEHOLDER, RECORD C", "300 SAMPLE BLVD", "Compliant", listOf("18-0003 – FICTIONAL OFFENSE FOUR – Nov 20, 2016 – ADA CO"), listOf("Adult registry"), Severity.INFO, 43.6260, -116.1900),
+            r(3, "FICTIONAL, RECORD D", "400 EXAMPLE CT", "Compliant", listOf("18-0004 – FICTIONAL OFFENSE FIVE – May 09, 2018 – ADA CO"), listOf("Juvenile registry"), Severity.INFO, 43.5900, -116.2500),
+        )
+    }
 
     fun forModule(module: ModuleId, input: ScanInput): List<Finding> = when (module) {
         ModuleId.BREACH -> breach(input)

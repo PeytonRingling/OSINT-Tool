@@ -54,6 +54,10 @@ fun rememberReconActions(snackbar: SnackbarHostState): ReconActions {
                     context.startActivity(Intent.createChooser(send, "Share finding").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 },
                 onExport = { f -> export("recon-${f.module.name.lowercase()}-${f.id.takeLast(12)}.json", Export.finding(f)) },
+                onOpenMap = { g ->
+                    // Coordinates only: nothing about who is at this address is passed to the maps app.
+                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, "geo:${g.lat},${g.lng}?q=${g.lat},${g.lng}".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                },
                 onOpenUrl = { url ->
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 },

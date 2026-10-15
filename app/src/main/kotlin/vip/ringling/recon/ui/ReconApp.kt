@@ -60,6 +60,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import vip.ringling.recon.domain.ModuleStatus
 import vip.ringling.recon.ui.components.LocalSharedScopes
+import vip.ringling.recon.ui.components.LocalUserLocation
 import vip.ringling.recon.ui.components.SharedScopes
 import vip.ringling.recon.ui.detail.EmptyDetailPane
 import vip.ringling.recon.ui.detail.FindingDetail
@@ -98,7 +99,10 @@ fun ReconRoot(vm: MainViewModel = hiltViewModel()) {
                 if (vm.settings.value.haptics) haptic.performHapticFeedback(HapticFeedbackType.Confirm)
             }
         }
-        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { ReconApp() }
+        val me by vm.me.collectAsStateWithLifecycle()
+        CompositionLocalProvider(LocalUserLocation provides me) {
+            Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { ReconApp() }
+        }
     }
 }
 
@@ -242,12 +246,23 @@ fun recordStatuses(r: vip.ringling.recon.domain.ScanRecord) =
 @Composable
 private fun HomeRoute(nav: NavHostController, expanded: Boolean, actions: ReconActions, pad: PaddingValues) {
     val vm: HomeViewModel = hiltViewModel()
+    val main: MainViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
     val st by vm.state.collectAsStateWithLifecycle()
     val selected by vm.selectedFinding.collectAsStateWithLifecycle(null)
+    val permission = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { main.refreshLocation() }
+    // Registry results on screen + permission already granted → quietly fetch a position for distances.
+    val hasRegistry = st.session?.findings?.any { it.geo != null } == true
+    androidx.compose.runtime.LaunchedEffect(hasRegistry) { if (hasRegistry && main.hasLocationPermission()) main.refreshLocation() }
     val ha = HomeActions(
         onQueryChange = vm::onQueryChange, onOverride = vm::onOverride, onSubmit = vm::submit, onStop = vm::stop,
         onFindingClick = { f -> if (expanded) vm.select(f.id) else nav.navigate("finding/${f.id}") },
         onAckRegistry = vm::ackRegistry, onRecent = vm::reuse,
+        onRequestLocation = {
+            if (main.hasLocationPermission()) main.refreshLocation()
+            else permission.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION))
+        },
         onExportAll = { st.session?.let { actions.exportScan(it.input, it.findings) } },
     )
     HomePane(st, ha, selected, actions, expanded, pad)

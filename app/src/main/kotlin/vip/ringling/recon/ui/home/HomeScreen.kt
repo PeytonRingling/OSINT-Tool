@@ -62,6 +62,7 @@ data class HomeActions(
     val onAckRegistry: () -> Unit = {},
     val onRecent: (ScanRecord) -> Unit = {},
     val onExportAll: () -> Unit = {},
+    val onRequestLocation: () -> Unit = {},
 )
 
 @Composable
@@ -119,6 +120,7 @@ fun HomeScreen(
                 onAckRegistry = actions.onAckRegistry,
                 onFindingClick = actions.onFindingClick,
                 onExportAll = actions.onExportAll,
+                onRequestLocation = actions.onRequestLocation,
             )
         }
     }

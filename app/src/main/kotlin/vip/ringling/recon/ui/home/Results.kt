@@ -3,6 +3,12 @@ package vip.ringling.recon.ui.home
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.rounded.MyLocation
+import androidx.compose.material3.FilledTonalButton
+import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -24,7 +30,13 @@ import vip.ringling.recon.domain.ModuleStatus
 import vip.ringling.recon.domain.RiskScore
 import vip.ringling.recon.domain.ScanInput
 import vip.ringling.recon.domain.Severity
+import vip.ringling.recon.domain.Geo
+import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.ui.components.LegalNotice
+import vip.ringling.recon.ui.components.LocalUserLocation
+import vip.ringling.recon.ui.components.distanceMeters
+import vip.ringling.recon.ui.map.MapPin
+import vip.ringling.recon.ui.map.TileMap
 import vip.ringling.recon.ui.components.ModuleCard
 import vip.ringling.recon.ui.components.RiskRing
 import vip.ringling.recon.ui.components.icon
@@ -40,6 +52,7 @@ fun LazyListScope.scanResults(
     onAckRegistry: () -> Unit,
     onFindingClick: (Finding) -> Unit,
     onExportAll: () -> Unit,
+    onRequestLocation: () -> Unit = {},
 ) {
     item(key = "summary") {
         // Registry results stay hidden (including in counts and the risk score) until the legal notice is accepted.
@@ -79,8 +92,12 @@ fun LazyListScope.scanResults(
     val order = statuses.keys.sortedBy { it.ordinal }
     order.forEach { module ->
         item(key = "module-$module") {
-            val mine = findings.filter { it.module == module }
+            val me = LocalUserLocation.current
             val gated = module == ModuleId.REGISTRY && !registryAck
+            // Registry results are listed nearest-first once the user has shared their position.
+            val mine = findings.filter { it.module == module }.let { l ->
+                if (module == ModuleId.REGISTRY && me != null) l.sortedBy { distanceMeters(me, it) ?: Double.MAX_VALUE } else l
+            }
             ModuleCard(
                 module = module,
                 status = statuses[module] ?: ModuleStatus.QUEUED,
@@ -90,7 +107,43 @@ fun LazyListScope.scanResults(
                 onFindingClick = onFindingClick,
                 modifier = Modifier.padding(horizontal = 16.dp),
                 gate = if (gated) ({ LegalNotice(onAckRegistry) }) else null,
+                extra = if (module == ModuleId.REGISTRY && mine.any { it.geo != null }) ({ RegistryMapPanel(mine, me, selectedId, onFindingClick, onRequestLocation) }) else null,
             )
+        }
+    }
+}
+
+/** Map of every located registrant plus the user, and the prompt to share location for distances. */
+@Composable
+private fun RegistryMapPanel(
+    findings: List<Finding>,
+    me: GeoPoint?,
+    selectedId: String?,
+    onFindingClick: (Finding) -> Unit,
+    onRequestLocation: () -> Unit,
+) {
+    val cs = MaterialTheme.colorScheme
+    val located = findings.filter { it.geo != null }
+    Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        TileMap(
+            pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title) },
+            me = me, selectedId = selectedId,
+            onPinClick = { pin -> located.firstOrNull { it.id == pin.id }?.let(onFindingClick) },
+            modifier = Modifier.fillMaxWidth().height(240.dp),
+        )
+        if (me == null) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    "Show how far each address is from you. Your location stays on this device.",
+                    Modifier.weight(1f), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
+                )
+                FilledTonalButton(onClick = onRequestLocation, modifier = Modifier.heightIn(min = 48.dp)) {
+                    Icon(Icons.Rounded.MyLocation, null, Modifier.size(18.dp)); Text("Use my location", Modifier.padding(start = 6.dp))
+                }
+            }
+        } else {
+            val nearest = located.mapNotNull { distanceMeters(me, it) }.minOrNull()
+            if (nearest != null) Text("Nearest: ${Geo.formatDistance(nearest)} away", style = MaterialTheme.typography.labelLarge, color = cs.primary)
         }
     }
 }

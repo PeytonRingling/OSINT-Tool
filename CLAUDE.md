@@ -66,6 +66,20 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
    county search + detail page, Jsoup). Live per-query only; **never bulk-cache or compile lists**
    (Idaho Code 74-120). Show the legal notice before results.
 
+## Registry detail (photos / map / distance) — added 2026-10-15
+- Per-entry data: thumbnail + full photo URLs (`/sorFiles/photos/...`), coordinates parsed from the registry's OWN map page
+  (`jsp/sor_map_display.jsp`, `google.maps.LatLng(lat, lng)`; no third-party geocoder ever sees an address), offense list, status,
+  last-registered. Tags: adult/juvenile database, "Non-compliant" (status NON COMP), "Multiple convictions" (≥2 distinct conviction
+  dates). The registry has NO recidivism field — "repeat offender" is only inferred from dates and the UI says so. NON COMP or multiple
+  convictions → severity EXPOSED.
+- `Finding` gained optional `geo`, `imageUrl`, `imageLargeUrl`, `tags` (generic, any module can use them).
+- Photos/tiles: Coil with memory cache only (`diskCache(null)` in `ReconApp`, plus per-request DISABLED). Map = own OSM raster-tile slippy map
+  (`ui/map/TileMap.kt`, math in `domain/Geo.kt`, attribution shown). Screenshot tests set `LocalImagesEnabled=false` so renders are offline.
+- Location (`data/location/UserLocation`): FINE/COARSE runtime permission, in-memory only, never persisted/logged/sent; used for distances,
+  nearest-first sorting and the "you" dot. Tile requests reveal the viewed AREA to OpenStreetMap (not identity).
+- Registry findings can't be exported (`Export.exportable`): no Export JSON button, excluded from export-all; still stripped from history.
+  Copy/Share of a single record remains.
+
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.
@@ -83,5 +97,5 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Registry findings are shown live only: `ScanController` strips them before saving history (tested). Never cache.
 - Failure policy: a failing sub-check becomes an INFO "… unavailable" finding (breach/domain); an inconclusive site probe
   is counted, never treated as "not found".
-- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 90 tests at last count.
+- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 109 tests at last count.
 - Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.

@@ -232,7 +232,8 @@ private fun LegalSection(state: SettingsUiState) {
             Text(
                 "Everything runs on this device — no backend, no telemetry. The offender registry module performs live lookups " +
                     "of your query only, reads just the first results page, and never stores or compiles registry data " +
-                    "(Idaho Code §74-120: no commercial use, no telephone or mailing lists).",
+                    "(Idaho Code §74-120: no commercial use, no telephone or mailing lists). Registry photos and map tiles are shown but never saved, " +
+                    "registry records can't be exported, and your location is used only on this device to show distances.",
                 style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
             )
         }

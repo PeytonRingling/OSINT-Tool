@@ -33,8 +33,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import vip.ringling.recon.domain.Export
 import vip.ringling.recon.domain.Finding
+import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.Severity
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.rounded.Map
+import androidx.compose.ui.layout.ContentScale
+import vip.ringling.recon.ui.components.LocalUserLocation
+import vip.ringling.recon.ui.components.RemoteImage
+import vip.ringling.recon.ui.components.distanceLabel
+import vip.ringling.recon.ui.map.MapPin
+import vip.ringling.recon.ui.map.TileMap
+import vip.ringling.recon.ui.theme.ReconTheme
 import vip.ringling.recon.ui.components.ConfidenceMeter
 import vip.ringling.recon.ui.components.RiskRing
 import vip.ringling.recon.ui.components.SeverityChip
@@ -46,6 +58,7 @@ data class DetailActions(
     val onShare: (Finding) -> Unit = {},
     val onExport: (Finding) -> Unit = {},
     val onOpenUrl: (String) -> Unit = {},
+    val onOpenMap: (vip.ringling.recon.domain.GeoPoint) -> Unit = {},
 )
 
 private fun Finding.weight() = when (severity) {
@@ -96,12 +109,46 @@ fun FindingDetail(
                         }
                         RiskRing(finding.weight(), size = 104.dp, stroke = 11.dp, caption = "WEIGHT")
                     }
-                    finding.confidence?.let { ConfidenceMeter(it) }
+                    finding.confidence?.takeIf { finding.imageLargeUrl == null && finding.module != ModuleId.REGISTRY }?.let { ConfidenceMeter(it) }
+                    if (finding.module == ModuleId.REGISTRY) {
+                        RemoteImage(
+                            finding.imageLargeUrl ?: finding.imageUrl, "Photo of ${finding.title}",
+                            Modifier.fillMaxWidth().height(if (finding.imageLargeUrl ?: finding.imageUrl != null) 260.dp else 72.dp).clip(MaterialTheme.shapes.medium), contentScale = ContentScale.Fit,
+                        )
+                    }
+                    if (finding.tags.isNotEmpty()) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            finding.tags.forEach { tag ->
+                                val hot = tag == "Non-compliant" || tag == "Multiple convictions"
+                                Text(
+                                    tag, style = MaterialTheme.typography.labelMedium,
+                                    color = if (hot) ReconTheme.severity.exposed else cs.onSurfaceVariant,
+                                    modifier = Modifier.clip(RoundedCornerShape(50))
+                                        .background(if (hot) ReconTheme.severity.exposedContainer else cs.surfaceContainerHighest)
+                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                )
+                            }
+                        }
+                    }
+                    distanceLabel(finding)?.let { Text("$it from you", style = MaterialTheme.typography.titleMedium, color = cs.primary) }
                 }
             }
         }
         item {
             Text(finding.detail, style = MaterialTheme.typography.bodyLarge, color = cs.onSurface, modifier = Modifier.padding(horizontal = 8.dp))
+        }
+        finding.geo?.let { g ->
+            item {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    TileMap(
+                        pins = listOf(MapPin(finding.id, g, finding.severity, finding.title)), me = LocalUserLocation.current,
+                        selectedId = finding.id, onPinClick = {}, modifier = Modifier.fillMaxWidth().height(220.dp),
+                    )
+                    OutlinedButton(onClick = { actions.onOpenMap(g) }, modifier = Modifier.heightIn(min = 48.dp)) {
+                        Icon(Icons.Rounded.Map, null, Modifier.size(18.dp)); Text("Open in Maps", Modifier.padding(start = 8.dp))
+                    }
+                }
+            }
         }
         finding.url?.let { url ->
             item {
@@ -119,7 +166,8 @@ fun FindingDetail(
                 FilledTonalButton(onClick = { actions.onShare(finding) }, Modifier.heightIn(min = 48.dp)) {
                     Icon(Icons.Rounded.Share, null, Modifier.size(18.dp)); Text("Share", Modifier.padding(start = 8.dp))
                 }
-                FilledTonalButton(onClick = { actions.onExport(finding) }, Modifier.heightIn(min = 48.dp)) {
+                // Registry records can't be exported: a saved file of registrants is a compiled list (Idaho Code §74-120).
+                if (Export.exportable(finding)) FilledTonalButton(onClick = { actions.onExport(finding) }, Modifier.heightIn(min = 48.dp)) {
                     Icon(Icons.Rounded.FileDownload, null, Modifier.size(18.dp)); Text("Export JSON", Modifier.padding(start = 8.dp))
                 }
             }
