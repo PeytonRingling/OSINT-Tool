@@ -36,6 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -134,7 +135,7 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
         androidx.compose.material3.ModalBottomSheet(onDismissRequest = { sheet = null }, containerColor = sig.panel) {
             Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 24.dp)) {
                 if (list.isEmpty()) { SignalLabel(title); Text(empty, color = sig.muted, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 12.dp)) }
-                else Box(Modifier.heightIn(max = 560.dp)) { androidx.compose.foundation.rememberScrollState().let { sc -> Column(Modifier.verticalScroll(sc)) { FindingGroup(title, "${list.size}", list) { f -> sheet = null; actions.onFinding(f) } } } }
+                else Box(Modifier.heightIn(max = 560.dp)) { androidx.compose.foundation.rememberScrollState().let { sc -> Column(Modifier.verticalScroll(sc)) { FindingGroup(title, "${list.size}", list, state.handled) { f -> sheet = null; actions.onFinding(f) } } } }
             }
         }
     }
@@ -154,6 +155,8 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
                     }
                     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(5.dp), modifier = Modifier.padding(bottom = 2.dp)) {
                         Stat(scored.size, "findings", sig.text); Stat(exposed, "exposed", sig.alertText); Stat(info, "info", sig.infoText)
+                        val handledN = scored.count { vip.ringling.recon.data.HandledRepository.keyOf(it) in state.handled }
+                        if (handledN > 0) Stat(handledN, "handled", sig.safeText)
                     }
                 }
             }
@@ -167,18 +170,18 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
             if (events.isNotEmpty()) item {
                 HairPanel(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 8.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { SignalLabel("Breach timeline"); SignalLabel("${events.size} events") }
-                        BreachTimeline(events, Modifier.fillMaxWidth().padding(top = 6.dp).height(46.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { SignalLabel("Breach timeline"); SignalLabel("${events.size} events · tap a dot") }
+                        BreachTimeline(events, Modifier.fillMaxWidth().padding(top = 6.dp).height(46.dp), onEvent = { e -> scored.firstOrNull { it.id == e.findingId }?.let(actions.onFinding) })
                     }
                 }
             }
             val breaches = scored.filter { it.module == ModuleId.BREACH }.sortedBy { if (it.severity == Severity.EXPOSED) 0 else 1 }
             if (breaches.isNotEmpty()) item(key = "breaches") {
-                FindingGroup("Breaches", "${breaches.size} · tap for details", breaches, actions.onFinding)
+                FindingGroup("Breaches", "${breaches.size} · tap for details", breaches, state.handled, actions.onFinding)
             }
             val others = scored.filter { it.module != ModuleId.BREACH }.sortedBy { if (it.severity == Severity.EXPOSED) 0 else 1 }
             if (others.isNotEmpty()) item(key = "others") {
-                FindingGroup("Other findings", "${others.size}", others, actions.onFinding)
+                FindingGroup("Other findings", "${others.size}", others, state.handled, actions.onFinding)
             }
             if (steps.isNotEmpty()) item {
                 HairPanel(Modifier.fillMaxWidth()) {
@@ -221,7 +224,7 @@ private fun Stat(n: Int, label: String, color: Color) {
 
 /** The full findings list (grouped by module, filterable). Tapping a row opens its detail. */
 @Composable
-fun FindingsList(state: ResultsUiState, actions: ResultsActions, modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues(), onBack: (() -> Unit)? = null, showHeader: Boolean = true) {
+fun FindingsList(state: ResultsUiState, actions: ResultsActions, modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues(), onBack: (() -> Unit)? = null, showHeader: Boolean = true, compact: Boolean = false) {
     val sig = ReconTheme.signal
     val shown = state.findings.filter { f ->
         when (state.filter) {
@@ -247,6 +250,7 @@ fun FindingsList(state: ResultsUiState, actions: ResultsActions, modifier: Modif
         state.statuses.keys.sortedBy { it.ordinal }.forEach { m ->
             val list = byModule[m].orEmpty()
             if (list.isEmpty() && state.filter != FindingFilter.ALL) return@forEach
+            if (compact) { if (list.isNotEmpty()) item(key = "m-$m") { FindingGroup(m.label, "${list.size}", list, state.handled, actions.onFinding) }; return@forEach }
             item(key = "m-$m") {
                 ModuleCard(m, state.statuses[m] ?: ModuleStatus.DONE, list, state.errors[m], state.selectedId, actions.onFinding)
             }
@@ -290,7 +294,7 @@ fun AreaScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modifie
             mapBox(Modifier.weight(1f).fillMaxSize())
             Column(Modifier.width(320.dp).fillMaxSize().background(sig.panel).border(1.dp, sig.hairline)) {
                 state.findings.firstOrNull { it.id == state.selectedId && it.isRegistryRecord }?.let { r ->
-                    SelectedFindingCard(r, state.selectedId in state.handled, actions.onOpenFinding, actions.onPin, "Open record", Modifier.padding(start = 12.dp, end = 12.dp, top = contentPadding.calculateTopPadding() + 8.dp), onHandled = null)
+                    SelectedFindingCard(r, vip.ringling.recon.data.HandledRepository.keyOf(r) in state.handled, actions.onOpenFinding, actions.onPin, "Open record", Modifier.padding(start = 12.dp, end = 12.dp, top = contentPadding.calculateTopPadding() + 8.dp), onHandled = null)
                 }
                 AreaSheetList(state, actions, records, me, Modifier.weight(1f), contentPadding)
             }
@@ -416,15 +420,16 @@ fun RegistryRow(f: Finding, me: GeoPoint?, selected: Boolean, onClick: () -> Uni
 
 /** Tappable list of findings on the exposure screen: logo, title, one summary line, the first data classes (risky ones red) and severity. */
 @Composable
-fun FindingGroup(title: String, trailing: String, items: List<Finding>, onOpen: (Finding) -> Unit) {
+fun FindingGroup(title: String, trailing: String, items: List<Finding>, handled: Set<String> = emptySet(), onOpen: (Finding) -> Unit) {
     val sig = ReconTheme.signal
     HairPanel(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(start = 14.dp, end = 6.dp, top = 12.dp, bottom = 4.dp)) {
             Row(Modifier.fillMaxWidth().padding(end = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) { SignalLabel(title); SignalLabel(trailing) }
             items.forEachIndexed { i, f ->
                 if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.07f)))
+                val done = vip.ringling.recon.data.HandledRepository.keyOf(f) in handled
                 Row(
-                    Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(onClickLabel = "Open details") { onOpen(f) }
+                    Modifier.fillMaxWidth().heightIn(min = 64.dp).alpha(if (done) 0.5f else 1f).clickable(onClickLabel = "Open details") { onOpen(f) }
                         .semantics { contentDescription = "${f.title}, ${f.severity.name.lowercase()}" }.padding(vertical = 10.dp),
                     verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
@@ -442,7 +447,7 @@ fun FindingGroup(title: String, trailing: String, items: List<Finding>, onOpen: 
                         }
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        StatusTag(if (f.severity == Severity.EXPOSED) "Exposed" else "Info", if (f.severity == Severity.EXPOSED) Tone.ALERT else Tone.INFO)
+                        if (done) StatusTag("Handled ✓", Tone.SAFE) else StatusTag(if (f.severity == Severity.EXPOSED) "Exposed" else "Info", if (f.severity == Severity.EXPOSED) Tone.ALERT else Tone.INFO)
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = sig.muted)
                     }
                 }

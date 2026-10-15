@@ -210,9 +210,10 @@ fun ReconApp() {
                     composable("finding/{id}") {
                         val vm: DetailViewModel = hiltViewModel()
                         val f by vm.finding.collectAsStateWithLifecycle()
+                        val handledSet by vm.handled.collectAsStateWithLifecycle()
                         CompositionLocalProvider(LocalSharedScopes provides SharedScopes(this@SharedTransitionLayout, this)) {
                             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                                f?.let { FindingDetail(it, actions.detail, onBack = { nav.popBackStack() }, contentPadding = pad) }
+                                f?.let { FindingDetail(it, actions.detail.copy(onHandled = vm::setHandled), onBack = { nav.popBackStack() }, contentPadding = pad, handled = vip.ringling.recon.data.HandledRepository.keyOf(it) in handledSet) }
                             }
                         }
                     }

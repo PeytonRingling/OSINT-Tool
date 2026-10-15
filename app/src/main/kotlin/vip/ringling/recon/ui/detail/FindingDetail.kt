@@ -65,6 +65,7 @@ data class DetailActions(
     val onOpenMap: (vip.ringling.recon.domain.GeoPoint) -> Unit = {},
     val onPivot: (String) -> Unit = {},
     val onRunPaid: (Finding) -> Unit = {},
+    val onHandled: (Finding, Boolean) -> Unit = { _, _ -> },
 )
 
 private fun Finding.weight() = when (severity) {
@@ -81,6 +82,7 @@ fun FindingDetail(
     modifier: Modifier = Modifier,
     onBack: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(),
+    handled: Boolean = false,
 ) {
     val cs = MaterialTheme.colorScheme
     val isBreach = finding.isBreachRecord()
@@ -178,6 +180,9 @@ fun FindingDetail(
         }
         item {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (!finding.neutral && finding.severity != Severity.CLEAN) FilledTonalButton(onClick = { actions.onHandled(finding, !handled) }, Modifier.heightIn(min = 48.dp)) {
+                    Text(if (handled) "Handled ✓ (undo)" else "Mark as handled")
+                }
                 FilledTonalButton(onClick = { actions.onCopy(finding) }, Modifier.heightIn(min = 48.dp)) {
                     Icon(Icons.Rounded.ContentCopy, null, Modifier.size(18.dp)); Text("Copy", Modifier.padding(start = 8.dp))
                 }

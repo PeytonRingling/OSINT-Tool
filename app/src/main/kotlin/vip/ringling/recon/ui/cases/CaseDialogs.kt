@@ -117,3 +117,15 @@ fun PinToCaseSheet(target: String, type: InputType, cases: List<CaseView>, onPic
         }
     }
 }
+
+/** Asks for POST_NOTIFICATIONS (Android 13+) once, so watchlist alerts can actually be shown. Returns the function to call when a watch is added. */
+@androidx.compose.runtime.Composable
+fun rememberNotificationRequest(): () -> Unit {
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {}
+    return {
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.POST_NOTIFICATIONS) != android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) launcher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+    }
+}

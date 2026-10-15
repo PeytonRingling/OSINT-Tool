@@ -8,7 +8,7 @@ data class OrbitNode(val module: ModuleId, val label: String, val count: Int, va
     val radius: Double get() = 9.0 + minOf(15.0, sqrt(count.toDouble()) * 3.3)
 }
 
-data class TimelineEvent(val year: Int, val month: Int, val severity: Severity, val title: String) {
+data class TimelineEvent(val year: Int, val month: Int, val severity: Severity, val title: String, val findingId: String = "") {
     val monthIndex: Int get() = year * 12 + (month - 1)
 }
 
@@ -44,7 +44,7 @@ object Exposure {
         val d = f.facts.firstOrNull { it.label == "Breach date" }?.value ?: return@mapNotNull null
         val m = Regex("""([A-Za-z]{3})[a-z]*\s+\d{1,2},\s*(\d{4})""").find(d) ?: return@mapNotNull null
         val mi = months.indexOf(m.groupValues[1].lowercase()).takeIf { it >= 0 } ?: return@mapNotNull null
-        TimelineEvent(m.groupValues[2].toInt(), mi + 1, f.severity, f.title)
+        TimelineEvent(m.groupValues[2].toInt(), mi + 1, f.severity, f.title, f.id)
     }.sortedBy { it.monthIndex }
 
     fun hasStealerLogs(findings: List<Finding>) = findings.any { f -> f.module == ModuleId.BREACH && f.facts.any { it.label == "Flags" && it.value.contains("stealer", ignoreCase = true) } }

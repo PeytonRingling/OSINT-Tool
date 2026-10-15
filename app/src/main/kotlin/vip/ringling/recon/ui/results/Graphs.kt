@@ -2,6 +2,8 @@ package vip.ringling.recon.ui.results
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.unit.dp
@@ -111,11 +113,21 @@ fun OrbitGraph(centerIcon: ImageVector, value: String, nodes: List<OrbitNode>, m
 
 /** Breach events as dots on a month axis: alert-coloured when exposed, info-coloured otherwise. */
 @Composable
-fun BreachTimeline(events: List<TimelineEvent>, modifier: Modifier = Modifier) {
+fun BreachTimeline(events: List<TimelineEvent>, modifier: Modifier = Modifier, onEvent: ((TimelineEvent) -> Unit)? = null) {
     val sig = ReconTheme.signal
     val measurer = rememberTextMeasurer()
     val desc = "Timeline of ${events.size} breaches: " + events.joinToString(", ") { "${monthName(it.month)} ${it.year}" }
-    Canvas(modifier.semantics { contentDescription = desc }) {
+    val tap = if (onEvent == null) Modifier else Modifier.pointerInput(events) {
+        detectTapGestures { pt ->
+            // Nearest dot within 28dp of the tap wins (dots can be a few dp apart).
+            val pad = 15.dp.toPx(); val axisY = size.height * 0.4f
+            val lo = events.minOf { it.monthIndex }; val hi = events.maxOf { it.monthIndex }
+            fun xOf(m: Int) = if (hi == lo) size.width / 2f else pad + (m - lo).toFloat() / (hi - lo) * (size.width - 2 * pad)
+            events.minByOrNull { kotlin.math.hypot(xOf(it.monthIndex) - pt.x, axisY - pt.y) }
+                ?.takeIf { kotlin.math.hypot(xOf(it.monthIndex) - pt.x, axisY - pt.y) <= 28.dp.toPx() }?.let(onEvent)
+        }
+    }
+    Canvas(modifier.then(tap).semantics { contentDescription = desc }) {
         if (events.isEmpty()) return@Canvas
         val axisY = size.height * 0.4f
         val pad = 15f * density

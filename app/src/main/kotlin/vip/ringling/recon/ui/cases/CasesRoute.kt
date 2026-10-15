@@ -38,10 +38,11 @@ fun CasesRoute(pad: PaddingValues, newCaseSignal: Int, onOpen: (String) -> Unit)
     val st by vm.state.collectAsStateWithLifecycle()
     var showNew by rememberSaveable { mutableStateOf(false) }
     var showWatch by rememberSaveable { mutableStateOf(false) }
+    val askNotifications = rememberNotificationRequest()
     var handledSignal by rememberSaveable { mutableStateOf(newCaseSignal) }
     LaunchedEffect(newCaseSignal) { if (newCaseSignal != handledSignal) { handledSignal = newCaseSignal; showNew = true } }
     if (showNew) NewCaseDialog(onDismiss = { showNew = false }, onCreate = { name -> showNew = false; vm.create(name, null, onOpen) })
-    if (showWatch) AddWatchDialog(onDismiss = { showWatch = false }, onAdd = { vm.addWatch(it); showWatch = false })
+    if (showWatch) AddWatchDialog(onDismiss = { showWatch = false }, onAdd = { vm.addWatch(it); askNotifications(); showWatch = false })
     CasesScreen(st, CasesActions(onOpen = { onOpen(it.file.id) }, onNewCase = { showNew = true }, onAddWatch = { showWatch = true }, onRemoveWatch = vm::removeWatch), contentPadding = pad)
 }
 
@@ -113,10 +114,11 @@ fun CasesWorkspace(pad: PaddingValues, newCaseSignal: Int, selectedId: String?, 
     val sig = ReconTheme.signal
     var showNew by rememberSaveable { mutableStateOf(false) }
     var showWatch by rememberSaveable { mutableStateOf(false) }
+    val askNotifications = rememberNotificationRequest()
     var handledSignal by rememberSaveable { mutableStateOf(newCaseSignal) }
     LaunchedEffect(newCaseSignal) { if (newCaseSignal != handledSignal) { handledSignal = newCaseSignal; showNew = true } }
     if (showNew) NewCaseDialog(onDismiss = { showNew = false }, onCreate = { name -> showNew = false; vm.create(name, null, onSelect) })
-    if (showWatch) AddWatchDialog(onDismiss = { showWatch = false }, onAdd = { vm.addWatch(it); showWatch = false })
+    if (showWatch) AddWatchDialog(onDismiss = { showWatch = false }, onAdd = { vm.addWatch(it); askNotifications(); showWatch = false })
     Row(Modifier.fillMaxSize()) {
         Box(Modifier.width(280.dp).fillMaxSize().border(1.dp, sig.hairline)) {
             CasesScreen(st, CasesActions(onOpen = { onSelect(it.file.id) }, onNewCase = { showNew = true }, onAddWatch = { showWatch = true }, onRemoveWatch = vm::removeWatch), contentPadding = pad, selectedId = selectedId, compact = true)

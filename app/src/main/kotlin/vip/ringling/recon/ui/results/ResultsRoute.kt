@@ -64,9 +64,9 @@ fun ExposureWide(st: ResultsUiState, actions: ResultsActions, pad: PaddingValues
         androidx.compose.foundation.layout.Column(androidx.compose.ui.Modifier.width(320.dp).fillMaxSize().background(sig.panel).border(1.dp, sig.hairline)) {
             val selected = st.findings.firstOrNull { it.id == st.selectedId }
             selected?.let { f ->
-                SelectedFindingCard(f, f.id in st.handled, actions.onOpenFinding, actions.onPin, "Open details", androidx.compose.ui.Modifier.padding(start = 12.dp, end = 12.dp, top = pad.calculateTopPadding() + 8.dp), onHandled = { actions.onHandled(f, it) })
+                SelectedFindingCard(f, vip.ringling.recon.data.HandledRepository.keyOf(f) in st.handled, actions.onOpenFinding, actions.onPin, "Open details", androidx.compose.ui.Modifier.padding(start = 12.dp, end = 12.dp, top = pad.calculateTopPadding() + 8.dp), onHandled = { actions.onHandled(f, it) })
             }
-            FindingsList(st, actions, Modifier.weight(1f), PaddingValues(top = if (selected == null) pad.calculateTopPadding() else 0.dp, bottom = pad.calculateBottomPadding()), showHeader = false)
+            FindingsList(st, actions, Modifier.weight(1f), PaddingValues(top = if (selected == null) pad.calculateTopPadding() else 0.dp, bottom = pad.calculateBottomPadding()), showHeader = false, compact = true)
         }
     }
 }

@@ -65,8 +65,11 @@ class DetailViewModel @Inject constructor(
     handle: SavedStateHandle,
     controller: ScanController,
     history: HistoryRepository,
+    private val handledRepo: vip.ringling.recon.data.HandledRepository,
 ) : ViewModel() {
     private val id: String = checkNotNull(handle["id"])
+    val handled: StateFlow<Set<String>> = handledRepo.handled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+    fun setHandled(f: Finding, on: Boolean) { viewModelScope.launch { handledRepo.set(f, on) } }
     val finding: StateFlow<Finding?> = combine(controller.session, history.records) { s, recs ->
         s?.findings?.firstOrNull { it.id == id }
             ?: recs.firstNotNullOfOrNull { r -> r.findings.firstOrNull { it.id == id } }
