@@ -37,6 +37,8 @@ class ExposureTest {
         assertEquals(listOf("Treat a device as compromised", "Rotate exposed passwords", "Move key accounts to passkeys"), steps.map { it.title })
         assertTrue(steps[0].urgent && !steps[1].urgent)
         assertEquals("1 finding flagged as exposed.", steps[1].detail)
+        assertEquals(listOf("BREACH-hibp-S"), steps[0].findingIds); assertEquals(listOf("BREACH-hibp-S"), steps[1].findingIds)
+        assertEquals(listOf("SPF missing" to listOf("DOMAIN-spf")), Exposure.fixFirst(listOf(Finding("DOMAIN-spf", ModuleId.DOMAIN, "SPF missing", "x", Severity.EXPOSED))).map { it.title to it.findingIds })
         assertEquals(listOf("Move key accounts to passkeys"), Exposure.fixFirst(listOf(plain)).map { it.title })
         val dns = Finding("DOMAIN-spf", ModuleId.DOMAIN, "SPF missing", "No SPF record.\nMore", Severity.EXPOSED)
         assertEquals(listOf("SPF missing"), Exposure.fixFirst(listOf(dns)).map { it.title })

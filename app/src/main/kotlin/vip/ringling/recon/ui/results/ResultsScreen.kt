@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -30,6 +31,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -109,6 +112,7 @@ fun ResultsHeader(state: ResultsUiState, actions: ResultsActions, modifier: Modi
     }
 }
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 /** Exposure map for every non-ZIP target: risk numeral, stats, orbit graph, breach timeline and "fix first". */
 @Composable
 fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues(), showFindingsButton: Boolean = true) {
@@ -121,6 +125,19 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
     val events = Exposure.timeline(state.findings)
     val steps = Exposure.fixFirst(state.findings)
     val tone = riskTone(score)
+    var sheet by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<SheetFor?>(null) }
+    sheet?.let { sh ->
+        val (title, list, empty) = when (sh) {
+            is SheetFor.Module -> Triple(sh.label.lowercase().replaceFirstChar { it.uppercase() }, scored.filter { it.module == sh.module }, "Nothing found by this module.")
+            is SheetFor.Step -> Triple(sh.step.title, scored.filter { it.id in sh.step.findingIds }, "No matching findings.")
+        }
+        androidx.compose.material3.ModalBottomSheet(onDismissRequest = { sheet = null }, containerColor = sig.panel) {
+            Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 24.dp)) {
+                if (list.isEmpty()) { SignalLabel(title); Text(empty, color = sig.muted, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 12.dp)) }
+                else Box(Modifier.heightIn(max = 560.dp)) { androidx.compose.foundation.rememberScrollState().let { sc -> Column(Modifier.verticalScroll(sc)) { FindingGroup(title, "${list.size}", list) { f -> sheet = null; actions.onFinding(f) } } } }
+            }
+        }
+    }
     Box(modifier.fillMaxSize().background(Brush.radialGradient(listOf(tone.let { if (it == Tone.ALERT) sig.alert else sig.signal }.copy(alpha = 0.10f), Color.Transparent), radius = 800f))) {
         LazyColumn(
             Modifier.fillMaxSize(),
@@ -143,7 +160,7 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
             item { TickBar(ceil(score / 5.0).toInt().coerceIn(0, 20), tone = tone, modifier = Modifier.padding(top = 2.dp)) }
             item {
                 BracketPanel(Modifier.fillMaxWidth().height(262.dp)) {
-                    OrbitGraph(input?.type?.icon() ?: ModuleId.BREACH.icon(), input?.raw.orEmpty(), nodes, Modifier.fillMaxSize())
+                    OrbitGraph(input?.type?.icon() ?: ModuleId.BREACH.icon(), input?.raw.orEmpty(), nodes, Modifier.fillMaxSize(), onNode = { sheet = SheetFor.Module(it.module, it.label) })
                     if (showFindingsButton) SignalButton("${state.findings.count { it.module != ModuleId.DORKS && it.scorable }} findings ›", actions.onShowFindings, Modifier.align(Alignment.BottomEnd).padding(10.dp), mono = true)
                 }
             }
@@ -169,7 +186,10 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { SignalLabel("Fix first"); SignalLabel("${steps.size} steps") }
                         steps.forEachIndexed { i, st ->
                             if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.07f)))
-                            Row(Modifier.fillMaxWidth().heightIn(min = 54.dp).padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Row(
+                                Modifier.fillMaxWidth().heightIn(min = 54.dp).let { m -> if (st.findingIds.isEmpty()) m else m.clickable(onClickLabel = "Show affected findings") { sheet = SheetFor.Step(st) } }.padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
                                 Box(
                                     Modifier.size(28.dp).clip(RoundedCornerShape(6.dp)).let { if (st.urgent) it.background(sig.alert) else it.border(1.dp, Color(0xFF3A423A), RoundedCornerShape(6.dp)) },
                                     contentAlignment = Alignment.Center,
@@ -178,6 +198,7 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
                                     Text(st.title, color = sig.text, style = MaterialTheme.typography.titleSmall)
                                     Text(st.detail, color = sig.muted, style = MaterialTheme.typography.bodySmall)
                                 }
+                                if (st.findingIds.isNotEmpty()) Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = sig.muted)
                             }
                         }
                     }
@@ -428,4 +449,9 @@ fun FindingGroup(title: String, trailing: String, items: List<Finding>, onOpen: 
             }
         }
     }
+}
+
+private sealed interface SheetFor {
+    data class Module(val module: ModuleId, val label: String) : SheetFor
+    data class Step(val step: vip.ringling.recon.domain.FixStep) : SheetFor
 }

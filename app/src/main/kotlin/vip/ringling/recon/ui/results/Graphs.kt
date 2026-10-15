@@ -1,6 +1,10 @@
 package vip.ringling.recon.ui.results
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -34,11 +38,29 @@ fun orbitDescription(value: String, nodes: List<OrbitNode>) =
 
 /** The target sits in the centre; each module is a node on an orbit sized by its finding count. The breach node wears a ring of dots, one per breach. */
 @Composable
-fun OrbitGraph(centerIcon: ImageVector, value: String, nodes: List<OrbitNode>, modifier: Modifier = Modifier) {
+fun OrbitGraph(centerIcon: ImageVector, value: String, nodes: List<OrbitNode>, modifier: Modifier = Modifier, onNode: ((OrbitNode) -> Unit)? = null) {
     val sig = ReconTheme.signal
     val measurer = rememberTextMeasurer()
     val iconPainter = rememberVectorPainter(centerIcon)
-    Canvas(modifier.semantics { contentDescription = orbitDescription(value, nodes) }) {
+    androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
+    if (onNode != null) {
+        // Tap targets over each node (at least 48dp), using the same geometry as the canvas below.
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val w = constraints.maxWidth.toFloat(); val h = constraints.maxHeight.toFloat()
+        val sc = minOf(w / 356f, h / 260f)
+        val n = nodes.size.coerceAtLeast(1)
+        nodes.forEachIndexed { i, nd ->
+            val a = nodeAngle(i, n)
+            val cx = w / 2f + (92.0 * cos(a) * sc).toFloat(); val cy = h / 2f + 2f * sc + (92.0 * 0.9 * sin(a) * sc).toFloat()
+            val half = maxOf((nd.radius * sc).toFloat() + 6f, with(density) { 24.dp.toPx() })
+            androidx.compose.foundation.layout.Box(
+                Modifier.offset { androidx.compose.ui.unit.IntOffset((cx - half).toInt(), (cy - half).toInt()) }.size(with(density) { (half * 2).toDp() })
+                    .clickable(role = androidx.compose.ui.semantics.Role.Button, onClickLabel = "Show ${nd.module.label} findings") { onNode(nd) }
+                    .semantics { contentDescription = "${nd.module.label}, ${nd.count} finding${if (nd.count == 1) "" else "s"}" },
+            )
+        }
+    }
+    Canvas(Modifier.matchParentSize().semantics { contentDescription = orbitDescription(value, nodes) }) {
         val s = minOf(size.width / 356f, size.height / 260f)
         val c = Offset(size.width / 2f, size.height / 2f + 2f * s)
         fun px(v: Double) = (v * s).toFloat()
@@ -83,6 +105,7 @@ fun OrbitGraph(centerIcon: ImageVector, value: String, nodes: List<OrbitNode>, m
         }
         val title = measurer.measure("EXPOSURE MAP", TextStyle(fontFamily = MonoFont, fontSize = (9f * s).toSp(), color = sig.muted, letterSpacing = (1.4f * s).toSp()))
         drawText(title, topLeft = Offset(14f * s, 14f * s))
+    }
     }
 }
 

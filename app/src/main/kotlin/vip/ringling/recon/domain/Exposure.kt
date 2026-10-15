@@ -12,7 +12,7 @@ data class TimelineEvent(val year: Int, val month: Int, val severity: Severity, 
     val monthIndex: Int get() = year * 12 + (month - 1)
 }
 
-data class FixStep(val title: String, val detail: String, val urgent: Boolean)
+data class FixStep(val title: String, val detail: String, val urgent: Boolean, /** Findings this step is about (tapping the step lists them). */ val findingIds: List<String> = emptyList())
 
 /** Everything the exposure screens derive from a scan's findings. Pure functions of the findings, so they are unit-tested. */
 object Exposure {
@@ -55,12 +55,13 @@ object Exposure {
         val exposed = scored.filter { it.severity == Severity.EXPOSED }
         val breaches = scored.filter { it.module == ModuleId.BREACH }
         if (breaches.isEmpty()) {
-            return exposed.take(3).map { FixStep(it.title, it.detail.lineSequence().first().ifBlank { it.title }, urgent = false) }.mapIndexed { i, s -> s.copy(urgent = i == 0) }
+            return exposed.take(3).map { FixStep(it.title, it.detail.lineSequence().first().ifBlank { it.title }, urgent = false, findingIds = listOf(it.id)) }.mapIndexed { i, s -> s.copy(urgent = i == 0) }
         }
         val steps = mutableListOf<FixStep>()
-        if (hasStealerLogs(findings)) steps += FixStep("Treat a device as compromised", "Stealer logs come from infected devices.", true)
-        if (exposed.isNotEmpty()) steps += FixStep("Rotate exposed passwords", "${exposed.size} finding${if (exposed.size == 1) "" else "s"} flagged as exposed.", steps.isEmpty())
-        steps += FixStep("Move key accounts to passkeys", "No password left to steal.", steps.isEmpty())
+        if (hasStealerLogs(findings)) steps += FixStep("Treat a device as compromised", "Stealer logs come from infected devices.", true, breaches.filter { f -> f.facts.any { it.label == "Flags" && it.value.contains("stealer", ignoreCase = true) } }.map { it.id })
+        if (exposed.isNotEmpty()) steps += FixStep("Rotate exposed passwords", "${exposed.size} finding${if (exposed.size == 1) "" else "s"} flagged as exposed.", steps.isEmpty(), exposed.map { it.id })
+        val withPasswords = breaches.filter { f -> f.tags.any { it.contains("password", ignoreCase = true) } }
+        steps += FixStep("Move key accounts to passkeys", "No password left to steal.", steps.isEmpty(), withPasswords.map { it.id })
         return steps.take(3)
     }
 }
