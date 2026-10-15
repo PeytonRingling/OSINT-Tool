@@ -43,6 +43,9 @@ import vip.ringling.recon.ui.signal.rememberAnimationsEnabled
 import vip.ringling.recon.ui.theme.MonoFont
 import vip.ringling.recon.ui.theme.ReconTheme
 
+private const val MAX_BLIPS = 12
+private const val LABELLED = 3
+
 /** Text shown under a blip's value. */
 fun blipStatus(t: RadarTarget): String = when {
     t.isArea -> if (t.records == null) "AREA SCAN" else if (t.records == 0) "CLEAN" else "${t.records} RECORDS"
@@ -69,7 +72,9 @@ fun RadarCanvas(targets: List<RadarTarget>, onTarget: (RadarTarget) -> Unit, mod
     val pulse by transition.animateFloat(0f, 1f, infiniteRepeatable(tween(2400)), label = "pulse")
     val sweepAngle = if (anim) sweep else 35f
     val pulseT = if (anim) pulse else 0f
-    val blips = remember(targets) { RadarMath.place(targets) }
+    // Declutter: at most the 12 newest targets are drawn (the Log has them all), and only the 3 newest carry a label.
+    val blips = remember(targets) { RadarMath.place(targets.take(MAX_BLIPS)) }
+    val labelled = remember(targets) { targets.take(LABELLED).map { it.key }.toSet() }
     val measurer = rememberTextMeasurer()
     val alert = sig.alert; val info = sig.info; val safe = sig.safe; val alertText = sig.alertText; val infoText = sig.infoText; val safeText = sig.safeText
     val text = sig.text; val muted = sig.muted; val ground = sig.ground; val signal = sig.signal
@@ -92,10 +97,6 @@ fun RadarCanvas(targets: List<RadarTarget>, onTarget: (RadarTarget) -> Unit, mod
             drawCircle(signal.copy(alpha = 0.17f), 96f * s, c, style = Stroke(1f, pathEffect = dash))
             drawCircle(signal.copy(alpha = 0.17f), 144f * s, c, style = Stroke(1f, pathEffect = dash))
             drawCircle(signal.copy(alpha = 0.17f), 192f * s, c, style = ring)
-            drawLine(signal.copy(alpha = 0.10f), p(195.0, 14.0), p(195.0, 406.0)); drawLine(signal.copy(alpha = 0.10f), p(3.0, 210.0), p(387.0, 210.0))
-            listOf("90" to 172.0, "60" to 124.0, "30" to 76.0, "0" to 28.0).forEach { (t, y) ->
-                drawText(measurer, t, p(199.0, y - 8), style = androidx.compose.ui.text.TextStyle(fontFamily = MonoFont, fontSize = (8.5f * s).toSp(), color = Color(0xFF7E877B)))
-            }
             // sweep
             rotate(sweepAngle - 90f, c) {
                 drawArc(
@@ -119,15 +120,16 @@ fun RadarCanvas(targets: List<RadarTarget>, onTarget: (RadarTarget) -> Unit, mod
                 } else {
                     drawCircle(ground, 5.5f * s + 2f, pos); drawCircle(fill, 5.5f * s, pos)
                 }
-                val right = b.x < 195.0 + 40.0
-                val label = t.input.raw.let { if (it.length > 24) it.take(23) + "…" else it }
-                val l1 = measurer.measure(label, androidx.compose.ui.text.TextStyle(fontFamily = MonoFont, fontSize = (9.5f * s).toSp(), color = text))
-                val l2 = measurer.measure(blipStatus(t), androidx.compose.ui.text.TextStyle(fontFamily = MonoFont, fontSize = (8.5f * s).toSp(), color = txt))
-                val lx = if (right) pos.x + 11f * s else pos.x - 11f * s - maxOf(l1.size.width, l2.size.width)
-                drawText(l1, topLeft = Offset(lx, pos.y - l1.size.height * 0.6f)); drawText(l2, topLeft = Offset(lx, pos.y + l1.size.height * 0.4f))
+                if (t.key in labelled) {
+                    val right = b.x < 195.0 + 40.0
+                    val label = t.input.raw.let { if (it.length > 20) it.take(19) + "…" else it }
+                    val l1 = measurer.measure(label, androidx.compose.ui.text.TextStyle(fontFamily = MonoFont, fontSize = (9.5f * s).toSp(), color = text))
+                    val lx = if (right) pos.x + 11f * s else pos.x - 11f * s - l1.size.width
+                    drawText(l1, topLeft = Offset(lx, pos.y - l1.size.height * 0.5f))
+                }
             }
             drawText(measurer, "CLOSER = HIGHER RISK", p(16.0, 400.0), style = androidx.compose.ui.text.TextStyle(fontFamily = MonoFont, fontSize = (8.5f * s).toSp(), color = muted, letterSpacing = (1.2f * s).toSp()))
-            val tc = measurer.measure("${targets.size} TARGETS", androidx.compose.ui.text.TextStyle(fontFamily = MonoFont, fontSize = (8.5f * s).toSp(), color = muted, letterSpacing = (1.2f * s).toSp()))
+            val tc = measurer.measure((if (targets.size > MAX_BLIPS) "NEWEST $MAX_BLIPS OF ${targets.size}" else "${targets.size} TARGETS"), androidx.compose.ui.text.TextStyle(fontFamily = MonoFont, fontSize = (8.5f * s).toSp(), color = muted, letterSpacing = (1.2f * s).toSp()))
             drawText(tc, topLeft = Offset(p(374.0, 0.0).x - tc.size.width, p(0.0, 400.0).y))
         }
         // 48dp tap targets with spoken descriptions.

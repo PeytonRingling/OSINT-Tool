@@ -11,6 +11,7 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -148,6 +149,7 @@ fun ReconApp() {
         val expanded = width >= 840.dp
         val useRail = width >= 600.dp
         val content: @Composable (PaddingValues) -> Unit = { pad ->
+            Box(Modifier.fillMaxSize().imePadding()) {
             SharedTransitionLayout {
                 NavHost(
                     nav, startDestination = Tab.HOME.route,
@@ -215,6 +217,7 @@ fun ReconApp() {
                         }
                     }
                 }
+            }
             }
         }
 

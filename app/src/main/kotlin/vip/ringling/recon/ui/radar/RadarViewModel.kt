@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import vip.ringling.recon.data.HistoryRepository
@@ -20,6 +21,7 @@ import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.RadarMath
 import vip.ringling.recon.domain.RadarTarget
+import vip.ringling.recon.domain.targetsFromSnapshots
 import vip.ringling.recon.domain.ScanInput
 
 data class RadarUiState(
@@ -45,7 +47,7 @@ sealed interface RadarEvent {
 @HiltViewModel
 class RadarViewModel @Inject constructor(
     private val controller: ScanController,
-    history: HistoryRepository,
+    private val history: HistoryRepository,
     private val snapshots: vip.ringling.recon.data.SnapshotRepository,
 ) : ViewModel() {
     private val query = MutableStateFlow("")
@@ -53,6 +55,7 @@ class RadarViewModel @Inject constructor(
     val events: SharedFlow<RadarEvent> = _events
 
     init {
+        viewModelScope.launch { snapshots.backfill(history.records.first()) }
         viewModelScope.launch {
             controller.pendingQuery.collect { q ->
                 if (q != null) { controller.consumePending(); query.value = q; submit() }
@@ -62,12 +65,11 @@ class RadarViewModel @Inject constructor(
 
     private val base = combine(query, controller.enabled, controller.autoPick, controller.session) { q, enabled, auto, session -> Triple(q, enabled to auto, session?.running == true) }
 
-    val state: StateFlow<RadarUiState> = combine(base, history.records, snapshots.snapshots) { (q, ea, running), records, snaps ->
+    val state: StateFlow<RadarUiState> = combine(base, snapshots.snapshots) { (q, ea, running), snaps ->
         val (enabled, auto) = ea
         val detected = InputDetector.detect(q)
         val modules = detected?.let { t -> controller.modulesFor(ScanInput(q, t)).filter { it in enabled } }.orEmpty()
-        val counts = snaps.filter { it.isArea }.groupBy { it.key }.mapNotNull { (k, v) -> v.maxBy { it.ts }.records?.let { k to it } }.toMap()
-        RadarUiState(q, detected, modules, enabled, auto, RadarMath.targets(records, counts), running)
+        RadarUiState(q, detected, modules, enabled, auto, RadarMath.targetsFromSnapshots(snaps), running)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RadarUiState())
 
     fun onQueryChange(v: String) { query.value = v }

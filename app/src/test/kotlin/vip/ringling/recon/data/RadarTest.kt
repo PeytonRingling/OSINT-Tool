@@ -2,6 +2,7 @@ package vip.ringling.recon.data
 
 import kotlin.math.hypot
 import kotlin.test.Test
+import kotlinx.coroutines.flow.first
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import vip.ringling.recon.domain.Finding
@@ -9,6 +10,7 @@ import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.RadarMath
 import vip.ringling.recon.domain.RadarTarget
+import vip.ringling.recon.domain.targetsFromSnapshots
 import vip.ringling.recon.domain.ScanInput
 import vip.ringling.recon.domain.ScanRecord
 import vip.ringling.recon.domain.ScanSnapshot
@@ -85,5 +87,24 @@ class LogMathTest {
     @Test fun areasShowCountsNotRisk() {
         val z = vip.ringling.recon.domain.LogMath.targets(listOf(s("1", "83338", InputType.ZIP, 1, 0, 68), s("2", "83338", InputType.ZIP, 2, 0, 70)))[0]
         assertTrue(z.isArea); assertTrue(z.risks.isEmpty()); assertEquals(null, z.delta); assertEquals(70, z.latest.records)
+    }
+
+    @Test fun radarAndLogShowTheSameTargets() {
+        val snaps = listOf(s("1", "a@b.com", InputType.EMAIL, 1, 100, 0), s("2", "a@b.com", InputType.EMAIL, 5, 40, 0), s("3", "jane", InputType.USERNAME, 3, 10, 0), s("4", "83338", InputType.ZIP, 4, 0, 68))
+        val radar = vip.ringling.recon.domain.RadarMath.targetsFromSnapshots(snaps)
+        val log = vip.ringling.recon.domain.LogMath.targets(snaps)
+        assertEquals(log.map { it.key }, radar.map { it.key })
+        assertEquals(40, radar.first { it.input.raw == "a@b.com" }.risk, "latest scan wins")
+        assertEquals(68, radar.first { it.isArea }.records)
+    }
+
+    @Test fun backfillAddsOnlyMissingHistoryRows() = kotlinx.coroutines.test.runTest {
+        val repo = SnapshotRepository(FakeSnapshotDao())
+        val r1 = ScanRecord("h1", ScanInput("a@b.com", InputType.EMAIL), 1, emptyList()); val r2 = ScanRecord("h2", ScanInput("jane", InputType.USERNAME), 2, emptyList())
+        repo.add(ScanSnapshot.fromRecord(r2))
+        repo.backfill(listOf(r1, r2))
+        assertEquals(setOf("h1", "h2"), repo.snapshots.first().map { it.id }.toSet())
+        repo.backfill(listOf(r1, r2))
+        assertEquals(2, repo.snapshots.first().size)
     }
 }

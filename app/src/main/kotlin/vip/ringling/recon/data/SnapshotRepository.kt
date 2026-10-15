@@ -19,10 +19,11 @@ class SnapshotRepository @Inject constructor(private val dao: SnapshotDao) {
     suspend fun clear() = dao.clear()
     suspend fun deleteTarget(type: InputType, value: String) = dao.deleteTarget(type.name, value)
 
-    /** Seeds the table from History once (when upgrading from a build that had no snapshots). */
+    /** Adds a snapshot for every History row that has none (builds that predate the table, or a scan that finished before it existed). */
     suspend fun backfill(records: List<ScanRecord>) {
-        if (dao.snapshot().isNotEmpty() || records.isEmpty()) return
-        dao.insertAll(records.map { ScanSnapshot.fromRecord(it).toEntity() })
+        val have = dao.snapshot().map { it.id }.toSet()
+        val missing = records.filter { it.id !in have }
+        if (missing.isNotEmpty()) dao.insertAll(missing.map { ScanSnapshot.fromRecord(it).toEntity() })
     }
 }
 

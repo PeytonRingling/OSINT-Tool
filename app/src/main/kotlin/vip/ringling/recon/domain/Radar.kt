@@ -75,3 +75,11 @@ object RadarMath {
             RadarTarget(latest.input, if (zip) 0 else latest.risk, if (zip) recordCounts["${latest.input.type.name}:${latest.input.raw}"] else null, latest.timestampMillis, rs.size, if (zip) null else latest.id)
         }.sortedByDescending { it.lastScanMillis }
 }
+
+/** Same data as the Log: latest snapshot per distinct target, newest first (so the radar and the Log can never disagree). */
+fun RadarMath.targetsFromSnapshots(snapshots: List<ScanSnapshot>): List<RadarTarget> =
+    snapshots.groupBy { it.key }.values.map { l ->
+        val latest = l.maxBy { it.ts }
+        val zip = latest.isArea
+        RadarTarget(ScanInput(latest.value, latest.type), if (zip) 0 else latest.risk, if (zip) latest.records else null, latest.ts, l.size, if (zip) null else latest.id)
+    }.sortedByDescending { it.lastScanMillis }
