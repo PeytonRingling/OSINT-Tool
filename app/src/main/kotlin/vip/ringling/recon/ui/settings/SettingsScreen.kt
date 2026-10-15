@@ -1,6 +1,7 @@
 package vip.ringling.recon.ui.settings
 
-import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -8,29 +9,21 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,18 +33,33 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import vip.ringling.recon.data.net.ProxyMode
 import vip.ringling.recon.data.settings.AppSettings
 import vip.ringling.recon.data.settings.ThemeMode
 import vip.ringling.recon.data.update.UpdateState
 import vip.ringling.recon.domain.ApiKeyId
+import vip.ringling.recon.ui.signal.BracketPanel
+import vip.ringling.recon.ui.signal.HairPanel
+import vip.ringling.recon.ui.signal.Led
+import vip.ringling.recon.ui.signal.LedSwitch
+import vip.ringling.recon.ui.signal.PageHeader
+import vip.ringling.recon.ui.signal.SegmentedControl
+import vip.ringling.recon.ui.signal.SignalButton
+import vip.ringling.recon.ui.signal.SignalLabel
+import vip.ringling.recon.ui.signal.StatusTag
+import vip.ringling.recon.ui.signal.Tone
 import vip.ringling.recon.ui.theme.ReconTheme
+import vip.ringling.recon.ui.theme.ReconType
 
 data class SettingsUiState(
     val settings: AppSettings = AppSettings(),
@@ -60,8 +68,9 @@ data class SettingsUiState(
     val versionName: String = "0.1.0",
     val installedBuild: Int = 1,
     val update: UpdateState = UpdateState.Idle,
-    val watches: List<vip.ringling.recon.data.watch.WatchItem> = emptyList(),
-)
+) {
+    val keysSet: Int get() = ApiKeyId.entries.count { !keys[it].isNullOrBlank() }
+}
 
 data class SettingsActions(
     val onTheme: (ThemeMode) -> Unit = {},
@@ -72,304 +81,268 @@ data class SettingsActions(
     val onCheckUpdate: () -> Unit = {},
     val onInstallUpdate: () -> Unit = {},
     val onDismissUpdateError: () -> Unit = {},
-    val onProxyMode: (vip.ringling.recon.data.net.ProxyMode) -> Unit = {},
+    val onProxyMode: (ProxyMode) -> Unit = {},
     val onProxyHost: (String) -> Unit = {},
     val onProxyPort: (Int) -> Unit = {},
     val onAppLock: (Boolean) -> Unit = {},
-    val onAddWatch: (String) -> Unit = {},
-    val onRemoveWatch: (String) -> Unit = {},
 )
 
+/** "System": status panel, privacy & network, display, API keys (status list that expands to edit), updates, data and about. */
 @Composable
 fun SettingsScreen(
     state: SettingsUiState,
     actions: SettingsActions,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(),
+    initiallyExpandedKey: ApiKeyId? = null,
 ) {
-    val cs = MaterialTheme.colorScheme
-    BoxWithConstraints(modifier.fillMaxSize()) {
+    val sig = ReconTheme.signal
+    BoxWithConstraints(modifier.fillMaxSize().background(Brush.radialGradient(listOf(sig.signal.copy(alpha = 0.06f), Color.Transparent), radius = 700f))) {
         val wide = maxWidth >= 700.dp
-        val pad = PaddingValues(top = contentPadding.calculateTopPadding() + 12.dp, bottom = contentPadding.calculateBottomPadding() + 24.dp)
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(pad), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-            Column(Modifier.padding(horizontal = 24.dp)) {
-                Text("SETTINGS", style = MaterialTheme.typography.labelLarge, color = cs.onSurfaceVariant)
-                Text("Make it yours", style = MaterialTheme.typography.displaySmall, color = cs.onSurface)
+        val pad = PaddingValues(top = contentPadding.calculateTopPadding() + 24.dp, bottom = contentPadding.calculateBottomPadding() + 24.dp, start = 16.dp, end = 16.dp)
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(pad)) {
+            PageHeader("Configuration", "System") {
+                Text("v${state.versionName}\nBUILD ${state.installedBuild}", color = sig.muted, textAlign = TextAlign.End, style = ReconType.labelSmall.copy(fontSize = 10.5.sp, letterSpacing = 0.08.sp))
             }
+            StatusPanel(state, Modifier.padding(top = 12.dp))
             if (wide) {
-                Row(Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        UpdatesSection(state, actions); AppearanceSection(state, actions); PrivacySection(state, actions); WatchSection(state, actions); DataSection(state, actions)
-                    }
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        KeysSection(state, actions); LegalSection(state)
-                    }
+                Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+                    Column(Modifier.weight(1f)) { PrivacySection(state, actions); DisplaySection(state, actions) }
+                    Column(Modifier.weight(1f)) { KeysSection(state, actions, initiallyExpandedKey); UpdatesSection(state, actions); DataSection(state, actions); AboutSection(state) }
                 }
             } else {
-                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                    UpdatesSection(state, actions); AppearanceSection(state, actions); PrivacySection(state, actions); WatchSection(state, actions); KeysSection(state, actions); DataSection(state, actions); LegalSection(state)
-                }
+                PrivacySection(state, actions); DisplaySection(state, actions); KeysSection(state, actions, initiallyExpandedKey); UpdatesSection(state, actions); DataSection(state, actions); AboutSection(state)
             }
         }
     }
 }
 
 @Composable
-private fun Section(title: String, content: @Composable () -> Unit) {
-    val cs = MaterialTheme.colorScheme
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(title.uppercase(), style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
-        Surface(
-            Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = cs.surfaceContainer,
-            border = BorderStroke(1.dp, cs.outlineVariant.copy(alpha = 0.6f)),
-        ) { Column(Modifier.padding(vertical = 8.dp)) { content() } }
+private fun StatusPanel(state: SettingsUiState, modifier: Modifier = Modifier) {
+    val sig = ReconTheme.signal
+    BracketPanel(modifier.fillMaxWidth()) {
+        Row(Modifier.fillMaxWidth()) {
+            Cell("Routing", when (state.settings.proxyMode) { ProxyMode.OFF -> "Direct"; ProxyMode.TOR -> "Tor"; ProxyMode.CUSTOM -> "Proxy" }, Modifier.weight(1f))
+            Cell("App lock", if (state.settings.appLock) "On" else "Off", Modifier.weight(1f))
+            Cell("Keys", "${state.keysSet}", Modifier.weight(1f), suffix = "/${ApiKeyId.entries.size}", valueColor = sig.signal)
+        }
     }
 }
 
 @Composable
-private fun ToggleRow(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
-    val cs = MaterialTheme.colorScheme
-    Row(
-        Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
+private fun Cell(label: String, value: String, modifier: Modifier, suffix: String = "", valueColor: Color = ReconTheme.signal.text) {
+    Column(modifier.padding(horizontal = 14.dp, vertical = 12.dp).semantics { contentDescription = "$label: $value$suffix" }) {
+        SignalLabel(label, small = true)
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(value, color = valueColor, style = ReconType.pageTitle.copy(fontSize = 26.sp, lineHeight = 30.sp, fontStyle = androidx.compose.ui.text.font.FontStyle.Normal))
+            if (suffix.isNotEmpty()) Text(suffix, color = ReconTheme.signal.muted, style = ReconType.value.copy(fontSize = 12.sp), modifier = Modifier.padding(bottom = 4.dp))
+        }
+    }
+}
+
+@Composable
+private fun SysSection(title: String, content: @Composable () -> Unit) {
+    SignalLabel(title, Modifier.padding(start = 2.dp, top = 16.dp, bottom = 8.dp))
+    HairPanel(Modifier.fillMaxWidth()) { Column { content() } }
+}
+
+@Composable
+private fun Divider() = Row(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.07f))) {}
+
+@Composable
+private fun SwitchRow(title: String, subtitle: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    val sig = ReconTheme.signal
+    Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 14.dp, end = 4.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+            Text(title, color = sig.text, style = MaterialTheme.typography.titleSmall)
+            Text(subtitle, color = sig.muted, style = MaterialTheme.typography.bodySmall)
         }
-        Switch(checked, onChange, modifier = Modifier.semantics { contentDescription = title })
+        LedSwitch(checked, onChange, title)
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AppearanceSection(state: SettingsUiState, a: SettingsActions) {
-    Section("Appearance") {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Theme", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                ThemeMode.entries.forEachIndexed { i, m ->
-                    SegmentedButton(
-                        selected = state.settings.themeMode == m, onClick = { a.onTheme(m) },
-                        shape = SegmentedButtonDefaults.itemShape(i, ThemeMode.entries.size),
-                        modifier = Modifier.heightIn(min = 48.dp),
-                    ) { Text(m.label) }
-                }
-            }
-        }
-        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        ToggleRow("Dynamic color", "Use Material You colors from your wallpaper. Dark surfaces stay true black.", state.settings.dynamicColor, a.onDynamic)
-        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        ToggleRow("Haptics", "Vibrate when a scan completes.", state.settings.haptics, a.onHaptics)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PrivacySection(state: SettingsUiState, a: SettingsActions) {
-    val cs = MaterialTheme.colorScheme
-    val modes = vip.ringling.recon.data.net.ProxyMode.entries
-    Section("Privacy & network") {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Route lookups through a proxy", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
-            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                modes.forEachIndexed { i, m ->
-                    SegmentedButton(
-                        selected = state.settings.proxyMode == m, onClick = { a.onProxyMode(m) },
-                        shape = SegmentedButtonDefaults.itemShape(i, modes.size), modifier = Modifier.heightIn(min = 48.dp),
-                    ) { Text(m.label, maxLines = 1) }
-                }
-            }
+    val sig = ReconTheme.signal
+    val modes = ProxyMode.entries
+    SysSection("Privacy & network") {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Route lookups through a proxy", color = sig.text, style = MaterialTheme.typography.titleSmall)
+            SegmentedControl(modes.map { it.label.substringBefore(" (").let { l -> if (l == "Custom SOCKS5") "Custom" else l } }, state.settings.proxyMode.ordinal, { a.onProxyMode(modes[it]) })
             when (state.settings.proxyMode) {
-                vip.ringling.recon.data.net.ProxyMode.OFF -> Text("Requests go straight from this phone.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
-                vip.ringling.recon.data.net.ProxyMode.TOR -> Text(
-                    "Uses Orbot's SOCKS proxy at 127.0.0.1:9050 (start Orbot first). If it isn't running, lookups fail rather than leaking. Map tiles and photos are not proxied.",
-                    style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
-                )
-                vip.ringling.recon.data.net.ProxyMode.CUSTOM -> {
+                ProxyMode.OFF -> Text("Requests go straight from this phone.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                ProxyMode.TOR -> Text("Uses Orbot's SOCKS proxy at 127.0.0.1:9050 (start Orbot first). If it isn't running, lookups fail rather than leaking. Map tiles and photos are not proxied.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                ProxyMode.CUSTOM -> {
                     ProxyField("Host", state.settings.proxyHost, KeyboardType.Uri) { a.onProxyHost(it) }
                     ProxyField("Port", state.settings.proxyPort.toString(), KeyboardType.Number) { it.toIntOrNull()?.let(a.onProxyPort) }
-                    Text("SOCKS5 only. Invalid settings fail closed.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                    Text("SOCKS5 only. Invalid settings fail closed.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
-        HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = cs.outlineVariant.copy(alpha = 0.5f))
-        ToggleRow("App lock", "Ask for fingerprint, face or device PIN when opening the app, and hide it from the recents screen.", state.settings.appLock, a.onAppLock)
-    }
-}
-
-@Composable
-private fun WatchSection(state: SettingsUiState, a: SettingsActions) {
-    val cs = MaterialTheme.colorScheme
-    var input by remember { mutableStateOf("") }
-    Section("Watchlist") {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(
-                "Checks watched email addresses against your breach sources once a day in the background and notifies you when a new breach appears. Needs a HIBP or LeakCheck key.",
-                style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
-            )
-            state.watches.forEach { w ->
-                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) {
-                        Text(w.email, style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
-                        Text(
-                            if (w.lastChecked == 0L) "Waiting for first check…" else "${w.knownCount.coerceAtLeast(0)} known · checked ${java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(w.lastChecked)}",
-                            style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
-                        )
-                    }
-                    TextButton(onClick = { a.onRemoveWatch(w.email) }) { Text("Remove") }
-                }
-            }
-            ProxyField("Email", input, KeyboardType.Email) { input = it }
-            Button(onClick = { a.onAddWatch(input); input = "" }, enabled = input.contains('@'), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Watch this address") }
-        }
+        Divider()
+        SwitchRow("App lock", "Fingerprint, face or PIN. Hides Recon from recents.", state.settings.appLock, a.onAppLock)
     }
 }
 
 @Composable
 private fun ProxyField(label: String, value: String, type: KeyboardType, onChange: (String) -> Unit) {
-    val cs = MaterialTheme.colorScheme
-    Surface(shape = MaterialTheme.shapes.small, color = cs.surfaceContainerHigh, border = BorderStroke(1.dp, cs.outlineVariant)) {
-        Row(Modifier.padding(horizontal = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, Modifier.padding(end = 12.dp), style = MaterialTheme.typography.labelLarge, color = cs.onSurfaceVariant)
-            BasicTextField(
-                value = value, onValueChange = onChange, singleLine = true,
-                textStyle = MaterialTheme.typography.bodyMedium.copy(color = cs.onSurface), cursorBrush = SolidColor(cs.primary),
-                keyboardOptions = KeyboardOptions(keyboardType = type, autoCorrectEnabled = false),
-                modifier = Modifier.weight(1f).padding(vertical = 14.dp).semantics { contentDescription = "Proxy $label" },
-            )
-        }
+    val sig = ReconTheme.signal
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 52.dp).background(sig.panel, androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(horizontal = 14.dp),
+        verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        SignalLabel(label, Modifier.width(44.dp), small = true)
+        androidx.compose.foundation.text.BasicTextField(
+            value = value, onValueChange = onChange, singleLine = true, textStyle = ReconType.value.copy(fontSize = 14.sp, color = sig.text),
+            cursorBrush = androidx.compose.ui.graphics.SolidColor(sig.signal),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = type, autoCorrectEnabled = false),
+            modifier = Modifier.weight(1f).semantics { contentDescription = "Proxy $label" },
+        )
     }
 }
 
 @Composable
-private fun KeysSection(state: SettingsUiState, a: SettingsActions) {
-    Section("API keys") {
+private fun DisplaySection(state: SettingsUiState, a: SettingsActions) {
+    SysSection("Display") {
+        Column(Modifier.padding(14.dp)) {
+            SegmentedControl(ThemeMode.entries.map { it.label }, state.settings.themeMode.ordinal, { a.onTheme(ThemeMode.entries[it]) })
+        }
+        Divider()
+        SwitchRow("Dynamic color", "Material You. Dark stays true black.", state.settings.dynamicColor, a.onDynamic)
+        Divider()
+        SwitchRow("Haptics", "Vibrate when a scan completes.", state.settings.haptics, a.onHaptics)
+    }
+}
+
+@Composable
+private fun KeysSection(state: SettingsUiState, a: SettingsActions, initiallyExpanded: ApiKeyId?) {
+    val sig = ReconTheme.signal
+    var open by remember { mutableStateOf(initiallyExpanded) }
+    SysSection("API keys") {
         ApiKeyId.entries.forEachIndexed { i, id ->
-            if (i > 0) HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-            KeyField(id, state.keys[id].orEmpty()) { a.onKeyChange(id, it) }
+            if (i > 0) Divider()
+            val set = !state.keys[id].isNullOrBlank()
+            Column {
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(onClickLabel = if (open == id) "Collapse" else "Edit ${id.label}") { open = if (open == id) null else id }
+                        .semantics { contentDescription = "${id.label}, ${if (set) "saved" else "not set"}" }.padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Led(set, tone = Tone.SAFE)
+                    Column(Modifier.weight(1f)) {
+                        Text(id.label, color = sig.text, style = MaterialTheme.typography.titleSmall, maxLines = 1)
+                        Text(id.hint.substringBefore(".").substringBefore(":").take(60), color = sig.muted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                    }
+                    StatusTag(if (set) "Saved" else "Not set", if (set) Tone.SAFE else Tone.MUTED)
+                }
+                if (open == id) KeyEditor(id, state.keys[id].orEmpty()) { a.onKeyChange(id, it) }
+            }
         }
+        Divider()
         Text(
-            "Keys are entered here at runtime — nothing ships in the app. They are encrypted with a hardware-backed Android Keystore key, never logged, and never leave this device except in requests to the service they belong to.",
-            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            "Keys are entered here at runtime. They are encrypted with a hardware-backed Android Keystore key, never logged, and never leave this device except in requests to the service they belong to.",
+            color = sig.muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(14.dp),
         )
     }
 }
 
 @Composable
-private fun KeyField(id: ApiKeyId, value: String, onChange: (String) -> Unit) {
-    val cs = MaterialTheme.colorScheme
+private fun KeyEditor(id: ApiKeyId, value: String, onChange: (String) -> Unit) {
+    val sig = ReconTheme.signal
     var reveal by remember { mutableStateOf(false) }
-    Column(Modifier.padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(id.label, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
-            Text(
-                if (value.isBlank()) "Not set" else "Saved",
-                style = MaterialTheme.typography.labelMedium,
-                color = if (value.isBlank()) cs.onSurfaceVariant else ReconTheme.severity.clean,
-            )
-        }
-        Text(id.hint, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
-        Surface(shape = MaterialTheme.shapes.small, color = cs.surfaceContainerHigh, border = BorderStroke(1.dp, cs.outlineVariant)) {
-            Row(Modifier.padding(start = 14.dp), verticalAlignment = Alignment.CenterVertically) {
-                androidx.compose.foundation.layout.Box(Modifier.weight(1f).padding(vertical = 14.dp)) {
-                    if (value.isEmpty()) Text("Paste key", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
-                    BasicTextField(
-                        value = value, onValueChange = onChange, singleLine = true,
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(color = cs.onSurface),
-                        cursorBrush = SolidColor(cs.primary),
-                        visualTransformation = if (reveal) VisualTransformation.None else PasswordVisualTransformation('•'),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
-                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = "${id.label} API key" },
-                    )
-                }
-                IconButton(onClick = { reveal = !reveal }) {
-                    Icon(if (reveal) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (reveal) "Hide key" else "Reveal key")
-                }
+    Column(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(id.hint, color = sig.muted, style = MaterialTheme.typography.bodySmall)
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 52.dp).background(sig.panel, androidx.compose.foundation.shape.RoundedCornerShape(10.dp)).padding(start = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            androidx.compose.foundation.layout.Box(Modifier.weight(1f).padding(vertical = 14.dp)) {
+                if (value.isEmpty()) Text("Paste key", color = sig.muted, style = ReconType.value.copy(fontSize = 14.sp))
+                androidx.compose.foundation.text.BasicTextField(
+                    value = value, onValueChange = onChange, singleLine = true, textStyle = ReconType.value.copy(fontSize = 14.sp, color = sig.text),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(sig.signal),
+                    visualTransformation = if (reveal) VisualTransformation.None else PasswordVisualTransformation('•'),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
+                    modifier = Modifier.fillMaxWidth().semantics { contentDescription = "${id.label} API key" },
+                )
             }
-        }
-    }
-}
-
-@Composable
-private fun DataSection(state: SettingsUiState, a: SettingsActions) {
-    var confirm by remember { mutableStateOf(false) }
-    if (confirm) {
-        AlertDialog(
-            onDismissRequest = { confirm = false },
-            title = { Text("Delete scan history?") },
-            text = { Text("Removes ${state.historyCount} saved scans from this device.") },
-            confirmButton = { TextButton(onClick = { confirm = false; a.onClearHistory() }) { Text("Delete") } },
-            dismissButton = { TextButton(onClick = { confirm = false }) { Text("Cancel") } },
-        )
-    }
-    Section("Data") {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Scan history", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                Text("${state.historyCount} saved on this device only", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            OutlinedButton(onClick = { confirm = true }, enabled = state.historyCount > 0, modifier = Modifier.heightIn(min = 48.dp)) { Text("Clear") }
-        }
-    }
-}
-
-@Composable
-private fun LegalSection(state: SettingsUiState) {
-    val cs = MaterialTheme.colorScheme
-    Section("About") {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Recon ${state.versionName}", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
-            Text(
-                "Everything runs on this device — no backend, no telemetry. The offender registry module performs live lookups " +
-                    "of your query only, reads just the first results page, and never stores or compiles registry data " +
-                    "(Idaho Code §74-120: no commercial use, no telephone or mailing lists). Registry photos and map tiles are shown but never saved, " +
-                    "registry records can't be exported, and your location is used only on this device to show distances.",
-                style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
-            )
-            Text(
-                "Extra username sites derived from WhatsMyName © Micah Hoffman and contributors, CC BY-SA 4.0 (github.com/WebBreacher/WhatsMyName).",
-                style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
-            )
+            IconButton(onClick = { reveal = !reveal }, Modifier.size(48.dp)) { Icon(if (reveal) Icons.Rounded.VisibilityOff else Icons.Rounded.Visibility, if (reveal) "Hide key" else "Reveal key", tint = sig.muted) }
         }
     }
 }
 
 @Composable
 private fun UpdatesSection(state: SettingsUiState, a: SettingsActions) {
-    val cs = MaterialTheme.colorScheme
+    val sig = ReconTheme.signal
     val u = state.update
     val busy = u is UpdateState.Checking || u is UpdateState.Downloading || u is UpdateState.Installing
-    Section("Updates") {
-        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Installed: v${state.versionName} · build ${state.installedBuild}", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+    SysSection("Updates") {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Installed: v${state.versionName} · build ${state.installedBuild}", color = sig.text, style = MaterialTheme.typography.titleSmall)
             when (u) {
-                UpdateState.Idle -> Text("Check whether a newer build has been published.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
-                UpdateState.Checking -> { Text("Checking GitHub…", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant); LinearProgressIndicator(Modifier.fillMaxWidth()) }
-                is UpdateState.UpToDate -> Text("You're on the latest build.", style = MaterialTheme.typography.bodyMedium, color = ReconTheme.severity.clean)
+                UpdateState.Idle -> Text("Check whether a newer build has been published.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                UpdateState.Checking -> { Text("Checking GitHub…", color = sig.muted, style = MaterialTheme.typography.bodySmall); LinearProgressIndicator(Modifier.fillMaxWidth(), color = sig.signal, trackColor = sig.ledOff) }
+                is UpdateState.UpToDate -> Text("You're on the latest build.", color = sig.safeText, style = MaterialTheme.typography.bodyMedium)
                 is UpdateState.Available -> {
-                    Text(
-                        "Build ${u.info.build} is available · ${"%.1f".format(u.info.sizeBytes / 1_048_576.0)} MB" + (u.info.publishedAt?.let { " · ${it.take(10)}" } ?: ""),
-                        style = MaterialTheme.typography.bodyMedium, color = cs.primary,
-                    )
-                    Button(onClick = a.onInstallUpdate, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Download and install") }
+                    Text("Build ${u.info.build} is available · ${"%.1f".format(u.info.sizeBytes / 1_048_576.0)} MB" + (u.info.publishedAt?.let { " · ${it.take(10)}" } ?: ""), color = sig.signal, style = MaterialTheme.typography.bodyMedium)
+                    SignalButton("Download and install", a.onInstallUpdate, Modifier.fillMaxWidth(), filled = true)
                 }
                 is UpdateState.Downloading -> {
-                    Text("Downloading build ${u.info.build}… ${(u.progress * 100).toInt()}%", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
-                    LinearProgressIndicator(progress = { u.progress }, Modifier.fillMaxWidth())
+                    Text("Downloading build ${u.info.build}… ${(u.progress * 100).toInt()}%", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                    LinearProgressIndicator(progress = { u.progress }, Modifier.fillMaxWidth(), color = sig.signal, trackColor = sig.ledOff)
                 }
                 is UpdateState.NeedsPermission -> {
-                    Text("Android needs your OK before Recon can install updates. Allow it in the screen that opened, come back, and tap install again.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
-                    Button(onClick = a.onInstallUpdate, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("Install build ${u.info.build}") }
+                    Text("Android needs your OK before Recon can install updates. Allow it in the screen that opened, come back, and tap install again.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                    SignalButton("Install build ${u.info.build}", a.onInstallUpdate, Modifier.fillMaxWidth(), filled = true)
                 }
-                is UpdateState.Installing -> { Text("Installing build ${u.info.build}… Recon will restart.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant); LinearProgressIndicator(Modifier.fillMaxWidth()) }
+                is UpdateState.Installing -> { Text("Installing build ${u.info.build}… Recon will restart.", color = sig.muted, style = MaterialTheme.typography.bodySmall); LinearProgressIndicator(Modifier.fillMaxWidth(), color = sig.signal, trackColor = sig.ledOff) }
                 is UpdateState.Failed -> {
-                    Text(u.message, style = MaterialTheme.typography.bodySmall, color = cs.error)
-                    TextButton(onClick = a.onDismissUpdateError, Modifier.heightIn(min = 48.dp)) { Text("Dismiss") }
+                    Text(u.message, color = sig.alertText, style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = a.onDismissUpdateError, Modifier.heightIn(min = 48.dp)) { SignalLabel("Dismiss") }
                 }
             }
-            OutlinedButton(onClick = a.onCheckUpdate, enabled = !busy, modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Check for updates") }
+            SignalButton("Check for updates", a.onCheckUpdate, Modifier.fillMaxWidth(), enabled = !busy)
+        }
+    }
+}
+
+@Composable
+private fun DataSection(state: SettingsUiState, a: SettingsActions) {
+    val sig = ReconTheme.signal
+    var confirm by remember { mutableStateOf(false) }
+    if (confirm) {
+        AlertDialog(
+            onDismissRequest = { confirm = false }, title = { Text("Delete scan history?") },
+            text = { Text("Removes ${state.historyCount} saved scans (and the Log built from them) from this device. Cases keep their targets.") },
+            confirmButton = { TextButton(onClick = { confirm = false; a.onClearHistory() }) { Text("Delete") } },
+            dismissButton = { TextButton(onClick = { confirm = false }) { Text("Cancel") } },
+        )
+    }
+    SysSection("Data") {
+        Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 14.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Scan history", color = sig.text, style = MaterialTheme.typography.titleSmall)
+                Text("${state.historyCount} saved on this device only", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+            }
+            SignalButton("Clear", { confirm = true }, enabled = state.historyCount > 0, mono = true)
+        }
+    }
+}
+
+@Composable
+private fun AboutSection(state: SettingsUiState) {
+    val sig = ReconTheme.signal
+    SysSection("About") {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text("Recon ${state.versionName}", color = sig.text, style = MaterialTheme.typography.titleSmall)
+            Text(
+                "Everything runs on this device: no backend, no telemetry. The offender registry module performs live lookups of your query only and never stores or compiles registry data " +
+                    "(Idaho Code §74-120: no commercial use, no telephone or mailing lists). Registry photos and map tiles are shown but never saved, registry records can't be exported, " +
+                    "and your location is used only on this device to show distances.",
+                color = sig.muted, style = MaterialTheme.typography.bodySmall,
+            )
+            Text("Extra username sites derived from WhatsMyName © Micah Hoffman and contributors, CC BY-SA 4.0 (github.com/WebBreacher/WhatsMyName).", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+            Text("Fonts: Instrument Serif, Geist and Geist Mono (SIL Open Font License 1.1).", color = sig.muted, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
