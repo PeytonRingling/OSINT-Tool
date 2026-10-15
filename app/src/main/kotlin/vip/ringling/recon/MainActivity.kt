@@ -78,11 +78,29 @@ class MainActivity : ComponentActivity() {
         handleShare(intent)
     }
 
-    /** Text shared into Recon (from any app's share sheet) becomes a search. */
+    private var scanClipboardOnFocus = false
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // Clipboard reads are only allowed while we have focus (Android 10+), so the launcher shortcut defers to here.
+        if (hasFocus && scanClipboardOnFocus) {
+            scanClipboardOnFocus = false
+            val cm = getSystemService(android.content.ClipboardManager::class.java)
+            vip.ringling.recon.domain.IncomingText.clean(cm?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString())?.let(vm::requestSearch)
+        }
+    }
+
+    /** Text shared into Recon (share sheet), selected text ("Recon" in the selection menu), mailto:/tel: links and the clipboard shortcut become a search. */
     private fun handleShare(intent: Intent?) {
-        if (intent?.action != Intent.ACTION_SEND || intent.type?.startsWith("text/") != true) return
-        val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.lineSequence()?.firstOrNull { it.isNotBlank() }?.trim()?.take(200) ?: return
-        vm.requestSearch(text)
-        setIntent(Intent(this, MainActivity::class.java))
+        intent ?: return
+        val query = when (intent.action) {
+            Intent.ACTION_SEND -> if (intent.type?.startsWith("text/") == true) vip.ringling.recon.domain.IncomingText.clean(intent.getStringExtra(Intent.EXTRA_TEXT)) else null
+            Intent.ACTION_PROCESS_TEXT -> vip.ringling.recon.domain.IncomingText.clean(intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString())
+            Intent.ACTION_VIEW, Intent.ACTION_SENDTO, Intent.ACTION_DIAL -> vip.ringling.recon.domain.IncomingText.fromUri(intent.data?.scheme, intent.data?.schemeSpecificPart)
+            "vip.ringling.recon.SCAN_CLIPBOARD" -> { scanClipboardOnFocus = true; null }
+            else -> null
+        }
+        query?.let(vm::requestSearch)
+        if (query != null || intent.action == "vip.ringling.recon.SCAN_CLIPBOARD") setIntent(Intent(this, MainActivity::class.java))
     }
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut android:shortcutId="scan_clipboard" android:enabled="true" android:shortcutShortLabel="@string/shortcut_clipboard" android:shortcutLongLabel="@string/shortcut_clipboard_long">
+        <intent android:action="vip.ringling.recon.SCAN_CLIPBOARD" android:targetPackage="vip.ringling.recon" android:targetClass="vip.ringling.recon.MainActivity" />
+    </shortcut>
+</shortcuts>

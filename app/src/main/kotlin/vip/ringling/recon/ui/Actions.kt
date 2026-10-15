@@ -69,6 +69,7 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
                     context.startActivity(Intent.createChooser(send, "Share finding").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
                 },
                 onExport = { f -> export("recon-${f.module.name.lowercase()}-${f.id.takeLast(12)}.json", Export.finding(f)) },
+                onEvidence = { f -> val now = System.currentTimeMillis(); bytesHolder[0] = vip.ringling.recon.data.PdfWriter.fromMarkdown(vip.ringling.recon.domain.Evidence.markdown(f, now)); bytesLauncher.launch(vip.ringling.recon.domain.Evidence.fileName(f, now)) },
                 onPivot = { pivot(it) },
                 onRunPaid = { runPaid(it) },
                 onOpenMap = { g ->

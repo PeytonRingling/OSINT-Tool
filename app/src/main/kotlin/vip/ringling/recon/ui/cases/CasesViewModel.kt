@@ -77,9 +77,9 @@ class CasesViewModel @Inject constructor(
 
     fun create(name: String, first: CaseTarget? = null, onCreated: (String) -> Unit = {}) = viewModelScope.launch { onCreated(repo.create(name, first)) }
 
-    fun addWatch(email: String) = viewModelScope.launch {
-        if (!email.trim().matches(Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))) return@launch
-        watch.add(email)
+    fun addWatch(raw: String) = viewModelScope.launch {
+        val type = InputDetector.detect(raw)?.takeIf { it == InputType.EMAIL || it == InputType.USERNAME || it == InputType.DOMAIN } ?: return@launch
+        watch.add(InputDetector.normalize(raw, type), type = type)
         WatchScheduler.sync(context, true)
         WatchScheduler.runNow(context)
     }

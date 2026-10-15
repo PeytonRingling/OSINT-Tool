@@ -91,9 +91,9 @@ private fun WatchlistStrip(items: List<WatchItem>, actions: CasesActions) {
         Column {
             Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 14.dp, end = 10.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 Icon(Icons.Outlined.NotificationsNone, null, tint = sig.signal)
-                Column(Modifier.weight(1f).clickable(onClickLabel = if (open) "Hide watched emails" else "Show watched emails") { open = !open }) {
+                Column(Modifier.weight(1f).clickable(onClickLabel = if (open) "Hide watched targets" else "Show watched targets") { open = !open }) {
                     Text("Watchlist", color = sig.text, style = androidx.compose.material3.MaterialTheme.typography.titleSmall)
-                    Text(if (items.isEmpty()) "Daily breach check on watched emails" else "${items.size} watched · daily breach check", color = sig.muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                    Text(if (items.isEmpty()) "Daily check on watched emails, usernames and domains" else "${items.size} watched · daily check", color = sig.muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
                 }
                 SignalButton("Add", actions.onAddWatch, mono = true)
             }

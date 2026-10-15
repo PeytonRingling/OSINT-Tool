@@ -75,10 +75,10 @@ fun RenameCaseDialog(current: String, onDismiss: () -> Unit, onRename: (String) 
 @Composable
 fun AddWatchDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
     var email by remember { mutableStateOf("") }
-    val valid = email.trim().matches(Regex("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$"))
+    val valid = vip.ringling.recon.domain.InputDetector.detect(email).let { it == InputType.EMAIL || it == InputType.USERNAME || it == InputType.DOMAIN }
     AlertDialog(
-        onDismissRequest = onDismiss, title = { Text("Watch an email") },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Checked once a day against your breach sources. You're notified only about NEW breaches. Needs a HIBP or LeakCheck key."); SignalTextField(email, { email = it }, "name@example.com", description = "Email to watch", keyboard = androidx.compose.ui.text.input.KeyboardType.Email, onGo = { if (valid) onAdd(email) }) } },
+        onDismissRequest = onDismiss, title = { Text("Watch a target") },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Checked once a day. An email alerts on NEW breaches (needs a HIBP or LeakCheck key); a username or domain alerts when a new finding appears."); SignalTextField(email, { email = it }, "email, @username or domain", description = "Target to watch", keyboard = androidx.compose.ui.text.input.KeyboardType.Email, onGo = { if (valid) onAdd(email) }) } },
         confirmButton = { TextButton(onClick = { onAdd(email) }, enabled = valid) { Text("Watch") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

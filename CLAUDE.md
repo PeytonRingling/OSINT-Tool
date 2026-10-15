@@ -126,7 +126,7 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - **Photo metadata** (`ModuleId.IMAGE`, `InputType.IMAGE`, never auto-detected): Home chip -> picker -> `ImageAnalyzer` (androidx.exifinterface) shows camera, owner/serial, GPS (+map), SHA-256/MD5, reverse-image links. Fully on-device.
 - **Case file**: Room v2 (`MIGRATION_1_2` adds `case_items`, `watch`; migration is tested). "Add to case" on any finding except registry; notes; entity roll-up from pivots; Markdown/PDF/share report (`CaseReport`, `PdfWriter`).
 - **Watchlist**: Settings -> Watchlist; `WatchWorker` (WorkManager, daily, network) re-runs the breach source for watched emails, silent baseline first, notification on NEW breaches only; failed lookups never alter the baseline. Needs POST_NOTIFICATIONS on API 33+.
-- **Privacy**: Settings -> Tor (Orbot 127.0.0.1:9050) or custom SOCKS5 for every lookup via `ProxyState` (fail-closed; hostnames unresolved locally; Coil photos/tiles are NOT proxied). App lock = framework BiometricPrompt (biometric or device credential), re-locks on background, FLAG_SECURE hides recents.
+- **Privacy**: Settings -> Tor (Orbot 127.0.0.1:9050) or custom SOCKS5 for every lookup via `ProxyState` (fail-closed; hostnames unresolved locally; Coil photos/tiles use the same proxy selector, so they go through it too). App lock = framework BiometricPrompt (biometric or device credential), re-locks on background, FLAG_SECURE hides recents.
 - Share any text into Recon (share sheet) to search it; `SearchWidget` is a launcher shortcut only (no data shown).
 - Unverifiable here (need the user's keys/phone): HIBP account endpoints, LeakCheck v2, Veriphone, Twilio, biometric prompt and widget on a real device.
 
@@ -164,7 +164,17 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Log (`ui/log`, `domain/Log.kt`): grouped by target with sparklines; By target / Timeline. Backed by `scanSnapshot` (Room v4): one row per scan with risk/exposed/info; ZIP stores the record COUNT only (registry data is never stored). Delta = latest vs FIRST scan. Backfilled from History on first Log load; Clear all also clears snapshots.
 - Cases (`ui/cases`, Room `caseFile/caseTarget/caseNote`; legacy `case_items` kept for schema only): dossier cards, link graph (edges from shared handles/domains, "No link yet" is shown, never inferred), Targets/Pivots/Notes/Changes, "Pin to case" from results, Markdown/PDF/share report. Case exposure = max risk of scored targets. Changes timeline (`domain/CaseChanges.kt`) is derived ONLY from scanSnapshot rows (no inferred causes). >=840dp: `CasesWorkspace` (280dp list + canvas, Changes inline).
 - System (`ui/settings`): status panel, privacy (proxy, app lock), display, API-key status list, updates, data, about. Watchlist UI now lives on Cases; `HandledRepository` backs "Mark handled".
-- Migrations 1->2->3->4 are tested (`CaseTest`). Not built: WindowManager tabletop posture. Unverified on a device: fold/unfold state retention, biometric, widget, Tor, notifications.
+- Migrations 1->2->3->4 are tested (`CaseTest`). Unverified on a device: fold/unfold state retention, biometric, widget, Tor, notifications.
+
+## Improvements batch (added 2026-10-15)
+- Breaches: tappable rows on the exposure screen (`FindingGroup`), tappable orbit nodes / fix-first steps / timeline dots (bottom sheets list the matching findings; `FixStep.findingIds`, `TimelineEvent.findingId`). Breach detail = `ui/detail/BreachDetail.kt` (stats, what leaked + `BreachAdvice.explain`, what to do, story, details).
+- Radar and Log both read `scanSnapshot` (`RadarMath.targetsFromSnapshots`); `SnapshotRepository.backfill` adds any History row without a snapshot (runs at Radar/Log start). Radar draws the 12 newest, labels the 3 newest. Log: "Re-scan all" and Undo for Clear all (in-memory backup).
+- Re-scan all (`ScanController.rescanAll`, `ScanDiffs`): sequential background scans of non-ZIP/non-photo targets, saved like normal scans, `RescanSheet` shows score change + new titles. Also in a case's menu.
+- Handled: `HandledRepository.keyOf(f)` hash (NOT the finding id) is what the UI compares; "Mark as handled" on phone detail + wide pane; handled rows dim. The risk score is unchanged by it.
+- Watchlist accepts email (breach diff), username and domain (diff of scorable finding ids via `ScanRunner`; failed runs never alert). Adding one asks for POST_NOTIFICATIONS.
+- Password check (`PwnedPasswords`, k-anonymity, only a 5-char SHA-1 prefix leaves the phone, nothing stored). Evidence PDF (`Evidence`: timestamp + SHA-256 of the finding text; not for registry records). Backup export/import (`BackupManager`: scans, snapshots, cases, watchlist; never keys/settings; import merges).
+- Incoming: share sheet, text-selection menu (PROCESS_TEXT), `mailto:`/`tel:` links, launcher shortcut "Scan clipboard", Paste button on Radar (`IncomingText`).
+- Fold: `androidx.window` tabletop posture (`LocalTabletop`): results stack graph above findings. Unverified on a device.
 
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself

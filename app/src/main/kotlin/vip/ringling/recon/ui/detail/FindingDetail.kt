@@ -66,6 +66,7 @@ data class DetailActions(
     val onPivot: (String) -> Unit = {},
     val onRunPaid: (Finding) -> Unit = {},
     val onHandled: (Finding, Boolean) -> Unit = { _, _ -> },
+    val onEvidence: (Finding) -> Unit = {},
 )
 
 private fun Finding.weight() = when (severity) {
@@ -190,6 +191,9 @@ fun FindingDetail(
                     Icon(Icons.Rounded.Share, null, Modifier.size(18.dp)); Text("Share", Modifier.padding(start = 8.dp))
                 }
                 // Registry records can't be exported: a saved file of registrants is a compiled list (Idaho Code §74-120).
+                if (Export.exportable(finding) && finding.severity != Severity.CLEAN) FilledTonalButton(onClick = { actions.onEvidence(finding) }, Modifier.heightIn(min = 48.dp)) {
+                    Icon(Icons.Rounded.FileDownload, null, Modifier.size(18.dp)); Text("Evidence PDF", Modifier.padding(start = 8.dp))
+                }
                 if (Export.exportable(finding)) FilledTonalButton(onClick = { actions.onExport(finding) }, Modifier.heightIn(min = 48.dp)) {
                     Icon(Icons.Rounded.FileDownload, null, Modifier.size(18.dp)); Text("Export JSON", Modifier.padding(start = 8.dp))
                 }

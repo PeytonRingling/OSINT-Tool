@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
@@ -162,6 +163,13 @@ fun TargetDock(state: RadarUiState, actions: RadarActions, modifier: Modifier = 
                         modifier = Modifier.fillMaxWidth().semantics { contentDescription = "Email, phone, username, domain or ZIP" },
                     )
                 }
+                val clipboard = androidx.compose.ui.platform.LocalContext.current.getSystemService(android.content.ClipboardManager::class.java)
+                if (state.query.isEmpty()) Box(
+                    Modifier.size(48.dp).clickable(onClickLabel = "Paste from clipboard") {
+                        vip.ringling.recon.domain.IncomingText.clean(clipboard?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.text?.toString())?.let(actions.onQuery)
+                    },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.Outlined.ContentPaste, "Paste from clipboard", tint = sig.muted, modifier = Modifier.size(20.dp)) }
                 if (state.query.isNotEmpty()) Box(Modifier.size(48.dp).clickable(onClickLabel = "Clear") { actions.onQuery("") }, contentAlignment = Alignment.Center) {
                     Icon(Icons.Rounded.Close, "Clear", tint = sig.muted, modifier = Modifier.size(20.dp))
                 }

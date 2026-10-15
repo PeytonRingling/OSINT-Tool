@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.toList
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -38,6 +39,7 @@ import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.OsintSource
 import vip.ringling.recon.domain.ScanInput
+import vip.ringling.recon.domain.scorable
 
 data class WatchItem(val email: String, val knownCount: Int, val lastChecked: Long)
 
@@ -59,6 +61,13 @@ object WatchLogic {
         }
     }
 
+    /** Signature for non-email targets (username, domain): ids of every scorable finding; null when any source failed, so a bad run never alerts or moves the baseline. */
+    fun signatureFor(type: InputType, findings: List<Finding>): Set<String>? {
+        if (type == InputType.EMAIL) return signature(findings)
+        if (findings.any { it.id.endsWith("-error") }) return null
+        return findings.filter { it.scorable }.map { it.id }.toSet()
+    }
+
     /** New identifiers since the last check. A first check (no baseline) records silently. */
     fun newItems(known: Set<String>?, now: Set<String>): Set<String> = if (known == null) emptySet() else now - known
 }
@@ -68,10 +77,10 @@ class WatchRepository @Inject constructor(private val dao: WatchDao) {
     private val json = Json
     val items: Flow<List<WatchEntity>> = dao.all()
 
-    suspend fun add(email: String, now: Long = System.currentTimeMillis()) {
-        val e = email.trim().lowercase()
+    suspend fun add(value: String, now: Long = System.currentTimeMillis(), type: InputType = InputType.EMAIL) {
+        val e = value.trim().lowercase()
         // knownJson "null" = baseline not yet recorded.
-        dao.upsert(WatchEntity(e, e, InputType.EMAIL.name, "null", 0L, now))
+        dao.upsert(WatchEntity(e, e, type.name, "null", 0L, now))
     }
 
     suspend fun remove(email: String) = dao.delete(email)
@@ -83,12 +92,16 @@ class WatchRepository @Inject constructor(private val dao: WatchDao) {
 }
 
 /** Re-runs breach checks for watched emails and returns the ones with something new. */
-class WatchChecker @Inject constructor(private val repo: WatchRepository, private val source: OsintSource) {
+class WatchChecker(private val repo: WatchRepository, private val source: OsintSource, private val runner: vip.ringling.recon.domain.ScanRunner? = null) {
     suspend fun run(now: Long = System.currentTimeMillis()): Map<String, Set<String>> {
         val alerts = mutableMapOf<String, Set<String>>()
         for (w in repo.all()) {
-            val findings = runCatching { source.run(ScanInput(w.raw, InputType.EMAIL)).toList() }.getOrNull() ?: continue
-            val sig = WatchLogic.signature(findings) ?: continue
+            val type = runCatching { InputType.valueOf(w.type) }.getOrDefault(InputType.EMAIL)
+            val input = ScanInput(w.raw, type)
+            val findings = runCatching {
+                if (type == InputType.EMAIL || runner == null) source.run(input).toList() else runner.session(input).lastOrNull()?.findings.orEmpty()
+            }.getOrNull() ?: continue
+            val sig = WatchLogic.signatureFor(type, findings) ?: continue
             val fresh = WatchLogic.newItems(repo.known(w), sig)
             if (fresh.isNotEmpty()) alerts[w.raw] = fresh
             repo.record(w, sig, now)
@@ -102,13 +115,14 @@ class WatchChecker @Inject constructor(private val repo: WatchRepository, privat
 interface WatchEntryPoint {
     fun repo(): WatchRepository
     fun breachSource(): vip.ringling.recon.data.sources.breach.BreachSource
+    fun runner(): vip.ringling.recon.domain.ScanRunner
 }
 
 class WatchWorker(private val ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx, params) {
     override suspend fun doWork(): Result {
         val ep = EntryPointAccessors.fromApplication(ctx, WatchEntryPoint::class.java)
-        val alerts = WatchChecker(ep.repo(), ep.breachSource()).run()
-        alerts.forEach { (email, fresh) -> Notifier.breach(ctx, email, fresh.size) }
+        val alerts = WatchChecker(ep.repo(), ep.breachSource(), ep.runner()).run()
+        alerts.forEach { (value, fresh) -> Notifier.breach(ctx, value, fresh.size) }
         return Result.success()
     }
 }
