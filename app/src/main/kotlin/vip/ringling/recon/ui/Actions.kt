@@ -29,7 +29,7 @@ class ReconActions(
 )
 
 @Composable
-fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit = {}, onAddToCase: (Finding) -> Unit = {}, onRunPaid: (Finding) -> Unit = {}): ReconActions {
+fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit = {}, onRunPaid: (Finding) -> Unit = {}): ReconActions {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val holder = remember { arrayOfNulls<String>(1) }
@@ -55,7 +55,6 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
     }
 
     val pivot by androidx.compose.runtime.rememberUpdatedState(onPivot)
-    val addToCase by androidx.compose.runtime.rememberUpdatedState(onAddToCase)
     val runPaid by androidx.compose.runtime.rememberUpdatedState(onRunPaid)
     return remember(context) {
         ReconActions(
@@ -72,7 +71,6 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
                 onExport = { f -> export("recon-${f.module.name.lowercase()}-${f.id.takeLast(12)}.json", Export.finding(f)) },
                 onPivot = { pivot(it) },
                 onRunPaid = { runPaid(it) },
-                onAddToCase = { f -> addToCase(f); scope.launch { snackbar.showSnackbar("Added to case") } },
                 onOpenMap = { g ->
                     // Coordinates only: nothing about who is at this address is passed to the maps app.
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, "geo:${g.lat},${g.lng}?q=${g.lat},${g.lng}".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }

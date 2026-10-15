@@ -32,10 +32,18 @@ class MainViewModel @Inject constructor(
     private val controller: ScanController,
     private val userLocation: UserLocation,
     private val updates: UpdateManager,
-    private val cases: vip.ringling.recon.data.CaseRepository,
+    private val caseFiles: vip.ringling.recon.data.CaseFileRepository,
 ) : ViewModel() {
-    fun addToCase(f: Finding) { viewModelScope.launch { cases.add(f) } }
-    val caseCount: StateFlow<Int> = cases.items.map { it.size }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+    /** Bumped when something outside the Cases screen (the radar's "New case" button) asks it to open the new-case dialog. */
+    private val _newCase = kotlinx.coroutines.flow.MutableStateFlow(0)
+    val newCaseRequests: StateFlow<Int> = _newCase
+    fun requestNewCase() { _newCase.value += 1 }
+
+    /** Pin a scanned target to a case (only the target is kept, never findings). */
+    fun pin(caseId: String, input: vip.ringling.recon.domain.ScanInput) { viewModelScope.launch { caseFiles.addTarget(caseId, input.type, input.raw) } }
+    fun createCaseWith(name: String, input: vip.ringling.recon.domain.ScanInput) {
+        viewModelScope.launch { caseFiles.create(name, vip.ringling.recon.domain.CaseTarget(input.type, input.raw, System.currentTimeMillis())) }
+    }
     val update: StateFlow<UpdateState> = updates.state
     fun checkForUpdateQuietly() = updates.checkQuietly()
     fun requestSearch(query: String) = controller.requestSearch(query)

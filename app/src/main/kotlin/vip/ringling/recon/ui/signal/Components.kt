@@ -258,3 +258,25 @@ fun Wordmark(modifier: Modifier = Modifier) {
         Text("recon", color = ReconTheme.signal.text, style = ReconType.pageTitle.copy(fontSize = 28.sp, lineHeight = 30.sp))
     }
 }
+
+/** Single-line mono input with a signal hairline. */
+@Composable
+fun SignalTextField(
+    value: String, onValueChange: (String) -> Unit, placeholder: String, modifier: Modifier = Modifier,
+    description: String = placeholder, onGo: () -> Unit = {}, keyboard: androidx.compose.ui.text.input.KeyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
+) {
+    val sig = ReconTheme.signal
+    Box(
+        modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(10.dp)).background(sig.panel).border(1.dp, sig.signal.copy(alpha = 0.4f), RoundedCornerShape(10.dp)).padding(horizontal = 14.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        if (value.isEmpty()) Text(placeholder, color = sig.muted, style = ReconType.value.copy(fontSize = 14.sp), maxLines = 1)
+        androidx.compose.foundation.text.BasicTextField(
+            value = value, onValueChange = onValueChange, singleLine = true,
+            textStyle = ReconType.value.copy(fontSize = 15.sp, color = sig.text), cursorBrush = androidx.compose.ui.graphics.SolidColor(sig.signal),
+            keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = keyboard, imeAction = androidx.compose.ui.text.input.ImeAction.Go, autoCorrectEnabled = false),
+            keyboardActions = androidx.compose.foundation.text.KeyboardActions(onGo = { onGo() }),
+            modifier = Modifier.fillMaxWidth().semantics { this.contentDescription = description },
+        )
+    }
+}

@@ -20,9 +20,13 @@ class HandledRepository @Inject constructor(@ApplicationContext private val cont
     val handled: Flow<Set<String>> = context.handledStore.data.map { it[key] ?: emptySet() }
 
     suspend fun set(f: Finding, on: Boolean) {
-        val id = CaseRepository.keyOf(f)
+        val id = keyOf(f)
         context.handledStore.edit { p -> p[key] = (p[key] ?: emptySet()).let { if (on) it + id else it - id } }
     }
 
-    companion object { fun keyOf(f: Finding) = CaseRepository.keyOf(f) }
+    companion object {
+        /** Stable key from the finding's module, id, title and detail. */
+        fun keyOf(f: Finding): String =
+            java.security.MessageDigest.getInstance("SHA-256").digest("${f.module}|${f.id}|${f.title}|${f.detail}".toByteArray()).take(12).joinToString("") { "%02x".format(it) }
+    }
 }

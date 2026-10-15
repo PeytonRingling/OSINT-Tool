@@ -13,7 +13,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import vip.ringling.recon.data.db.HistoryDb
-import vip.ringling.recon.domain.CaseReport
 import vip.ringling.recon.domain.Fact
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.Link
@@ -28,26 +27,36 @@ class CaseTest {
     private fun f(id: String, module: ModuleId = ModuleId.IDENTITY, pivots: List<Pivot> = emptyList()) =
         Finding(id, module, "T-$id", "detail $id", Severity.INFO, url = "https://x/$id", facts = listOf(Fact("Name", "Jane\nDoe")), links = listOf(Link("L", "https://l")), pivots = pivots)
 
-    @Test fun addNoteRemoveAndRegistryRefusal() = runTest {
+    @Test fun casesPersistTargetsNotesAndRenameDelete() = runTest {
         val db = Room.inMemoryDatabaseBuilder(ctx, HistoryDb::class.java).allowMainThreadQueries().build()
-        val repo = CaseRepository(db.cases())
-        assertTrue(repo.add(f("a"))); assertFalse(repo.add(f("r", ModuleId.REGISTRY)), "registry data must never be stored")
-        val key = repo.items.first().single().key
-        repo.setNote(key, "met her at the expo")
-        assertEquals("met her at the expo", repo.items.first().single().note)
-        assertTrue(repo.add(f("a"))); assertEquals(1, repo.items.first().size, "same finding is not duplicated")
-        repo.remove(key); assertEquals(0, repo.items.first().size)
+        val repo = vip.ringling.recon.data.CaseFileRepository(db.caseFiles())
+        val id = repo.create("  My footprint ", vip.ringling.recon.domain.CaseTarget(vip.ringling.recon.domain.InputType.EMAIL, "a@b.com", 1), now = 5)
+        repo.addTarget(id, vip.ringling.recon.domain.InputType.USERNAME, "ab"); repo.addTarget(id, vip.ringling.recon.domain.InputType.USERNAME, "ab")
+        repo.addTarget(id, vip.ringling.recon.domain.InputType.IMAGE, "content://photo/1")
+        repo.addNote(id, "  met at the expo "); repo.addNote(id, "   ")
+        var c = repo.cases.first().single()
+        assertEquals("My footprint", c.name); assertEquals(1, c.number)
+        assertEquals(listOf("a@b.com", "ab"), c.targets.map { it.value }, "duplicates ignored; photos are not durable targets")
+        assertEquals(listOf("met at the expo"), c.notes.map { it.text })
+        repo.removeTarget(id, vip.ringling.recon.domain.InputType.USERNAME, "ab"); repo.rename(id, "Renamed"); repo.deleteNote(c.notes.single().id)
+        c = repo.cases.first().single()
+        assertEquals(listOf("a@b.com"), c.targets.map { it.value }); assertEquals("Renamed", c.name); assertTrue(c.notes.isEmpty())
+        val second = repo.create("Jerome area", vip.ringling.recon.domain.CaseTarget(vip.ringling.recon.domain.InputType.ZIP, "83338", 1))
+        assertEquals(listOf(1, 2), repo.cases.first().map { it.number })
+        repo.delete(id)
+        assertEquals(listOf(second), repo.cases.first().map { it.id }); assertTrue(db.caseFiles().targets().first().none { it.caseId == id })
         db.close()
     }
 
-    @Test fun entitiesCountAcrossFindingsAndReportIsComplete() {
-        val items = listOf(
-            CaseItem("1", f("a", pivots = listOf(Pivot("p", "Jane@x.com"), Pivot("p2", "janed"))), "n1", 1),
-            CaseItem("2", f("b", ModuleId.DOMAIN, listOf(Pivot("p", "jane@x.com"))), "", 2),
-        )
-        assertEquals(listOf("jane@x.com" to 2, "janed" to 1), CaseReport.entities(items))
-        val md = CaseReport.markdown(items, "2026-10-15")
-        assertTrue("# Recon case report" in md && "## Identity" in md && "## Domain recon" in md && "_Note:_ n1" in md && "- **Name:** Jane; Doe" in md && "jane@x.com (×2)" in md, md)
+    @Test fun caseReportCarriesTargetsChangesPivotsAndNotes() {
+        val file = vip.ringling.recon.domain.CaseFile("c", "My footprint", 1, 1, listOf(vip.ringling.recon.domain.CaseTarget(vip.ringling.recon.domain.InputType.EMAIL, "ann@b.com", 1), vip.ringling.recon.domain.CaseTarget(vip.ringling.recon.domain.InputType.USERNAME, "ann", 1)), listOf(vip.ringling.recon.domain.CaseNote(1, "check the old gmail", 1_700_000_000_000)))
+        val s1 = vip.ringling.recon.domain.ScanSnapshot("1", vip.ringling.recon.domain.InputType.EMAIL, "ann@b.com", 1_700_000_000_000, 34, 3, 5, emptyList())
+        val s2 = s1.copy(id = "2", ts = 1_700_000_100_000, risk = 100, exposed = 12)
+        val states = listOf(vip.ringling.recon.domain.CaseTargetState(file.targets[0], s2, listOf(s1, s2)), vip.ringling.recon.domain.CaseTargetState(file.targets[1], null, emptyList()))
+        val md = vip.ringling.recon.domain.CaseReport.markdown(file, states, vip.ringling.recon.domain.CaseChanges.events(states), listOf(vip.ringling.recon.domain.CasePivot("pal@work.io", "Breach check", "Found in Code footprint.")), "2026-10-15")
+        assertTrue("# My footprint" in md && "- Case exposure: 100/100 (Critical exposure)" in md && "Since first scan: ▲ 66" in md, md)
+        assertTrue("**ann@b.com** (Email): risk 100, 12 exposed" in md && "**ann** (Username): not scanned yet" in md && "same handle" in md, md)
+        assertTrue("▲ 66 — Risk 34 → 100." in md && "pal@work.io" in md && "check the old gmail" in md && "never stored or included" in md, md)
     }
 
     @Test fun migrationFromV1KeepsHistoryAndCreatesNewTables() = runTest {

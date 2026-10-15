@@ -229,6 +229,53 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
         LogScreen(LogUiState(vip.ringling.recon.domain.LogMath.targets(logSnapshots), logSnapshots.sortedByDescending { it.ts }, LogMode.TIMELINE, NOW), LogActions(), contentPadding = pad)
     }
 
+    private val caseEmail = ScanInput("test.user@example.com", InputType.EMAIL)
+    private val casePhone = ScanInput("5555550123", InputType.PHONE)
+    private val caseUser = ScanInput("testuser", InputType.USERNAME)
+    private val caseSnaps = listOf(
+        snap("c1", caseEmail, 12 * 3_600_000, 34, 3, 8), snap("c2", caseEmail, 11 * 3_600_000 + 30 * 60_000, 100, 12, 8), snap("c3", caseEmail, 7 * 60_000, 100, 12, 10),
+        snap("c4", caseUser, 12 * 3_600_000, 10, 1, 4), snap("c5", casePhone, 20 * 3_600_000, 8, 0, 2), snap("c6", casePhone, 9 * 60_000, 12, 0, 3),
+        snap("c7", ScanInput("test.user2@example.com", InputType.EMAIL), 11 * 3_600_000, 0),
+        snap("c8", zip, 11 * 60_000, 0, 0, 68), snap("c9", ScanInput("83301", InputType.ZIP), 11 * 3_600_000, 0, 0, 0),
+    )
+
+    private fun caseView(number: Int, name: String, targets: List<ScanInput>, pivots: List<vip.ringling.recon.domain.CasePivot> = emptyList(), notes: List<vip.ringling.recon.domain.CaseNote> = emptyList()): vip.ringling.recon.ui.cases.CaseView {
+        val file = vip.ringling.recon.domain.CaseFile("case$number", name, NOW, number, targets.map { vip.ringling.recon.domain.CaseTarget(it.type, it.raw, NOW) }, notes)
+        val by = caseSnaps.groupBy { it.key }
+        val states = file.targets.map { t -> by[t.key].orEmpty().sortedBy { it.ts }.let { vip.ringling.recon.domain.CaseTargetState(t, it.lastOrNull(), it) } }
+        return vip.ringling.recon.ui.cases.CaseView(file, states, vip.ringling.recon.domain.CaseLogic.edges(file.targets), pivots, vip.ringling.recon.domain.CaseChanges.events(states), vip.ringling.recon.domain.CaseChanges.exposureSeries(states))
+    }
+
+    private val footprint = caseView(
+        1, "My footprint", listOf(caseEmail, caseUser, casePhone),
+        pivots = listOf(
+            vip.ringling.recon.domain.CasePivot("pal@work.io", "Breach check pal@work.io", "Found in Code footprint for test.user@example.com."),
+            vip.ringling.recon.domain.CasePivot("octo_x", "Search @octo_x", "Found in Identity for testuser."),
+        ),
+    )
+    private val casesState = vip.ringling.recon.ui.cases.CasesUiState(
+        listOf(footprint, caseView(2, "example.com", listOf(ScanInput("test.user2@example.com", InputType.EMAIL))), caseView(3, "Jerome area", listOf(zip, ScanInput("83301", InputType.ZIP)))),
+        listOf(vip.ringling.recon.data.watch.WatchItem("test.user@example.com", 7, NOW)),
+    )
+
+    @Test fun cases_list() = shot("11_cases", tab = Tab.CASES) { _, pad -> vip.ringling.recon.ui.cases.CasesScreen(casesState, vip.ringling.recon.ui.cases.CasesActions(), contentPadding = pad) }
+
+    @Test fun case_detail_pivots() = shot("11b_case_detail", tab = Tab.CASES) { _, pad ->
+        vip.ringling.recon.ui.cases.CaseDetailScreen(footprint, vip.ringling.recon.ui.cases.CaseTab.PIVOTS, vip.ringling.recon.ui.cases.CaseDetailActions(), contentPadding = pad)
+    }
+
+    @Test fun case_detail_targets() = shot("11c_case_targets", tab = Tab.CASES) { _, pad ->
+        vip.ringling.recon.ui.cases.CaseDetailScreen(footprint, vip.ringling.recon.ui.cases.CaseTab.TARGETS, vip.ringling.recon.ui.cases.CaseDetailActions(), contentPadding = pad)
+    }
+
+    @Test fun case_timeline() = shot("11d_case_changes", tab = Tab.CASES) { _, pad ->
+        vip.ringling.recon.ui.cases.CaseTimelineScreen(footprint, vip.ringling.recon.ui.cases.ChangeFilter.ALL, {}, {}, {}, NOW, contentPadding = pad)
+    }
+
+    @Test fun case_timeline_worse() = shot("11e_case_changes_worse", tab = Tab.CASES) { _, pad ->
+        vip.ringling.recon.ui.cases.CaseTimelineScreen(footprint, vip.ringling.recon.ui.cases.ChangeFilter.WORSE, {}, {}, {}, NOW, contentPadding = pad)
+    }
+
     @Test fun settings_update_available() = shot("10b_settings_update_available", tab = Tab.SETTINGS) { _, pad ->
         val info = ReleaseInfo(12, "u", "Recon.apk", 4_057_192, null, "2026-10-15T01:02:03Z", null)
         SettingsScreen(

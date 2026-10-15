@@ -1,36 +1,43 @@
 package vip.ringling.recon.domain
 
-import vip.ringling.recon.data.CaseItem
-
-/** Turns a case into a shareable report. Plain Markdown is the source of truth; the PDF renders the same text. */
+/** Markdown report for a case, built from stored scans, notes and derived suggestions only. PDF and share render this same text. */
 object CaseReport {
-    /** Every pivot query across the case with how many findings mention it: the "entities" that tie findings together. */
-    fun entities(items: List<CaseItem>): List<Pair<String, Int>> =
-        items.flatMap { it.finding.pivots.map { p -> p.query.lowercase() }.distinct() }
-            .groupingBy { it }.eachCount().entries.sortedWith(compareByDescending<Map.Entry<String, Int>> { it.value }.thenBy { it.key })
-            .map { it.key to it.value }
-
-    fun markdown(items: List<CaseItem>, generated: String): String = buildString {
-        appendLine("# Recon case report")
-        appendLine("Generated $generated · ${items.size} finding${if (items.size == 1) "" else "s"}")
+    fun markdown(file: CaseFile, states: List<CaseTargetState>, events: List<ChangeEvent>, pivots: List<CasePivot>, generated: String): String = buildString {
+        appendLine("# ${file.name}")
+        appendLine("Recon case report · generated $generated · ${states.size} target${if (states.size == 1) "" else "s"}")
         appendLine()
-        appendLine("> Compiled from public sources. Verify before relying on it; matching names or handles do not prove they belong to the same person.")
-        val ent = entities(items)
-        if (ent.isNotEmpty()) {
-            appendLine(); appendLine("## Entities")
-            ent.forEach { (q, n) -> appendLine("- $q" + if (n > 1) " (×$n)" else "") }
-        }
-        items.groupBy { it.finding.module }.toSortedMap().forEach { (module, group) ->
-            appendLine(); appendLine("## ${module.label}")
-            group.forEach { (_, f, note) ->
-                appendLine(); appendLine("### ${f.title} — ${f.severity.label}")
-                appendLine(f.detail)
-                f.url?.let { appendLine(); appendLine(it) }
-                f.geo?.let { appendLine(); appendLine("Location: ${it.lat}, ${it.lng}") }
-                if (f.facts.isNotEmpty()) { appendLine(); f.facts.forEach { appendLine("- **${it.label}:** ${it.value.replace("\n", "; ")}") } }
-                if (f.links.isNotEmpty()) { appendLine(); f.links.forEach { appendLine("- [${it.label}](${it.url})") } }
-                if (note.isNotBlank()) { appendLine(); appendLine("_Note:_ $note") }
+        appendLine("> Compiled from public sources and stored scans. Verify before relying on it; matching names or handles do not prove they belong to the same person. Offender-registry records are never stored or included, only the searched ZIP and a record count.")
+        val exposure = CaseLogic.exposure(states)
+        appendLine(); appendLine("## Overview")
+        appendLine("- Status: ${CaseLogic.status(states).label}")
+        if (exposure != null) appendLine("- Case exposure: $exposure/100 (${Exposure.headline(exposure)})")
+        CaseChanges.sinceFirst(CaseChanges.exposureSeries(states))?.let { appendLine("- Since first scan: ${if (it >= 0) "▲" else "▼"} ${kotlin.math.abs(it)}") }
+        appendLine(); appendLine("## Targets")
+        states.forEach { st ->
+            val l = st.latest
+            val line = when {
+                l == null -> "not scanned yet"
+                st.isArea -> (l.records?.let { "$it records" } ?: "area scanned") + " (${st.scans.size} scan${if (st.scans.size == 1) "" else "s"})"
+                else -> "risk ${l.risk}, ${l.exposed} exposed, ${l.info} info (${st.scans.size} scan${if (st.scans.size == 1) "" else "s"})"
             }
+            appendLine("- **${st.target.value}** (${st.target.type.label}): $line")
+        }
+        val edges = CaseLogic.edges(states.map { it.target }).filter { it.kind != EdgeKind.NONE }
+        if (edges.isNotEmpty()) {
+            appendLine(); appendLine("## Links")
+            edges.forEach { appendLine("- ${states[it.a].target.value} ↔ ${states[it.b].target.value}: ${it.kind.label.lowercase()}") }
+        }
+        if (events.isNotEmpty()) {
+            appendLine(); appendLine("## Changes")
+            events.forEach { e -> appendLine("- ${java.time.Instant.ofEpochMilli(e.snapshot.ts).toString().take(16).replace('T', ' ')} · ${e.snapshot.type.label} ${e.snapshot.value} · ${e.tag} — ${e.summary}") }
+        }
+        if (pivots.isNotEmpty()) {
+            appendLine(); appendLine("## Suggested next scans")
+            pivots.forEach { appendLine("- ${it.query}: ${it.title}. ${it.reason}") }
+        }
+        if (file.notes.isNotEmpty()) {
+            appendLine(); appendLine("## Notes")
+            file.notes.forEach { appendLine("- ${java.time.Instant.ofEpochMilli(it.ts).toString().take(10)}: ${it.text}") }
         }
     }
 }

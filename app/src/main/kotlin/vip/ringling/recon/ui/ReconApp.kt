@@ -45,6 +45,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -101,7 +102,7 @@ fun ReconApp() {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val main: MainViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
-    val actions = rememberReconActions(snackbar, onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) }, onAddToCase = main::addToCase, onRunPaid = main::runPaid)
+    val actions = rememberReconActions(snackbar, onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) }, onRunPaid = main::runPaid)
     val updateState by main.update.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { main.checkForUpdateQuietly() }
     LaunchedEffect((updateState as? UpdateState.Available)?.info?.build) {
@@ -113,6 +114,10 @@ fun ReconApp() {
     val currentRoute = backStack?.destination?.route
     val topLevel = Tab.entries.firstOrNull { it.route == currentRoute }
     var showLoadout by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    var pinInput by remember { androidx.compose.runtime.mutableStateOf<vip.ringling.recon.domain.ScanInput?>(null) }
+    var newCaseFor by remember { androidx.compose.runtime.mutableStateOf<vip.ringling.recon.domain.ScanInput?>(null) }
+    val pinCases: vip.ringling.recon.ui.cases.CasesViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
+    val pinState by pinCases.state.collectAsStateWithLifecycle()
     val radarVm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
     val radarState by radarVm.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
@@ -122,6 +127,17 @@ fun ReconApp() {
                 is vip.ringling.recon.ui.radar.RadarEvent.OpenRecord -> nav.navigate("results/${e.id}")
             }
         }
+    }
+    pinInput?.let { input ->
+        val scope = androidx.compose.runtime.rememberCoroutineScope()
+        vip.ringling.recon.ui.cases.PinToCaseSheet(
+            input.raw, input.type, pinState.cases,
+            onPick = { c -> main.pin(c.file.id, input); pinInput = null; scope.launch { snackbar.showSnackbar("Pinned to ${c.file.name}") } },
+            onNew = { newCaseFor = input; pinInput = null }, onDismiss = { pinInput = null },
+        )
+    }
+    newCaseFor?.let { input ->
+        vip.ringling.recon.ui.cases.NewCaseDialog(onDismiss = { newCaseFor = null }, onCreate = { name -> main.createCaseWith(name, input); newCaseFor = null })
     }
     if (showLoadout) {
         vip.ringling.recon.ui.radar.LoadoutSheet(radarState.enabled, radarState.autoPick, radarVm::toggle, radarVm::setAuto, onDismiss = { showLoadout = false })
@@ -143,8 +159,8 @@ fun ReconApp() {
                     composable(Tab.HOME.route) {
                         RadarRoute(nav, expanded, pad, onLoadout = { showLoadout = true })
                     }
-                    composable("results") { ResultsEntry(nav, actions, pad) }
-                    composable("results/{id}") { ResultsEntry(nav, actions, pad) }
+                    composable("results") { ResultsEntry(nav, actions, pad) { pinInput = it } }
+                    composable("results/{id}") { ResultsEntry(nav, actions, pad) { pinInput = it } }
                     composable(Tab.HISTORY.route) {
                         val vm: vip.ringling.recon.ui.log.LogViewModel = hiltViewModel()
                         val st by vm.state.collectAsStateWithLifecycle()
@@ -177,22 +193,17 @@ fun ReconApp() {
                         )
                     }
                     composable(Tab.CASES.route) {
-                        val vm: vip.ringling.recon.ui.casefile.CaseViewModel = hiltViewModel()
-                        val st by vm.state.collectAsStateWithLifecycle()
-                        val stamp = remember { java.time.LocalDate.now().toString() }
-                        Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { vip.ringling.recon.ui.casefile.CaseScreen(
-                            st,
-                            vip.ringling.recon.ui.casefile.CaseActions(
-                                onBack = { nav.popBackStack() },
-                                onNote = vm::setNote, onRemove = vm::remove,
-                                onSearch = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) },
-                                onSaveMarkdown = { actions.saveFile("recon-case-$stamp.md", vip.ringling.recon.domain.CaseReport.markdown(st.items, stamp).toByteArray()) },
-                                onSavePdf = { actions.saveFile("recon-case-$stamp.pdf", vip.ringling.recon.data.PdfWriter.fromMarkdown(vip.ringling.recon.domain.CaseReport.markdown(st.items, stamp))) },
-                                onShare = { actions.shareText("Recon case report", vip.ringling.recon.domain.CaseReport.markdown(st.items, stamp)) },
-                            ),
-                            contentPadding = pad,
-                        ) }
+                        val newCase by main.newCaseRequests.collectAsStateWithLifecycle()
+                        vip.ringling.recon.ui.cases.CasesRoute(pad, newCase) { id -> nav.navigate("cases/$id") }
                     }
+                    composable("cases/{id}") {
+                        vip.ringling.recon.ui.cases.CaseDetailRoute(
+                            pad, actions, onBack = { nav.popBackStack() }, onChanges = { id -> nav.navigate("cases/$id/changes") },
+                            onOpenScan = { st -> if (st.latest == null || st.isArea) radarVm.rerun(vip.ringling.recon.domain.ScanInput(st.target.value, st.target.type)) else nav.navigate("results/${st.latest!!.id}") },
+                            onRun = { q -> main.requestSearch(q) },
+                        )
+                    }
+                    composable("cases/{id}/changes") { vip.ringling.recon.ui.cases.CaseTimelineRoute(pad, actions, onBack = { nav.popBackStack() }) }
                     composable("finding/{id}") {
                         val vm: DetailViewModel = hiltViewModel()
                         val f by vm.finding.collectAsStateWithLifecycle()
@@ -251,15 +262,16 @@ fun recordStatuses(r: vip.ringling.recon.domain.ScanRecord) =
     r.findings.map { it.module }.distinct().sortedBy { it.ordinal }.associateWith { ModuleStatus.DONE }
 
 @Composable
-private fun ResultsEntry(nav: NavHostController, actions: ReconActions, pad: PaddingValues) {
+private fun ResultsEntry(nav: NavHostController, actions: ReconActions, pad: PaddingValues, onPin: (vip.ringling.recon.domain.ScanInput) -> Unit) {
     vip.ringling.recon.ui.results.ResultsRoute(
         pad, onBack = { nav.popBackStack() }, onFinding = { f -> nav.navigate("finding/${f.id}") },
-        onExport = { st -> st.input?.let { actions.exportScan(it, st.findings) } }, onPin = { },
+        onExport = { st -> st.input?.let { actions.exportScan(it, st.findings) } }, onPin = { st -> st.input?.let(onPin) },
     )
 }
 
 @Composable
 private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingValues, onLoadout: () -> Unit) {
+    val main: MainViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
     val vm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
     val st by vm.state.collectAsStateWithLifecycle()
     val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> uri?.let { vm.analyzePhoto(it.toString()) } }
@@ -267,7 +279,7 @@ private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingVa
         st,
         vip.ringling.recon.ui.radar.RadarActions(
             onQuery = vm::onQueryChange, onSubmit = vm::submit, onTarget = vm::open, onLoadout = onLoadout,
-            onPhoto = { pickPhoto.launch("image/*") }, onNewCase = { nav.goTab(Tab.CASES) },
+            onPhoto = { pickPhoto.launch("image/*") }, onNewCase = { main.requestNewCase(); nav.goTab(Tab.CASES) },
         ),
         contentPadding = pad, wide = expanded,
     )
