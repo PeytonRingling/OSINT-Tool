@@ -243,6 +243,10 @@ private fun LegalSection(state: SettingsUiState) {
                     "registry records can't be exported, and your location is used only on this device to show distances.",
                 style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
             )
+            Text(
+                "Extra username sites derived from WhatsMyName © Micah Hoffman and contributors, CC BY-SA 4.0 (github.com/WebBreacher/WhatsMyName).",
+                style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
+            )
         }
     }
 }

@@ -35,6 +35,12 @@ class IdentityTest {
         }
     }
 
+    @Test fun wmnDerivedListParses() {
+        val sites = SiteList.parse(java.io.File("src/main/assets/wmn_sites.json").readText())
+        assertTrue(sites.size >= 100, "got ${sites.size}")
+        sites.forEach { s -> assertTrue("{u}" in s.url && s.url.startsWith("https://") && s.foundMsg != null, s.name) }
+    }
+
     private fun sites(base: String) = listOf(
         Site("StatusOk", "$base/s/ok/{u}", Method.status, Confidence.HIGH),
         Site("StatusGone", "$base/s/gone/{u}", Method.status, Confidence.HIGH),

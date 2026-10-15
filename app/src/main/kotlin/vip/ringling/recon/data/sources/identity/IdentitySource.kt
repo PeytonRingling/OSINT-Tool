@@ -67,7 +67,7 @@ class IdentitySource @Inject constructor(
     override val id = ModuleId.IDENTITY
     override val supportedInputTypes = setOf(InputType.USERNAME, InputType.EMAIL)
 
-    internal var limiter = RateLimiter(maxConcurrent = 8, minIntervalMs = 60)
+    internal var limiter = RateLimiter(maxConcurrent = 12, minIntervalMs = 40)
 
     override suspend fun run(input: ScanInput): Flow<Finding> = when (input.type) {
         InputType.USERNAME -> usernameSweep(input.raw)

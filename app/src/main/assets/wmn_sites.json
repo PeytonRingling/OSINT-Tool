@@ -1,0 +1,2906 @@
+{
+ "version": 1,
+ "note": "Derived from WhatsMyName (c) Micah Hoffman et al., CC BY-SA 4.0, https://github.com/WebBreacher/WhatsMyName. Kept only sites whose known account detected and a bogus handle did not, on 2026-10-15.",
+ "sites": [
+  {
+   "name": "35photo",
+   "url": "https://35photo.pro/@{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "userNameBlock",
+   "category": "hobby"
+  },
+  {
+   "name": "3dtoday",
+   "url": "https://3dtoday.ru/blogs/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"header_user_name",
+   "category": "hobby"
+  },
+  {
+   "name": "7dach",
+   "url": "https://7dach.ru/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Информация / Профиль",
+   "category": "social"
+  },
+  {
+   "name": "ACF",
+   "url": "https://support.advancedcustomfields.com/forums/users/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "bbp-user-body",
+   "category": "coding"
+  },
+  {
+   "name": "alik",
+   "url": "https://www.alik.cz/u/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Vizitka – Alík.cz</title>",
+   "category": "social"
+  },
+  {
+   "name": "Alura",
+   "url": "https://cursos.alura.com.br/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Perfil de",
+   "category": "tech"
+  },
+  {
+   "name": "AmericanThinker",
+   "url": "https://www.americanthinker.com/author/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"author_image\"",
+   "category": "political"
+  },
+  {
+   "name": "Arduino (Forum)",
+   "url": "https://forum.arduino.cc/u/{u}.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "tech",
+   "profileUrl": "https://forum.arduino.cc/u/{u}/summary"
+  },
+  {
+   "name": "Arduino (Project Hub)",
+   "url": "https://projecthub.arduino.cc/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"userInfo\":{",
+   "category": "tech"
+  },
+  {
+   "name": "Artbreeder",
+   "url": "https://www.artbreeder.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "data-tutorial=\"profile-filter\"",
+   "category": "art"
+  },
+  {
+   "name": "ArtStation",
+   "url": "https://www.artstation.com/api/v2/user_profiles/{u}.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "art",
+   "profileUrl": "https://www.artstation.com/{u}"
+  },
+  {
+   "name": "asciinema",
+   "url": "https://asciinema.org/~{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"profile-page\"",
+   "category": "coding"
+  },
+  {
+   "name": "AtCoder",
+   "url": "https://atcoder.jp/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<h3>Contest Status</h3>",
+   "category": "coding"
+  },
+  {
+   "name": "au.ru",
+   "url": "https://au.ru/user/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Лоты пользователя ",
+   "category": "misc"
+  },
+  {
+   "name": "Audiojungle",
+   "url": "https://audiojungle.net/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "s profile on AudioJungle",
+   "category": "music"
+  },
+  {
+   "name": "Bandlab",
+   "url": "https://www.bandlab.com/api/v1.3/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"username\":",
+   "category": "music",
+   "profileUrl": "https://www.bandlab.com/{u}"
+  },
+  {
+   "name": "BiggerPockets",
+   "url": "https://www.biggerpockets.com/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "| BiggerPockets</title>",
+   "category": "finance"
+  },
+  {
+   "name": "BIGO Live",
+   "url": "https://www.bigo.tv/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "userInfo:{nickName",
+   "category": "gaming"
+  },
+  {
+   "name": "Bimpos",
+   "url": "https://ask.bimpos.com/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<title>User ",
+   "category": "tech"
+  },
+  {
+   "name": "Bio Site",
+   "url": "https://bio.site/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "— Bio Sites</title>",
+   "category": "social"
+  },
+  {
+   "name": "biolink",
+   "url": "https://bio.link/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "profile:username",
+   "category": "misc"
+  },
+  {
+   "name": "blogi.pl",
+   "url": "https://www.blogi.pl/osoba,{u}.html",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Informacje ogólne",
+   "category": "blog"
+  },
+  {
+   "name": "Blogspot",
+   "url": "https://{u}.blogspot.com/?hl=en-US",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "_WidgetManager._Init",
+   "category": "blog"
+  },
+  {
+   "name": "Bluesky Domain as User",
+   "url": "https://bsky.app/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "on Bluesky</title>",
+   "category": "social"
+  },
+  {
+   "name": "BoardGameGeek",
+   "url": "https://api.geekdo.com/api/accounts/validate/username?username={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"message\":\"Sorry, this username is already taken.\"",
+   "category": "gaming",
+   "profileUrl": "https://boardgamegeek.com/user/{u}"
+  },
+  {
+   "name": "Boosty",
+   "url": "https://api.boosty.to/v1/blog/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "social",
+   "profileUrl": "https://boosty.to/{u}"
+  },
+  {
+   "name": "Brickset",
+   "url": "https://brickset.com/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Member since:</dt>",
+   "category": "hobby"
+  },
+  {
+   "name": "Bugcrowd",
+   "url": "https://bugcrowd.com/profile-service/v1/profiles/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"username\":",
+   "category": "tech",
+   "profileUrl": "https://bugcrowd.com/h/{u}"
+  },
+  {
+   "name": "Bunpro",
+   "url": "https://community.bunpro.jp/u/{u}.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "username",
+   "category": "social"
+  },
+  {
+   "name": "BuzzFeed",
+   "url": "https://www.buzzfeed.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": " on BuzzFeed</title><meta",
+   "category": "social"
+  },
+  {
+   "name": "cafecito",
+   "url": "https://cafecito.app/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": " | Cafecito</title>",
+   "category": "misc"
+  },
+  {
+   "name": "Calendy",
+   "url": "https://calendly.com/api/booking/profiles/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "misc",
+   "profileUrl": "https://calendly.com/{u}"
+  },
+  {
+   "name": "Cameo",
+   "url": "https://www.cameo.com/api/v2/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"_id\":",
+   "category": "shopping",
+   "profileUrl": "https://www.cameo.com/{u}"
+  },
+  {
+   "name": "Carbonmade",
+   "url": "https://{u}.carbonmade.com/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<meta name=\"description\" content=\"",
+   "category": "business"
+  },
+  {
+   "name": "Career.habr",
+   "url": "https://career.habr.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "— Хабр Карьера</title>",
+   "category": "business"
+  },
+  {
+   "name": "carrd.co",
+   "url": "https://{u}.carrd.co",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "( Made with Carrd )",
+   "category": "business"
+  },
+  {
+   "name": "cda.pl",
+   "url": "https://www.cda.pl/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Foldery",
+   "category": "video"
+  },
+  {
+   "name": "Cent",
+   "url": "https://beta.cent.co/data/user/profile?userHandles={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "social",
+   "profileUrl": "https://beta.cent.co/{u}/"
+  },
+  {
+   "name": "cfx.re",
+   "url": "https://forum.cfx.re/u/{u}.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "created_at",
+   "category": "gaming",
+   "profileUrl": "https://forum.cfx.re/u/{u}/summary"
+  },
+  {
+   "name": "Chamsko",
+   "url": "https://www.chamsko.pl/profil/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "W serwisie od",
+   "category": "images"
+  },
+  {
+   "name": "CHEEZburger",
+   "url": "https://cheezburger.com/Editor/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<title>Recent Posts from",
+   "category": "news"
+  },
+  {
+   "name": "Chocolatey",
+   "url": "https://community.chocolatey.org/profiles/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "id =\"bioSection\"",
+   "category": "tech"
+  },
+  {
+   "name": "Choko.Link",
+   "url": "https://choko.link/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "--title-font-family: Roboto;",
+   "category": "social"
+  },
+  {
+   "name": "Chomikuj.pl",
+   "url": "https://chomikuj.pl/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Foldery",
+   "category": "misc"
+  },
+  {
+   "name": "Clubhouse",
+   "url": "https://www.clubhouse.com/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"user\":",
+   "category": "social"
+  },
+  {
+   "name": "cnet",
+   "url": "https://www.cnet.com/profiles/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"author-header__stat-label\"",
+   "category": "news"
+  },
+  {
+   "name": "Coda",
+   "url": "https://coda.io/@{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "- Coda Profile</title>",
+   "category": "hobby"
+  },
+  {
+   "name": "Codecademy",
+   "url": "https://www.codecademy.com/profiles/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"type\":\"User\"",
+   "category": "coding"
+  },
+  {
+   "name": "CodeChef",
+   "url": "https://www.codechef.com/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"user-profile-container\"",
+   "category": "coding"
+  },
+  {
+   "name": "codementor",
+   "url": "https://www.codementor.io/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "ABOUT ME",
+   "category": "coding"
+  },
+  {
+   "name": "Coderwall",
+   "url": "https://coderwall.com/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "s profile |",
+   "category": "coding"
+  },
+  {
+   "name": "Codewars",
+   "url": "https://www.codewars.com/api/v1/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "coding",
+   "profileUrl": "https://www.codewars.com/users/{u}"
+  },
+  {
+   "name": "Commudle",
+   "url": "https://json.commudle.com/api/v2/users?username={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"status\":200",
+   "category": "tech",
+   "profileUrl": "https://www.commudle.com/users/{u}"
+  },
+  {
+   "name": "Coub",
+   "url": "https://coub.com/api/v2/channels/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"user_id\":",
+   "category": "social",
+   "profileUrl": "https://coub.com/{u}/"
+  },
+  {
+   "name": "crevado",
+   "url": "https://{u}.crevado.com/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Portfolio",
+   "category": "images"
+  },
+  {
+   "name": "Cropty",
+   "url": "https://api.cropty.io/v1/auth/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"name\":",
+   "category": "finance",
+   "profileUrl": "https://www.cropty.io/@{u}"
+  },
+  {
+   "name": "Daily Kos",
+   "url": "https://www.dailykos.com/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"@type\":\"ProfilePage\"",
+   "category": "news"
+  },
+  {
+   "name": "Dailymotion",
+   "url": "https://api.dailymotion.com/user/{u}?fields=id,username,screenname,description,avatar_720_url,cover_250_url,followers_total,following_total,videos_total,country,created_time,verified,url",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "video",
+   "profileUrl": "https://www.dailymotion.com/user/{u}"
+  },
+  {
+   "name": "dateinasia",
+   "url": "https://www.dateinasia.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "About me",
+   "category": "dating"
+  },
+  {
+   "name": "Dating.ru",
+   "url": "https://dating.ru/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "| dating.ru",
+   "category": "dating"
+  },
+  {
+   "name": "Demotywatory",
+   "url": "https://demotywatory.pl/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Z nami od:",
+   "category": "images"
+  },
+  {
+   "name": "Designspriation",
+   "url": "https://www.designspiration.com/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "has discovered on Designspiration",
+   "category": "art"
+  },
+  {
+   "name": "destream",
+   "url": "https://api.destream.net/siteapi/v2/live/details/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"userName\":",
+   "category": "finance",
+   "profileUrl": "https://destream.net/live/{u}"
+  },
+  {
+   "name": "Destructoid",
+   "url": "https://www.destructoid.com/?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Follow",
+   "category": "social"
+  },
+  {
+   "name": "DeviantArt",
+   "url": "https://www.deviantart.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": " on DeviantArt</title>",
+   "category": "images"
+  },
+  {
+   "name": "devRant",
+   "url": "https://devrant.com/api/get-user-id?app=3&username={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"success\":true",
+   "category": "coding",
+   "profileUrl": "https://devrant.com/users/{u}",
+   "absentCodes": [
+    400
+   ]
+  },
+  {
+   "name": "Diablo",
+   "url": "https://diablo2.io/member/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Viewing profile - ",
+   "category": "gaming"
+  },
+  {
+   "name": "DIBIZ",
+   "url": "https://www.dibiz.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Add to contacts</span>",
+   "category": "business"
+  },
+  {
+   "name": "diigo",
+   "url": "https://www.diigo.com/interact_api/load_profile_info?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "regist_at",
+   "category": "images",
+   "profileUrl": "https://www.diigo.com/profile/{u}"
+  },
+  {
+   "name": "Discogs",
+   "url": "https://api.discogs.com/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "music",
+   "profileUrl": "https://www.discogs.com/user/{u}"
+  },
+  {
+   "name": "Discord (Invite)",
+   "url": "https://discord.com/api/v9/invites/{u}?with_counts=true&with_expiration=true",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"channel\":",
+   "category": "social",
+   "profileUrl": "https://discord.com/invite/{u}"
+  },
+  {
+   "name": "Discourse",
+   "url": "https://meta.discourse.org/u/{u}/summary.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "topics",
+   "category": "misc",
+   "profileUrl": "https://meta.discourse.org/u/{u}"
+  },
+  {
+   "name": "discuss.elastic.co",
+   "url": "https://discuss.elastic.co/u/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<title>  Profile",
+   "category": "tech"
+  },
+  {
+   "name": "Disqus",
+   "url": "https://disqus.com/api/3.0/users/details?user=username:{u}&api_key=E8Uh5l5fHZ6gD8U3KycjAIAk46f68Zw7C6eW8WSjZvCLXebZ7p0r1yrYDrLilk2F",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"code\":0",
+   "category": "social",
+   "profileUrl": "https://disqus.com/by/{u}/",
+   "absentCodes": [
+    400
+   ]
+  },
+  {
+   "name": "Dojoverse",
+   "url": "https://dojoverse.com/members/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Joined",
+   "category": "hobby"
+  },
+  {
+   "name": "donate.stream",
+   "url": "https://donate.stream/api/v1/streamer.get?path={u}&app=9f4e793cec820015d511dbc77b20c5c1",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"response\":",
+   "category": "finance",
+   "profileUrl": "https://donate.stream/{u}"
+  },
+  {
+   "name": "Donatello",
+   "url": "https://donatello.to/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "UserPage.init",
+   "category": "finance"
+  },
+  {
+   "name": "Donatik",
+   "url": "https://{u}.donatik.ua/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\\\"__typename\\\":\\\"UserPageOutput\\\"",
+   "category": "finance",
+   "absentCodes": [
+    500
+   ]
+  },
+  {
+   "name": "Donation Alerts",
+   "url": "https://www.donationalerts.com/api/v1/user/{u}/donationpagesettings",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"data\":",
+   "category": "finance",
+   "profileUrl": "https://www.donationalerts.com/r/{u}"
+  },
+  {
+   "name": "DonationPay",
+   "url": "https://give.donationpay.org/hopewell-fund/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "id=\"dp-payment-form\"",
+   "category": "finance"
+  },
+  {
+   "name": "Donatty",
+   "url": "https://api.donatty.com/users/find/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"response\":",
+   "category": "business",
+   "profileUrl": "https://donatty.com/{u}"
+  },
+  {
+   "name": "Dota2.ru",
+   "url": "https://dota2.ru/forum/search/?type=user&keywords={u}&sort_by=username",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"forum-section__item forum-section__item--first\"",
+   "category": "gaming"
+  },
+  {
+   "name": "DOTAFire",
+   "url": "https://www.dotafire.com/ajax/searchSite?text={u}&search=members",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "href=\"/profile/",
+   "category": "gaming"
+  },
+  {
+   "name": "DOU",
+   "url": "https://dou.ua/users/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"page-profile\"",
+   "category": "social"
+  },
+  {
+   "name": "Duolingo",
+   "url": "https://www.duolingo.com/2017-06-30/users?username={u}&_=1628308619574",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "joinedClassroomIds",
+   "category": "hobby",
+   "profileUrl": "https://www.duolingo.com/profile/{u}"
+  },
+  {
+   "name": "easyen",
+   "url": "https://easyen.ru/index/8-0-{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "День рождения",
+   "category": "social"
+  },
+  {
+   "name": "ebay_stores",
+   "url": "https://www.ebay.com/str/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "| eBay Stores</title>",
+   "category": "shopping",
+   "absentCodes": [
+    410
+   ]
+  },
+  {
+   "name": "Etoro",
+   "url": "https://www.etoro.com/api/logininfo/v1.1/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"gcid\":",
+   "category": "finance",
+   "profileUrl": "https://www.etoro.com/people/{u}"
+  },
+  {
+   "name": "Expressional.social (Mastodon Instance)",
+   "url": "https://expressional.social/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://expressional.social/@{u}"
+  },
+  {
+   "name": "Fabswingers",
+   "url": "https://www.fabswingers.com/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "View Profile",
+   "category": "dating"
+  },
+  {
+   "name": "FACEIT",
+   "url": "https://www.faceit.com/api/users/v1/nicknames/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"result\":\"OK\"",
+   "category": "gaming",
+   "profileUrl": "https://www.faceit.com/en/players/{u}"
+  },
+  {
+   "name": "Figma",
+   "url": "https://www.figma.com/api/profile/handle/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"status\":200",
+   "category": "tech",
+   "profileUrl": "https://www.figma.com/@{u}"
+  },
+  {
+   "name": "Filmweb",
+   "url": "https://www.filmweb.pl/api/v1/users/{u}/id",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"userId\":",
+   "category": "hobby",
+   "profileUrl": "https://www.filmweb.pl/user/{u}"
+  },
+  {
+   "name": "fine_art_america",
+   "url": "https://fineartamerica.com/profiles/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Shop for artwork by",
+   "category": "shopping"
+  },
+  {
+   "name": "FL.ru",
+   "url": "https://www.fl.ru/users/{u}/portfolio/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"page-profile\"",
+   "category": "social"
+  },
+  {
+   "name": "Flickr",
+   "url": "https://www.flickr.com/photos/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "| Flickr",
+   "category": "images"
+  },
+  {
+   "name": "Flightradar24",
+   "url": "https://my.flightradar24.com/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"profile-card\" data-profile-user=",
+   "category": "misc"
+  },
+  {
+   "name": "Flipboard",
+   "url": "https://flipboard.com/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": ") on Flipboard",
+   "category": "tech"
+  },
+  {
+   "name": "flowcode",
+   "url": "https://www.flow.page/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"page\":{",
+   "category": "social"
+  },
+  {
+   "name": "Fosstodon.org (Mastodon Instance)",
+   "url": "https://fosstodon.org/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://fosstodon.org/@{u}"
+  },
+  {
+   "name": "fotka",
+   "url": "https://api.fotka.com/v2/user/dataStatic?login={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"profil\":",
+   "category": "social",
+   "profileUrl": "https://fotka.com/profil/{u}"
+  },
+  {
+   "name": "Fotolog Archived Profile",
+   "url": "https://archive.org/wayback/available?url=https://www.fotolog.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"archived_snapshots\": {\"closest\"",
+   "category": "archived",
+   "profileUrl": "https://web.archive.org/web/2/fotolog.com/{u}"
+  },
+  {
+   "name": "freeCodeCamp",
+   "url": "https://api.freecodecamp.org/users/get-public-profile?username={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"user\":",
+   "category": "coding",
+   "profileUrl": "https://www.freecodecamp.org/{u}"
+  },
+  {
+   "name": "Freelance.ua",
+   "url": "https://freelance.ua/user/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "p-profile-avatar",
+   "category": "social"
+  },
+  {
+   "name": "Freelancer",
+   "url": "https://www.freelancer.com/api/users/0.1/users?usernames%5B%5D={u}&compact=true",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"users\":{\"",
+   "category": "business",
+   "profileUrl": "https://www.freelancer.com/u/{u}"
+  },
+  {
+   "name": "Game Jolt",
+   "url": "https://gamejolt.com/site-api/web/profile/@{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "created_on",
+   "category": "gaming",
+   "profileUrl": "https://gamejolt.com/@{u}"
+  },
+  {
+   "name": "Garmin Connect",
+   "url": "https://connect.garmin.com/app/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "window.VIEWER_USERPREFERENCES = {",
+   "category": "health"
+  },
+  {
+   "name": "GDBrowser",
+   "url": "https://gdbrowser.com/api/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"accountID\":",
+   "category": "gaming",
+   "profileUrl": "https://gdbrowser.com/u/{u}",
+   "absentCodes": [
+    500
+   ]
+  },
+  {
+   "name": "GeeksForGeeks",
+   "url": "https://authapi.geeksforgeeks.org/api-get/user-profile-info/?handle={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"message\":\"data retrieved successfully\"",
+   "category": "coding",
+   "profileUrl": "https://www.geeksforgeeks.org/profile/{u}/",
+   "absentCodes": [
+    400
+   ]
+  },
+  {
+   "name": "Geocaching",
+   "url": "https://www.geocaching.com/p/?u={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"hax-profile\"",
+   "category": "social"
+  },
+  {
+   "name": "Gettr",
+   "url": "https://gettr.com/api/s/uinf/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"rc\":\"OK\"",
+   "category": "social",
+   "profileUrl": "https://gettr.com/user/{u}",
+   "absentCodes": [
+    400
+   ]
+  },
+  {
+   "name": "Giphy (Channel)",
+   "url": "https://giphy.com/channel/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\\\"user_id\\\"",
+   "category": "images"
+  },
+  {
+   "name": "Gitea",
+   "url": "https://gitea.com/api/v1/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "coding",
+   "profileUrl": "https://gitea.com/{u}"
+  },
+  {
+   "name": "GNOME (Shell Extensions)",
+   "url": "https://extensions.gnome.org/accounts/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"user-details\"",
+   "category": "coding"
+  },
+  {
+   "name": "Goodgame_Russia",
+   "url": "https://goodgame.ru/channel/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "channel_id",
+   "category": "gaming",
+   "absentCodes": [
+    400
+   ]
+  },
+  {
+   "name": "gpodder.net",
+   "url": "https://gpodder.net/user/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "mdash; gpodder.net",
+   "category": "music"
+  },
+  {
+   "name": "Graphics.social (Mastodon Instance)",
+   "url": "https://graphics.social/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://graphics.social/@{u}"
+  },
+  {
+   "name": "Greasy Fork",
+   "url": "https://greasyfork.org/en/users?q={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"user-list\"",
+   "category": "tech"
+  },
+  {
+   "name": "gumroad",
+   "url": "https://{u}.gumroad.com/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "s profile picture",
+   "category": "shopping"
+  },
+  {
+   "name": "Habbo.com",
+   "url": "https://www.habbo.com/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId\":",
+   "category": "gaming",
+   "profileUrl": "https://www.habbo.com/profile/{u}"
+  },
+  {
+   "name": "Habbo.com.br",
+   "url": "https://www.habbo.com.br/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId\":",
+   "category": "gaming",
+   "profileUrl": "https://www.habbo.com.br/profile/{u}"
+  },
+  {
+   "name": "Habbo.com.tr",
+   "url": "https://www.habbo.com.tr/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId\":",
+   "category": "gaming",
+   "profileUrl": "https://www.habbo.com.tr/profile/{u}"
+  },
+  {
+   "name": "Habbo.de",
+   "url": "https://www.habbo.de/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId\":",
+   "category": "gaming",
+   "profileUrl": "https://www.habbo.de/profile/{u}"
+  },
+  {
+   "name": "Habbo.es",
+   "url": "https://www.habbo.es/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId\":",
+   "category": "gaming",
+   "profileUrl": "https://www.habbo.es/profile/{u}"
+  },
+  {
+   "name": "Habbo.fi",
+   "url": "https://www.habbo.fi/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId\":",
+   "category": "gaming",
+   "profileUrl": "https://www.habbo.fi/profile/{u}"
+  },
+  {
+   "name": "Habbo.fr",
+   "url": "https://www.habbo.fr/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId\":",
+   "category": "gaming",
+   "profileUrl": "https://www.habbo.fr/profile/{u}"
+  },
+  {
+   "name": "Habbo.it",
+   "url": "https://www.habbo.it/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId\":",
+   "category": "gaming",
+   "profileUrl": "https://www.habbo.it/profile/{u}"
+  },
+  {
+   "name": "Habbo.nl",
+   "url": "https://www.habbo.nl/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId\":",
+   "category": "gaming",
+   "profileUrl": "https://www.habbo.nl/profile/{u}"
+  },
+  {
+   "name": "Habr (Q&A)",
+   "url": "https://qna.habr.com/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"page-header__info\"",
+   "category": "coding"
+  },
+  {
+   "name": "Habr (User)",
+   "url": "https://habr.com/ru/users/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "tm-page tm-user",
+   "category": "social"
+  },
+  {
+   "name": "Habtium",
+   "url": "https://habtium.es/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<div class=\"profile-info",
+   "category": "gaming"
+  },
+  {
+   "name": "Hackaday.io",
+   "url": "https://hackaday.io/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"following-container \"",
+   "category": "hobby"
+  },
+  {
+   "name": "HackAdvisor",
+   "url": "https://hackadvisor.io/api/v2/profile/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"username\":",
+   "category": "tech",
+   "profileUrl": "https://hackadvisor.io/hacker/{u}"
+  },
+  {
+   "name": "hackerearth",
+   "url": "https://www.hackerearth.com/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "| Developer Profile on HackerEarth",
+   "category": "coding"
+  },
+  {
+   "name": "Hackster",
+   "url": "https://www.hackster.io/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "data-hypernova-key=\"UserProfile\"",
+   "category": "coding"
+  },
+  {
+   "name": "hamaha",
+   "url": "https://hamaha.net/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "id=\"profile\"",
+   "category": "finance"
+  },
+  {
+   "name": "Hcommons.social (Mastodon Instance)",
+   "url": "https://hcommons.social/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://hcommons.social/@{u}"
+  },
+  {
+   "name": "HiHello",
+   "url": "https://www.hihello.com/author/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"mainEntity\": {",
+   "category": "business"
+  },
+  {
+   "name": "Home Design 3D",
+   "url": "https://www.homedesign3d.net/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "id=\"user_content\"",
+   "category": "hobby"
+  },
+  {
+   "name": "Hometech.social (Mastodon Instance)",
+   "url": "https://hometech.social/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://hometech.social/@{u}"
+  },
+  {
+   "name": "Hostux.social (Mastodon Instance)",
+   "url": "https://hostux.social/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://hostux.social/@{u}"
+  },
+  {
+   "name": "Houzz",
+   "url": "https://www.houzz.com/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Followers",
+   "category": "hobby"
+  },
+  {
+   "name": "HubPages",
+   "url": "https://hubpages.com/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "name\">Followers",
+   "category": "blog"
+  },
+  {
+   "name": "HudsonRock",
+   "url": "https://cavalier.hudsonrock.com/api/json/v2/osint-tools/search-by-username?username={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "This username is associated with a computer that was infected by an info-stealer",
+   "category": "tech"
+  },
+  {
+   "name": "icq-chat",
+   "url": "https://icq.icqchat.co/members/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"memberHeader-mainContent",
+   "category": "social"
+  },
+  {
+   "name": "IFTTT",
+   "url": "https://ifttt.com/p/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Joined",
+   "category": "misc"
+  },
+  {
+   "name": "ILGM Growers Forum",
+   "url": "https://ilgmforum.com/u/{u}/summary.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "user_summary\":{",
+   "category": "social",
+   "profileUrl": "https://ilgmforum.com/u/{u}/summary"
+  },
+  {
+   "name": "ImageShack",
+   "url": "https://imageshack.com/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "s Images</title>",
+   "category": "images"
+  },
+  {
+   "name": "iMGSRC.RU",
+   "url": "https://imgsrc.ru/main/user.php?lang=ru&user={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Присоединился",
+   "category": "images"
+  },
+  {
+   "name": "Imgur",
+   "url": "https://api.imgur.com/account/v1/accounts/{u}?client_id=546c25a59c58ad7",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"username\":",
+   "category": "images",
+   "profileUrl": "https://imgur.com/user/{u}/about"
+  },
+  {
+   "name": "inaturalist",
+   "url": "https://api.inaturalist.org/v1/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"results\":[{",
+   "category": "hobby",
+   "profileUrl": "https://inaturalist.nz/people/{u}"
+  },
+  {
+   "name": "InsaneJournal",
+   "url": "https://{u}.insanejournal.com/profile",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "User:",
+   "category": "social"
+  },
+  {
+   "name": "Instagram_archives",
+   "url": "https://archive.org/wayback/available?url=https://instagram.com/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"archived_snapshots\": {\"closest\"",
+   "category": "social"
+  },
+  {
+   "name": "Instructables",
+   "url": "https://www.instructables.com/json-api/showAuthorExists?screenName={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"exists\": true",
+   "category": "hobby",
+   "profileUrl": "https://www.instructables.com/member/{u}/"
+  },
+  {
+   "name": "Internet Archive User Contribution Search",
+   "url": "https://archive.org/advancedsearch.php?q=creator:{u}&output=json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "backup_location",
+   "category": "misc",
+   "profileUrl": "https://archive.org/search.php?query=creator:{u}"
+  },
+  {
+   "name": "Internet Archive Username Mentions",
+   "url": "https://archive.org/advancedsearch.php?q={u}&output=json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "backup_location",
+   "category": "misc",
+   "profileUrl": "https://archive.org/search.php?query={u}"
+  },
+  {
+   "name": "Intigriti",
+   "url": "https://app.intigriti.com/api/user/public/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"userName\":",
+   "category": "tech",
+   "profileUrl": "https://app.intigriti.com/profile/{u}"
+  },
+  {
+   "name": "itch.io",
+   "url": "https://itch.io/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"user_data\"",
+   "category": "gaming"
+  },
+  {
+   "name": "JBZD",
+   "url": "https://jbzd.com.pl/uzytkownik/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Dzidy użytkownika",
+   "category": "images"
+  },
+  {
+   "name": "jeja.pl",
+   "url": "https://www.jeja.pl/user,{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Profil użytkownika",
+   "category": "misc"
+  },
+  {
+   "name": "Jeuxvideo",
+   "url": "https://www.jeuxvideo.com/profil/{u}?mode=infos",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "- jeuxvideo.com",
+   "category": "gaming"
+  },
+  {
+   "name": "Kick",
+   "url": "https://kick.com/api/v2/channels/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\"",
+   "category": "social",
+   "profileUrl": "https://kick.com/{u}"
+  },
+  {
+   "name": "kik",
+   "url": "https://kik.me/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "/thumb.jpg\"/>",
+   "category": "social"
+  },
+  {
+   "name": "KnowYourMeme",
+   "url": "https://knowyourmeme.com/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Contributions",
+   "category": "social",
+   "absentCodes": [
+    400
+   ]
+  },
+  {
+   "name": "Ko-Fi",
+   "url": "https://ko-fi.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "id=\"profile-header\"",
+   "category": "social"
+  },
+  {
+   "name": "komi",
+   "url": "https://api.komi.io/api/talent/usernames/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "accountStatus\":\"active",
+   "category": "social",
+   "profileUrl": "https://{u}.komi.io"
+  },
+  {
+   "name": "Kongregate",
+   "url": "https://www.kongregate.com/accounts/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Member Since",
+   "category": "gaming"
+  },
+  {
+   "name": "kwejk.pl",
+   "url": "https://kwejk.pl/uzytkownik/{u}#/tablica/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Kwejki użytkownika",
+   "category": "images"
+  },
+  {
+   "name": "LeakIX",
+   "url": "https://leakix.net/u/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": ">Joined ",
+   "category": "tech",
+   "absentCodes": [
+    500
+   ]
+  },
+  {
+   "name": "Libretooth.gr (Mastodon Instance)",
+   "url": "https://libretooth.gr/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://libretooth.gr/@{u}"
+  },
+  {
+   "name": "linux.org.ru",
+   "url": "https://www.linux.org.ru/people/{u}/profile",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Дата регистрации",
+   "category": "tech"
+  },
+  {
+   "name": "Livejournal",
+   "url": "https://{u}.livejournal.com",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<link rel=\"canonical\" href=\"",
+   "category": "blog"
+  },
+  {
+   "name": "lobste.rs",
+   "url": "https://lobste.rs/u/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Joined",
+   "category": "tech"
+  },
+  {
+   "name": "Malpedia Actors",
+   "url": "https://malpedia.caad.fkie.fraunhofer.de/actor/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "href=\"/actors\"",
+   "category": "tech"
+  },
+  {
+   "name": "Mapstodon.space (Mastodon Instance)",
+   "url": "https://mapstodon.space/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://mapstodon.space/@{u}"
+  },
+  {
+   "name": "Martech",
+   "url": "https://martech.org/author/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "twitter:site",
+   "category": "business"
+  },
+  {
+   "name": "masto.ai",
+   "url": "https://masto.ai/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "social",
+   "profileUrl": "https://masto.ai/@{u}"
+  },
+  {
+   "name": "Masto.nyc (Mastodon Instance)",
+   "url": "https://masto.nyc/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://masto.nyc/@{u}"
+  },
+  {
+   "name": "Mastodon-101010.pl",
+   "url": "https://101010.pl/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "@101010.pl",
+   "category": "social"
+  },
+  {
+   "name": "Mastodon-C.IM",
+   "url": "https://c.im/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "@c.im) - C.IM</title>",
+   "category": "social"
+  },
+  {
+   "name": "Mastodon-Defcon",
+   "url": "https://defcon.social/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "- DEF CON Social</title>",
+   "category": "social"
+  },
+  {
+   "name": "Mastodon-rigcz.club",
+   "url": "https://rigcz.club/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "@rigcz.club",
+   "category": "social"
+  },
+  {
+   "name": "Mastodon-Toot.Community",
+   "url": "https://toot.community/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "@toot.community) - toot.community</title>",
+   "category": "social"
+  },
+  {
+   "name": "MAX",
+   "url": "https://max.ru/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "в мессенджере MAX</title>",
+   "category": "social"
+  },
+  {
+   "name": "Meta-Wiki (Wikimedia)",
+   "url": "https://meta.wikimedia.org/wiki/Special:CentralAuth?target={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "id='mw-centralauth-info'",
+   "category": "news"
+  },
+  {
+   "name": "Microsoft Learn",
+   "url": "https://learn.microsoft.com/api/profiles/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"userId\":",
+   "category": "tech",
+   "profileUrl": "https://learn.microsoft.com/en-us/users/{u}/"
+  },
+  {
+   "name": "Minds",
+   "url": "https://www.minds.com/api/v3/register/validate?username={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"valid\":false",
+   "category": "social",
+   "profileUrl": "https://www.minds.com/{u}/"
+  },
+  {
+   "name": "Minecraft List",
+   "url": "https://minecraftlist.com/api/legacy/players/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"found\":true",
+   "category": "gaming",
+   "profileUrl": "https://minecraftlist.com/players/{u}"
+  },
+  {
+   "name": "mintme",
+   "url": "https://www.mintme.com/token/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "token | mintMe",
+   "category": "finance"
+  },
+  {
+   "name": "Mixcloud",
+   "url": "https://api.mixcloud.com/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"username\":",
+   "category": "music",
+   "profileUrl": "https://www.mixcloud.com/{u}/"
+  },
+  {
+   "name": "Mixlr",
+   "url": "https://api.mixlr.com/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "music",
+   "profileUrl": "https://mixlr.com/{u}/"
+  },
+  {
+   "name": "MobileGTA.net",
+   "url": "https://www.mobilegta.net/en/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "userpage_user",
+   "category": "gaming"
+  },
+  {
+   "name": "Monkeytype",
+   "url": "https://api.monkeytype.com/users/{u}/profile",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"message\":\"Profile retrieved\"",
+   "category": "coding",
+   "profileUrl": "https://monkeytype.com/profile/{u}"
+  },
+  {
+   "name": "Moxfield",
+   "url": "https://api2.moxfield.com/v1/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"userName\":",
+   "category": "gaming",
+   "profileUrl": "https://www.moxfield.com/users/{u}"
+  },
+  {
+   "name": "mssg.me",
+   "url": "https://{u}.mssg.me/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "property=\"og:title\"",
+   "category": "social"
+  },
+  {
+   "name": "Muck Rack",
+   "url": "https://muckrack.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "on Muck Rack",
+   "category": "news"
+  },
+  {
+   "name": "my_instants",
+   "url": "https://www.myinstants.com/en/profile/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": " | Myinstants</title>",
+   "category": "music"
+  },
+  {
+   "name": "MyAnimeList",
+   "url": "https://myanimelist.net/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Profile - MyAnimeList.net",
+   "category": "social"
+  },
+  {
+   "name": "MyLot",
+   "url": "https://www.mylot.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "on myLot</title>",
+   "category": "social"
+  },
+  {
+   "name": "MYM",
+   "url": "https://mym.fans/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"page profile\"",
+   "category": "social"
+  },
+  {
+   "name": "MyNickname",
+   "url": "https://mynickname.com/en/search?q={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "nickname found:</h2>",
+   "category": "misc"
+  },
+  {
+   "name": "MySpace",
+   "url": "https://myspace.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<!-- Profile -->",
+   "category": "social"
+  },
+  {
+   "name": "naija_planet",
+   "url": "https://naijaplanet.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "dating Profile, ",
+   "category": "dating"
+  },
+  {
+   "name": "NaturalNews",
+   "url": "https://naturalnews.com/author/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"Headline\"",
+   "category": "political"
+  },
+  {
+   "name": "Neocities",
+   "url": "https://neocities.org/site/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "noindex, follow",
+   "category": "social"
+  },
+  {
+   "name": "Nightbot",
+   "url": "https://api.nightbot.tv/1/channels/t/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"status\":200",
+   "category": "social",
+   "profileUrl": "https://nightbot.tv/t/{u}/commands"
+  },
+  {
+   "name": "Nih Buat Jajan",
+   "url": "https://www.nihbuatjajan.com/manifest/{u}.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"name\":",
+   "category": "social",
+   "profileUrl": "https://www.nihbuatjajan.com/{u}"
+  },
+  {
+   "name": "Nitecrew (Mastodon Instance)",
+   "url": "https://nitecrew.rip/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://nitecrew.rip/@{u}"
+  },
+  {
+   "name": "Note",
+   "url": "https://note.com/api/v2/creators/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"data\":{",
+   "category": "social",
+   "profileUrl": "https://note.com/{u}"
+  },
+  {
+   "name": "oglaszamy24h.pl",
+   "url": "https://oglaszamy24h.pl/profil,{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Profil użytkownika:",
+   "category": "shopping"
+  },
+  {
+   "name": "ok.ru",
+   "url": "https://ok.ru/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "| OK",
+   "category": "social"
+  },
+  {
+   "name": "omg.lol",
+   "url": "https://api.omg.lol/address/{u}/info",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"success\": true",
+   "category": "social",
+   "profileUrl": "https://{u}.omg.lol"
+  },
+  {
+   "name": "Opencollective",
+   "url": "https://opencollective.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "- Open Collective",
+   "category": "finance"
+  },
+  {
+   "name": "OpenStreetMap",
+   "url": "https://www.openstreetmap.org/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Mapper since:",
+   "category": "social"
+  },
+  {
+   "name": "OpenStreetMap Wiki",
+   "url": "https://wiki.openstreetmap.org/w/api.php?action=query&format=json&list=users&ususers={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"userid\":",
+   "category": "social",
+   "profileUrl": "https://wiki.openstreetmap.org/wiki/User:{u}"
+  },
+  {
+   "name": "Oper.ru",
+   "url": "https://oper.ru/visitors/info.php?t={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Информация о пользователе",
+   "category": "tech"
+  },
+  {
+   "name": "Origins.Habbo.com",
+   "url": "https://origins.habbo.com/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId",
+   "category": "gaming"
+  },
+  {
+   "name": "Origins.Habbo.com.br",
+   "url": "https://origins.habbo.com.br/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId",
+   "category": "gaming"
+  },
+  {
+   "name": "Origins.Habbo.es",
+   "url": "https://origins.habbo.es/api/public/users?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "uniqueId",
+   "category": "gaming"
+  },
+  {
+   "name": "Paragraph",
+   "url": "https://paragraph.com/api/blogs/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"user\":{",
+   "category": "blog",
+   "profileUrl": "https://paragraph.com/@{u}"
+  },
+  {
+   "name": "PatientsLikeMe",
+   "url": "https://www.patientslikeme.com/members/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "s profile | PatientsLikeMe</title>",
+   "category": "health"
+  },
+  {
+   "name": "Patriots Win",
+   "url": "https://patriots.win/api/v2/user/about.json?user={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"users\":[{",
+   "category": "political",
+   "profileUrl": "https://patriots.win/u/{u}/"
+  },
+  {
+   "name": "Patronite",
+   "url": "https://patronite.pl/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Zostań Patronem",
+   "category": "finance"
+  },
+  {
+   "name": "PayPal Business",
+   "url": "https://www.paypal.com/biz/profile-data/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"payerId\":",
+   "category": "finance",
+   "profileUrl": "https://www.paypal.com/biz/profile/{u}"
+  },
+  {
+   "name": "PayPal.Me",
+   "url": "https://www.paypal.com/paypalme/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"recipientSlugDetails\":",
+   "category": "finance"
+  },
+  {
+   "name": "Peerlist",
+   "url": "https://peerlist.io/api/v1/users/profile/tldr?handle={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"tldr\":",
+   "category": "coding",
+   "profileUrl": "https://peerlist.io/{u}",
+   "absentCodes": [
+    500
+   ]
+  },
+  {
+   "name": "Peing",
+   "url": "https://peing.net/en/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "data-route-user-id-main=''",
+   "category": "social"
+  },
+  {
+   "name": "Periscope",
+   "url": "https://www.periscope.tv/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<label>Followers",
+   "category": "video"
+  },
+  {
+   "name": "Picsart",
+   "url": "https://api.picsart.com/users/show/{u}.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"status\":\"success\"",
+   "category": "art",
+   "profileUrl": "https://picsart.com/u/{u}"
+  },
+  {
+   "name": "Pillowfort",
+   "url": "https://www.pillowfort.social/{u}/json/?p=1",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"posts\":",
+   "category": "social",
+   "profileUrl": "https://www.pillowfort.social/{u}"
+  },
+  {
+   "name": "pixelfed.social",
+   "url": "https://pixelfed.social/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "- Pixelfed</title>",
+   "category": "social"
+  },
+  {
+   "name": "Planoly",
+   "url": "https://planoly.store/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"creatorLink\":{",
+   "category": "misc"
+  },
+  {
+   "name": "Plink",
+   "url": "https://plink.gg/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"user-page\"",
+   "category": "gaming"
+  },
+  {
+   "name": "Poe.com",
+   "url": "https://poe.com/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"__isNode\":\"PoeUser\"",
+   "category": "tech"
+  },
+  {
+   "name": "pokemonshowdown",
+   "url": "https://pokemonshowdown.com/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Official ladder",
+   "category": "gaming"
+  },
+  {
+   "name": "Poll Everywhere",
+   "url": "https://pollev.com/proxy/api/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "name",
+   "category": "tech",
+   "profileUrl": "https://pollev.com/{u}"
+  },
+  {
+   "name": "Poshmark",
+   "url": "https://poshmark.com/closet/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": " is using Poshmark to sell items from their closet.",
+   "category": "shopping"
+  },
+  {
+   "name": "Poweredbygay.social (Mastodon Instance)",
+   "url": "https://poweredbygay.social/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://poweredbygay.social/@{u}"
+  },
+  {
+   "name": "Pr0gramm",
+   "url": "https://pr0gramm.com/api/profile/info?name={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"user\":",
+   "category": "social",
+   "profileUrl": "https://pr0gramm.com/user/{u}"
+  },
+  {
+   "name": "Pravda.me",
+   "url": "https://pravda.me/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Социальная сеть - Правда (by mastodon)</title>",
+   "category": "social"
+  },
+  {
+   "name": "Privacy Guides",
+   "url": "https://discuss.privacyguides.net/u/{u}.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"user_badges\":",
+   "category": "tech",
+   "profileUrl": "https://discuss.privacyguides.net/u/{u}/summary"
+  },
+  {
+   "name": "Pronouny",
+   "url": "https://pronouny.xyz/api/users/profile/username/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"username\":",
+   "category": "social",
+   "profileUrl": "https://pronouny.xyz/users/{u}",
+   "absentCodes": [
+    400
+   ]
+  },
+  {
+   "name": "Prose",
+   "url": "https://prose.astral.camp/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "blog-title",
+   "category": "blog"
+  },
+  {
+   "name": "Rant.li",
+   "url": "https://rant.li/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "blog-title",
+   "category": "blog"
+  },
+  {
+   "name": "Refsheet",
+   "url": "https://refsheet.net/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "og:title",
+   "category": "hobby"
+  },
+  {
+   "name": "resumes_actorsaccess",
+   "url": "https://resumes.actorsaccess.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "- Resume | Actors Access</title>",
+   "category": "social"
+  },
+  {
+   "name": "Revolut",
+   "url": "https://revolut.me/api/web-profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"firstName\"",
+   "category": "finance",
+   "profileUrl": "https://revolut.me/{u}"
+  },
+  {
+   "name": "Roberts Space Industries",
+   "url": "https://robertsspaceindustries.com/community-hub/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Query\",\"creator",
+   "category": "gaming"
+  },
+  {
+   "name": "Roblox",
+   "url": "https://auth.roblox.com/v1/usernames/validate?username={u}&birthday=2019-12-31T23:00:00.000Z",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Username is already in use",
+   "category": "gaming",
+   "profileUrl": "https://www.roblox.com/search/users?keyword={u}"
+  },
+  {
+   "name": "RubyGems.org",
+   "url": "https://rubygems.org/api/v1/profiles/{u}.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "coding",
+   "profileUrl": "https://rubygems.org/profiles/{u}"
+  },
+  {
+   "name": "RuneScape",
+   "url": "https://apps.runescape.com/runemetrics/profile/profile?user={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"name\":",
+   "category": "hobby",
+   "profileUrl": "https://apps.runescape.com/runemetrics/app/overview/player/{u}"
+  },
+  {
+   "name": "ruVoIP.net",
+   "url": "https://ruvoip.net/members/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "id=\"user-xprofile\"",
+   "category": "tech"
+  },
+  {
+   "name": "Salon24",
+   "url": "https://www.salon24.pl/u/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<span>Obserwujących</span>",
+   "category": "blog"
+  },
+  {
+   "name": "Scored",
+   "url": "https://scored.co/api/v2/user/about.json?user={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"status\":true",
+   "category": "social",
+   "profileUrl": "https://scored.co/u/{u}"
+  },
+  {
+   "name": "ScoutWiki",
+   "url": "https://en.scoutwiki.org/User:{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "NewPP limit report",
+   "category": "social"
+  },
+  {
+   "name": "Scribd (Document)",
+   "url": "https://www.scribd.com/search/query?query={u}&verbatim=true",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"compilationId\":\"",
+   "category": "hobby",
+   "profileUrl": "https://www.scribd.com/search?query={u}&verbatim=true"
+  },
+  {
+   "name": "Searchengines",
+   "url": "https://searchengines.guru/ru/search?keyword=&author={u}&sortByDate=true",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"search-result__item\"",
+   "category": "hobby"
+  },
+  {
+   "name": "SEOClerks",
+   "url": "https://www.seoclerks.com/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<div class=\"user-info container\">",
+   "category": "social"
+  },
+  {
+   "name": "Sepia Search (PeerTube)",
+   "url": "https://sepiasearch.org/api/v1/search/video-channels?search=%22{u}%22&start=0&count=10",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"data\":[{",
+   "category": "video",
+   "profileUrl": "https://sepiasearch.org/search?search=%22{u}%22&page=1&resultType=channels"
+  },
+  {
+   "name": "setlist.fm",
+   "url": "https://www.setlist.fm/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "s setlist.fm | setlist.fm</title>",
+   "category": "music"
+  },
+  {
+   "name": "SFD",
+   "url": "https://www.sfd.pl/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Tematy użytkownika",
+   "category": "health"
+  },
+  {
+   "name": "Shikimori",
+   "url": "https://shikimori.io/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"profile-head\"",
+   "category": "social"
+  },
+  {
+   "name": "shopify",
+   "url": "https://{u}.myshopify.com",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "home",
+   "category": "shopping"
+  },
+  {
+   "name": "SimplePlanes",
+   "url": "https://www.simpleplanes.com/u/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<h5>joined",
+   "category": "gaming"
+  },
+  {
+   "name": "slides",
+   "url": "https://slides.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Presentations by",
+   "category": "social"
+  },
+  {
+   "name": "SmashRun",
+   "url": "https://smashrun.com/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Miles run overall",
+   "category": "health"
+  },
+  {
+   "name": "SmugMug",
+   "url": "https://{u}.smugmug.com",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "schema.org/Person",
+   "category": "images"
+  },
+  {
+   "name": "Snapchat",
+   "url": "https://www.snapchat.com/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "is on Snapchat!",
+   "category": "social"
+  },
+  {
+   "name": "soc.citizen4.eu",
+   "url": "https://soc.citizen4.eu/profile/{u}/profile",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "@soc.citizen4.eu",
+   "category": "social"
+  },
+  {
+   "name": "social.bund.de",
+   "url": "https://social.bund.de/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "@social.bund.de) - social.bund.de</title>",
+   "category": "social"
+  },
+  {
+   "name": "Soup",
+   "url": "https://www.soup.io/author/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Author at Soup.io",
+   "category": "blog"
+  },
+  {
+   "name": "Speaker Deck",
+   "url": "https://speakerdeck.com/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": ") on Speaker Deck</title>",
+   "category": "social"
+  },
+  {
+   "name": "Sports Tracker",
+   "url": "https://api.sports-tracker.com/apiserver/v1/user/name/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"uuid\":",
+   "category": "health",
+   "profileUrl": "https://sports-tracker.com/view_profile/{u}"
+  },
+  {
+   "name": "Spotify",
+   "url": "https://open.spotify.com/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "content=\"profile\"",
+   "category": "music"
+  },
+  {
+   "name": "StackOverflow",
+   "url": "https://api.stackexchange.com/2.3/users?order=desc&sort=name&inname={u}&site=stackoverflow",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"items\":[{",
+   "category": "coding",
+   "profileUrl": "https://stackoverflow.com/users/filter?search={u}"
+  },
+  {
+   "name": "stats.fm",
+   "url": "https://api.stats.fm/api/v1/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"item\":{",
+   "category": "music",
+   "profileUrl": "https://stats.fm/{u}"
+  },
+  {
+   "name": "Statuspage",
+   "url": "https://{u}.statuspage.io/api/v2/status.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "updated_at",
+   "category": "tech",
+   "profileUrl": "https://{u}.statuspage.io/"
+  },
+  {
+   "name": "StoryCorps",
+   "url": "https://archive.storycorps.org/user/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "archive author",
+   "category": "blog"
+  },
+  {
+   "name": "StreamElements",
+   "url": "https://api.streamelements.com/kappa/v2/channels/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"providerId\"",
+   "category": "finance",
+   "profileUrl": "https://streamelements.com/{u}"
+  },
+  {
+   "name": "Substack",
+   "url": "https://substack.com/api/v1/user/{u}/public_profile",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "social",
+   "profileUrl": "https://substack.com/@{u}"
+  },
+  {
+   "name": "Suzuri",
+   "url": "https://suzuri.jp/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Items",
+   "category": "business"
+  },
+  {
+   "name": "Tanuki.pl",
+   "url": "https://tanuki.pl/profil/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Dołączył",
+   "category": "hobby"
+  },
+  {
+   "name": "TAPiTAG",
+   "url": "https://account.tapitag.co/tapitag/api/v1/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "User details are Showing",
+   "category": "business",
+   "profileUrl": "https://account.tapitag.co/{u}"
+  },
+  {
+   "name": "Taringa Archived Profile",
+   "url": "https://archive.org/wayback/available?url=https://www.taringa.net/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"archived_snapshots\": {\"closest\"",
+   "category": "archived",
+   "profileUrl": "https://web.archive.org/web/2/taringa.net/{u}"
+  },
+  {
+   "name": "Teletype",
+   "url": "https://teletype.in/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"layout__content m_main blog\"",
+   "category": "blog"
+  },
+  {
+   "name": "Tenor",
+   "url": "https://tenor.com/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"ProfilePage page\"",
+   "category": "images"
+  },
+  {
+   "name": "TETR.IO",
+   "url": "https://ch.tetr.io/api/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"success\":true",
+   "category": "gaming",
+   "profileUrl": "https://ch.tetr.io/u/{u}"
+  },
+  {
+   "name": "The Gateway Pundit",
+   "url": "https://www.thegatewaypundit.com/author/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "meta property=\"og:type\" content=\"profile\"",
+   "category": "political"
+  },
+  {
+   "name": "theguardian",
+   "url": "https://www.theguardian.com/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "content=\"&#x3C;p&#x3E;",
+   "category": "news"
+  },
+  {
+   "name": "themeforest",
+   "url": "https://themeforest.net/user/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "s profile on ThemeForest",
+   "category": "art"
+  },
+  {
+   "name": "TikTok",
+   "url": "https://www.tiktok.com/oembed?url=https://www.tiktok.com/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"author_url\":",
+   "category": "social",
+   "profileUrl": "https://www.tiktok.com/@{u}?lang=en",
+   "absentCodes": [
+    400
+   ]
+  },
+  {
+   "name": "Tilde.zone (Mastodon Instance)",
+   "url": "https://tilde.zone/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://tilde.zone/@{u}"
+  },
+  {
+   "name": "Tinder",
+   "url": "https://tinder.com/@{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": ") | Tinder</title>",
+   "category": "dating"
+  },
+  {
+   "name": "TipeeeStream",
+   "url": "https://www.tipeeestream.com/v3.0/pages/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "finance",
+   "profileUrl": "https://www.tipeeestream.com/{u}/"
+  },
+  {
+   "name": "Tooting.ch (Mastodon Instance)",
+   "url": "https://tooting.ch/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://tooting.ch/@{u}"
+  },
+  {
+   "name": "TradingView",
+   "url": "https://www.tradingview.com/u/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"js-user-profile\"",
+   "category": "finance"
+  },
+  {
+   "name": "TRAKTRAIN",
+   "url": "https://traktrain.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "id=\"userId\"",
+   "category": "music"
+  },
+  {
+   "name": "Trello",
+   "url": "https://trello.com/1/Members/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "social",
+   "profileUrl": "https://trello.com/{u}"
+  },
+  {
+   "name": "TruckersMP.Ru",
+   "url": "https://truckersmp.ru/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"b-user-page\"",
+   "category": "gaming"
+  },
+  {
+   "name": "tunefind",
+   "url": "https://www.tunefind.com/api-request/account/profile?userName={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"user-stats-engagement\":",
+   "category": "music",
+   "profileUrl": "https://www.tunefind.com/user/profile/{u}"
+  },
+  {
+   "name": "Twitcast",
+   "url": "https://frontendapi.twitcasting.tv/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"user\":{",
+   "category": "social",
+   "profileUrl": "https://twitcasting.tv/{u}"
+  },
+  {
+   "name": "twpro",
+   "url": "https://twpro.jp/{u}/q-data.json",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": ",200,\"/",
+   "category": "social",
+   "profileUrl": "https://twpro.jp/{u}"
+  },
+  {
+   "name": "UEF CONNECT",
+   "url": "https://uefconnect.uef.fi/en/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "profile-page-header__info",
+   "category": "business"
+  },
+  {
+   "name": "Ultimate Guitar",
+   "url": "https://www.ultimate-guitar.com/u/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": " | Ultimate-Guitar.Com</title>",
+   "category": "hobby",
+   "absentCodes": [
+    410
+   ]
+  },
+  {
+   "name": "Unlisted Videos",
+   "url": "https://unlistedvideos.com/search.php?user={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Date submitted",
+   "category": "archived"
+  },
+  {
+   "name": "uwu.ai",
+   "url": "https://{u}.uwu.ai/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "property=\"twitter:card\"",
+   "category": "social"
+  },
+  {
+   "name": "Uwumarket",
+   "url": "https://uwumarket.us/collections/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "data-collection-filters",
+   "category": "business"
+  },
+  {
+   "name": "Vero",
+   "url": "https://vero.co/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "name=\"username",
+   "category": "art"
+  },
+  {
+   "name": "vibilagare",
+   "url": "https://www.vibilagare.se/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"user-profile\"",
+   "category": "misc"
+  },
+  {
+   "name": "VIEWBUG",
+   "url": "https://www.viewbug.com/member/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"top-profile-membership\"",
+   "category": "hobby"
+  },
+  {
+   "name": "Vine",
+   "url": "https://vine.co/api/users/profiles/vanity/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "userId",
+   "category": "video",
+   "profileUrl": "https://vine.co/{u}"
+  },
+  {
+   "name": "visnesscard",
+   "url": "https://my.visnesscard.com/Home/GetCard/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "end_point",
+   "category": "business",
+   "profileUrl": "https://my.visnesscard.com/{u}"
+  },
+  {
+   "name": "Vivino",
+   "url": "https://api.vivino.com/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"id\":",
+   "category": "shopping",
+   "profileUrl": "https://www.vivino.com/users/{u}"
+  },
+  {
+   "name": "Vkl.world (Mastodon Instance)",
+   "url": "https://vkl.world/api/v1/accounts/lookup?acct={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "display_name",
+   "category": "social",
+   "profileUrl": "https://vkl.world/@{u}"
+  },
+  {
+   "name": "Voice123",
+   "url": "https://voice123.com/api/providers/search/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "user_id",
+   "category": "hobby",
+   "profileUrl": "https://voice123.com/{u}"
+  },
+  {
+   "name": "W3Schools",
+   "url": "https://pathfinder-api.kai.w3spaces.com/public-profile-api/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"createdAt\":",
+   "category": "tech"
+  },
+  {
+   "name": "Wakatime",
+   "url": "https://wakatime.com/api/v1/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"data\":",
+   "category": "coding",
+   "profileUrl": "https://wakatime.com/@{u}"
+  },
+  {
+   "name": "Warmerise",
+   "url": "https://warmerise.com/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<div id='profile_photo",
+   "category": "gaming"
+  },
+  {
+   "name": "warriorforum",
+   "url": "https://www.warriorforum.com/members/{u}.html",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Last Activity:",
+   "category": "hobby",
+   "absentCodes": [
+    400
+   ]
+  },
+  {
+   "name": "Wattpad",
+   "url": "https://www.wattpad.com/api/v3/users/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"username\":",
+   "category": "social",
+   "profileUrl": "https://www.wattpad.com/user/{u}",
+   "absentCodes": [
+    400
+   ]
+  },
+  {
+   "name": "WeTransfer",
+   "url": "https://wepresent.wetransfer.com/artists/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "name\":\"WePresent | ",
+   "category": "art"
+  },
+  {
+   "name": "Wikidot",
+   "url": "https://www.wikidot.com/user:info/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<h1 class=\"profile-title\">",
+   "category": "social"
+  },
+  {
+   "name": "Wimkin-PublicProfile",
+   "url": "https://wimkin.com/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "is on WIMKIN",
+   "category": "political"
+  },
+  {
+   "name": "Wishlistr",
+   "url": "https://www.wishlistr.com/sign-up/?rs=checkUserName&rsargs[]={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "+:var res = \"",
+   "category": "shopping",
+   "profileUrl": "https://www.wishlistr.com/{u}/"
+  },
+  {
+   "name": "WordPress.com (Public)",
+   "url": "https://public-api.wordpress.com/rest/v1.1/sites/{u}.wordpress.com",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"ID\":",
+   "category": "blog",
+   "profileUrl": "https://{u}.wordpress.com"
+  },
+  {
+   "name": "WordPress.org (Forums)",
+   "url": "https://login.wordpress.org/wp-json/wporg/v1/username-available/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"error\":\"That username is already in use.",
+   "category": "blog",
+   "profileUrl": "https://wordpress.org/support/users/{u}/"
+  },
+  {
+   "name": "WordPress.org (Profiles)",
+   "url": "https://login.wordpress.org/wp-json/wporg/v1/username-available/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"error\":\"That username is already in use.",
+   "category": "blog",
+   "profileUrl": "https://profiles.wordpress.org/{u}/"
+  },
+  {
+   "name": "Wykop",
+   "url": "https://wykop.pl/ludzie/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<title>Profil:",
+   "category": "social"
+  },
+  {
+   "name": "X",
+   "url": "https://api.x.com/i/users/username_available.json?username={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"reason\":\"taken\"",
+   "category": "social",
+   "profileUrl": "https://x.com/{u}"
+  },
+  {
+   "name": "Xakep.ru",
+   "url": "https://xakep.ru/author/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "authorBlock-avatar",
+   "category": "tech"
+  },
+  {
+   "name": "Xanga",
+   "url": "https://{u}.xanga.com/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"module module-weblog\"",
+   "category": "blog"
+  },
+  {
+   "name": "Xbox Gamertag",
+   "url": "https://www.xboxgamertag.com/search/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Games Played",
+   "category": "gaming"
+  },
+  {
+   "name": "Yazawaj",
+   "url": "https://www.yazawaj.com/profile/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "profile-description",
+   "category": "dating"
+  },
+  {
+   "name": "YesWeHack",
+   "url": "https://api.yeswehack.com/hunters/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"username\":",
+   "category": "tech",
+   "profileUrl": "https://yeswehack.com/hunters/{u}"
+  },
+  {
+   "name": "YouNow",
+   "url": "https://api.younow.com/php/api/broadcast/info/user={u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"userId\":",
+   "category": "social",
+   "profileUrl": "https://www.younow.com/{u}"
+  },
+  {
+   "name": "youpic",
+   "url": "https://youpic.com/photographer/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "<meta name=\"og:title\"",
+   "category": "hobby"
+  },
+  {
+   "name": "Zepeto",
+   "url": "https://gw-napi.zepeto.io/profiles/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "zepetoId\":",
+   "category": "social",
+   "profileUrl": "https://web.zepeto.me/share/user/profile/{u}?language=en"
+  },
+  {
+   "name": "zhihu",
+   "url": "https://api.zhihu.com/books/people/{u}/publications?offset=0&limit=5",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "\"is_start\": true",
+   "category": "social",
+   "profileUrl": "https://www.zhihu.com/people/{u}"
+  },
+  {
+   "name": "Zillow",
+   "url": "https://www.zillow.com/profile/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "- Real Estate Agent",
+   "category": "shopping"
+  },
+  {
+   "name": "Военное обозрение",
+   "url": "https://topwar.ru/user/{u}/",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "class=\"puser-info\"",
+   "category": "hobby"
+  }
+ ]
+}

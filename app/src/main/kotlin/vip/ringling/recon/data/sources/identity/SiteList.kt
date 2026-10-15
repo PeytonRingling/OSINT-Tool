@@ -32,6 +32,8 @@ data class Site(
     val usernameRegex: String? = null,
     /** Optional profile enrichment (see [Extract]); the response body of a hit is mined for facts, avatar and linked handles. */
     val extract: Extract? = null,
+    /** Free-form grouping (WhatsMyName category). */
+    val category: String? = null,
 )
 
 @Serializable
@@ -46,6 +48,12 @@ fun interface SiteListProvider { fun load(): List<Site> }
 
 @Singleton
 class AssetSiteList @Inject constructor(@ApplicationContext private val context: Context) : SiteListProvider {
-    private val cached by lazy { context.assets.open("sites.json").bufferedReader().use { SiteList.parse(it.readText()) } }
+    /** Curated list first (it wins on name clashes), then the calibrated WhatsMyName-derived list (CC BY-SA 4.0, attributed in Settings). */
+    private val cached by lazy {
+        val own = context.assets.open("sites.json").bufferedReader().use { SiteList.parse(it.readText()) }
+        val wmn = runCatching { context.assets.open("wmn_sites.json").bufferedReader().use { SiteList.parse(it.readText()) } }.getOrDefault(emptyList())
+        val names = own.map { it.name.lowercase() }.toSet()
+        own + wmn.filter { it.name.lowercase() !in names }
+    }
     override fun load() = cached
 }
