@@ -24,7 +24,10 @@ class SettingsViewModel @Inject constructor(
     private val apiKeys: ApiKeys,
     private val updates: UpdateManager,
     private val snapshots: vip.ringling.recon.data.SnapshotRepository,
+    private val backup: vip.ringling.recon.data.BackupManager,
 ) : ViewModel() {
+    suspend fun backupText(): String = backup.export()
+    suspend fun importBackup(text: String) = backup.import(text)
     val state: StateFlow<SettingsUiState> = combine(repo.settings, apiKeys.keys, history.records, updates.state) { s, k, h, u ->
         SettingsUiState(s, k, h.size, BuildConfig.VERSION_NAME, updates.installedBuild, u)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())

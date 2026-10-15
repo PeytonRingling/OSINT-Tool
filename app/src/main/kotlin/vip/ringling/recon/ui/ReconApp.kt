@@ -185,9 +185,20 @@ fun ReconApp() {
                     composable(Tab.SETTINGS.route) {
                         val vm: SettingsViewModel = hiltViewModel()
                         val st by vm.state.collectAsStateWithLifecycle()
+                        val ctx = androidx.compose.ui.platform.LocalContext.current
+                        val scope = androidx.compose.runtime.rememberCoroutineScope()
+                        val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
+                            if (uri != null) scope.launch {
+                                val text = runCatching { ctx.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() } }.getOrNull()
+                                val r = if (text == null) null else vm.importBackup(text)
+                                snackbar.showSnackbar(r?.fold({ "Imported ${it.scans} scans, ${it.cases} cases, ${it.watch} watched" }, { "Import failed: ${it.message}" }) ?: "Couldn't read that file")
+                            }
+                        }
                         SettingsScreen(
                             st,
-                            SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock),
+                            SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock,
+                                onExportBackup = { scope.launch { actions.saveFile("recon-backup-${java.time.LocalDate.now()}.json", vm.backupText().toByteArray()) } },
+                                onImportBackup = { picker.launch(arrayOf("application/json", "text/plain", "*/*")) }),
                             contentPadding = pad,
                         )
                     }

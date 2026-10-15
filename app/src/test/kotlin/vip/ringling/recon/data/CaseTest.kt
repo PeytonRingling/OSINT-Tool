@@ -48,6 +48,31 @@ class CaseTest {
         db.close()
     }
 
+    @Test fun backupRoundTripsAndNeverContainsKeys() = runTest {
+        fun mgr(db: HistoryDb): Pair<vip.ringling.recon.data.BackupManager, vip.ringling.recon.data.CaseFileRepository> {
+            val repo = vip.ringling.recon.data.CaseFileRepository(db.caseFiles())
+            return vip.ringling.recon.data.BackupManager(db.scans(), db.snapshots(), db.caseFiles(), vip.ringling.recon.data.watch.WatchRepository(db.watches()), repo) to repo
+        }
+        val a = Room.inMemoryDatabaseBuilder(ctx, HistoryDb::class.java).allowMainThreadQueries().build()
+        val (ma, ra) = mgr(a)
+        a.scans().insert(vip.ringling.recon.data.db.ScanEntity("s1", "ann@b.com", "EMAIL", 5, "[]", 2))
+        a.snapshots().insert(vip.ringling.recon.data.db.SnapshotEntity("s1", "EMAIL", "ann@b.com", 5, 40, 1, 2, "x,y"))
+        val id = ra.create("Case", vip.ringling.recon.domain.CaseTarget(vip.ringling.recon.domain.InputType.EMAIL, "ann@b.com", 1)); ra.addNote(id, "hello")
+        vip.ringling.recon.data.watch.WatchRepository(a.watches()).add("ann@b.com")
+        val text = ma.export()
+        assertTrue("hibp" !in text.lowercase() && "api" !in text.lowercase().replace("apikey", ""), "no key material in the file")
+        val b = Room.inMemoryDatabaseBuilder(ctx, HistoryDb::class.java).allowMainThreadQueries().build()
+        val (mb, rb) = mgr(b)
+        val sum = mb.import(text).getOrThrow(); mb.import(text).getOrThrow()
+        assertEquals(1, sum.scans); assertEquals(1, sum.cases)
+        assertEquals("ann@b.com", b.scans().find("s1")!!.query); assertEquals(40, b.snapshots().snapshot().single().risk)
+        val c = rb.cases.first().single(); assertEquals("Case", c.name); assertEquals(listOf("hello"), c.notes.map { it.text }, "second import must not duplicate notes")
+        assertEquals(listOf("ann@b.com"), b.watches().snapshot().map { it.raw })
+        assertTrue(mb.import("{\"format\":\"other\",\"createdAt\":1,\"scans\":[],\"snapshots\":[],\"cases\":[],\"watch\":[]}").isFailure)
+        assertTrue(mb.import("not json").isFailure)
+        a.close(); b.close()
+    }
+
     @Test fun caseReportCarriesTargetsChangesPivotsAndNotes() {
         val file = vip.ringling.recon.domain.CaseFile("c", "My footprint", 1, 1, listOf(vip.ringling.recon.domain.CaseTarget(vip.ringling.recon.domain.InputType.EMAIL, "ann@b.com", 1), vip.ringling.recon.domain.CaseTarget(vip.ringling.recon.domain.InputType.USERNAME, "ann", 1)), listOf(vip.ringling.recon.domain.CaseNote(1, "check the old gmail", 1_700_000_000_000)))
         val s1 = vip.ringling.recon.domain.ScanSnapshot("1", vip.ringling.recon.domain.InputType.EMAIL, "ann@b.com", 1_700_000_000_000, 34, 3, 5, emptyList())

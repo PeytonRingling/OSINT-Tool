@@ -85,6 +85,8 @@ data class SettingsActions(
     val onProxyHost: (String) -> Unit = {},
     val onProxyPort: (Int) -> Unit = {},
     val onAppLock: (Boolean) -> Unit = {},
+    val onExportBackup: () -> Unit = {},
+    val onImportBackup: () -> Unit = {},
 )
 
 /** "System": status panel, privacy & network, display, API keys (status list that expands to edit), updates, data and about. */
@@ -325,6 +327,14 @@ private fun DataSection(state: SettingsUiState, a: SettingsActions) {
                 Text("${state.historyCount} saved on this device only", color = sig.muted, style = MaterialTheme.typography.bodySmall)
             }
             SignalButton("Clear", { confirm = true }, enabled = state.historyCount > 0, mono = true)
+        }
+        Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 14.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text("Backup", color = sig.text, style = MaterialTheme.typography.titleSmall)
+                Text("Scans, cases and watchlist. Never keys or settings.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+            }
+            SignalButton("Export", a.onExportBackup, mono = true)
+            SignalButton("Import", a.onImportBackup, mono = true)
         }
     }
 }
