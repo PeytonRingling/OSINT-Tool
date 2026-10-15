@@ -210,3 +210,27 @@ class MapRobustnessTest {
         assertEquals(43.0, vip.ringling.recon.data.sources.registry.IdahoRegistryAdapter.parseGeo("new google.maps.LatLng(43.0000000, -116.0000000)")!!.lat, 1e-6)
     }
 }
+
+class ApproximatePinTest {
+    private fun reg(id: String, addr: String, lat: Double, lng: Double) =
+        vip.ringling.recon.domain.Finding(id, vip.ringling.recon.domain.ModuleId.REGISTRY, id, "$addr, JEROME, 83338\nStatus: ACTIVE", Severity.INFO, geo = vip.ringling.recon.domain.GeoPoint(lat, lng))
+
+    private fun fold(vararg f: vip.ringling.recon.domain.Finding): List<vip.ringling.recon.domain.Finding> {
+        var s = vip.ringling.recon.domain.ScanSession(ScanInput("83338", InputType.ZIP))
+        f.forEach { s = s.apply(vip.ringling.recon.domain.ScanEvent.Found(it)) }
+        return s.findings
+    }
+
+    @Test fun differentAddressesAtOneSpotAreApproximateAndIdempotent() {
+        val out = fold(reg("a", "1 A ST", 42.72, -114.31), reg("b", "9 Z RD", 42.72, -114.31), reg("c", "5 Q LN", 42.73, -114.50), reg("d", "7 W CT", 42.74, -114.51))
+        assertTrue(listOf("a", "b").all { id -> vip.ringling.recon.domain.APPROXIMATE_TAG in out.first { it.id == id }.tags })
+        assertTrue(vip.ringling.recon.domain.APPROXIMATE_TAG !in out.first { it.id == "c" }.tags)
+        assertEquals(1, out.first { it.id == "a" }.detail.lines().count { it.startsWith("Map pin is approximate") }, "note added once even after later events")
+        assertEquals("1 A ST, JEROME, 83338", out.first { it.id == "a" }.detail.lines().first())
+    }
+
+    @Test fun sameAddressSharingCoordinatesIsNotApproximate() {
+        val out = fold(reg("a", "1 A ST", 42.72, -114.31), reg("b", "1 a st", 42.72, -114.31))
+        assertTrue(out.none { vip.ringling.recon.domain.APPROXIMATE_TAG in it.tags })
+    }
+}

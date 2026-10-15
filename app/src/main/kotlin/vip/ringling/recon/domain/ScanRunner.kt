@@ -39,12 +39,32 @@ class ScanRunner @Inject constructor(private val sources: Set<@JvmSuppressWildca
 
 fun ScanSession.apply(e: ScanEvent): ScanSession = when (e) {
     is ScanEvent.Started -> copy(statuses = statuses + (e.module to ModuleStatus.RUNNING))
-    is ScanEvent.Found -> copy(findings = dropMislocated(findings + e.finding, e.finding))
+    is ScanEvent.Found -> copy(findings = flagApproximate(dropMislocated(findings + e.finding, e.finding)))
     is ScanEvent.Finished -> copy(statuses = statuses + (e.module to ModuleStatus.DONE))
     is ScanEvent.Failed -> copy(
         statuses = statuses + (e.module to ModuleStatus.FAILED),
         errors = errors + (e.module to e.message),
     )
+}
+
+const val APPROXIMATE_TAG = "Approximate location"
+
+/**
+ * Different street addresses sharing identical coordinates means the registry's geocoder fell back to a town or city centre for them.
+ * (Several people at the SAME address legitimately share coordinates, so that is not flagged.)
+ */
+private fun flagApproximate(all: List<Finding>): List<Finding> {
+    val registry = all.filter { it.module == ModuleId.REGISTRY && it.geo != null }
+    val approx = registry.groupBy { it.geo }.filter { (_, g) -> g.size >= 2 && g.map { it.detail.lineSequence().first().trim().lowercase() }.distinct().size >= 2 }.values.flatten().map { it.id }.toSet()
+    if (approx.isEmpty()) return all
+    return all.map { f ->
+        if (f.id !in approx || APPROXIMATE_TAG in f.tags) f
+        else {
+            val lines = f.detail.lines()
+            val note = "Map pin is approximate: the registry could not place this exact address, so it shows a town or city centre."
+            f.copy(tags = f.tags + APPROXIMATE_TAG, detail = (listOf(lines.first(), note) + lines.drop(1)).joinToString("\n"))
+        }
+    }
 }
 
 /** A registry record whose coordinates are far from all the others in the same search was geocoded to the wrong place: keep the record, drop the bad pin. */

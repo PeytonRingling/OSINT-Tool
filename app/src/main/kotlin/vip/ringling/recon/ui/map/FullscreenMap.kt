@@ -68,7 +68,7 @@ fun FullscreenMapContent(
     )
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         TileMap(
-            pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title) },
+            pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title, vip.ringling.recon.domain.APPROXIMATE_TAG in it.tags) },
             me = me, selectedId = selectedId, onPinClick = { selectedId = it.id; vip.ringling.recon.domain.MapMemory.selectedId = it.id },
             camera = vip.ringling.recon.domain.MapMemory.camera("full"),
             modifier = Modifier.fillMaxSize(), onClose = onDismiss, oneFingerPan = true, clipShape = androidx.compose.ui.graphics.RectangleShape, controlsPadding = controlsPadding,

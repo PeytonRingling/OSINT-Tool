@@ -143,7 +143,7 @@ private fun RegistryMapPanel(
     }
     Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
         TileMap(
-            pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title) },
+            pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title, vip.ringling.recon.domain.APPROXIMATE_TAG in it.tags) },
             me = me, selectedId = selectedId,
             onPinClick = { pin -> located.firstOrNull { it.id == pin.id }?.let(onFindingClick) },
             modifier = Modifier.fillMaxWidth().height(280.dp), camera = vip.ringling.recon.domain.MapMemory.camera("inline"),

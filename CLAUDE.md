@@ -144,6 +144,7 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
   sets it on phones so Back reopens the map exactly where it was (not in the two-pane layout, where the record shows beside the list).
 - `ScanSession.apply` drops the pin (keeps the record, adds tag "Location unverified") of a registry entry >100 km from the median of the others (needs ≥4 located); the registry's own geocoder sometimes lands in the wrong city.
   `parseGeo` prefers the Marker's LatLng over the map centre.
+- Different street addresses with identical coordinates = geocoder fell back to a town/city centre: tagged "Approximate location" (`APPROXIMATE_TAG`), note added to the detail, pale/small pin, no distance shown. Same address sharing coordinates is NOT flagged.
 
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself

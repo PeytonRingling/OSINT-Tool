@@ -44,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -70,7 +71,7 @@ import vip.ringling.recon.domain.Severity
 import vip.ringling.recon.ui.components.LocalImagesEnabled
 import vip.ringling.recon.ui.components.severityColor
 
-data class MapPin(val id: String, val geo: GeoPoint, val severity: Severity, val label: String)
+data class MapPin(val id: String, val geo: GeoPoint, val severity: Severity, val label: String, val approximate: Boolean = false)
 
 /** Street = OpenStreetMap; Satellite = Esri World Imagery. The choice is remembered in settings. */
 class MapLayerState(val satellite: Boolean, val onChange: (Boolean) -> Unit)
@@ -203,14 +204,14 @@ fun TileMap(
             pins.forEach { p ->
                 val o = screen(p.geo)
                 val selected = p.id == selectedId
-                val size = if (selected) 34.dp else if (pins.size > 25) 18.dp else 26.dp
+                val size = if (selected) 34.dp else if (p.approximate) 16.dp else if (pins.size > 25) 18.dp else 26.dp
                 val half = with(density) { size.roundToPx() / 2 }
                 Box(
-                    Modifier.offset(o.x.roundToInt() - half, o.y.roundToInt() - half).size(size)
+                    Modifier.offset(o.x.roundToInt() - half, o.y.roundToInt() - half).size(size).alpha(if (p.approximate && !selected) 0.55f else 1f)
                         .clip(CircleShape).background(Color.White).padding(if (selected) 4.dp else if (pins.size > 25) 2.dp else 3.dp)
                         .clip(CircleShape).background(severityColor(p.severity))
                         .clickable(onClickLabel = "Open ${p.label}") { onPinClick(p) }
-                        .semantics { contentDescription = "Pin: ${p.label}" },
+                        .semantics { contentDescription = "Pin: ${p.label}" + if (p.approximate) " (approximate location)" else "" },
                 )
             }
         }

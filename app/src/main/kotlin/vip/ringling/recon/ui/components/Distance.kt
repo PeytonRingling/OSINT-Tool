@@ -9,7 +9,7 @@ import vip.ringling.recon.domain.GeoPoint
 /** The user's position when they've allowed it; used only to show distances and the "you" dot. */
 val LocalUserLocation = compositionLocalOf<GeoPoint?> { null }
 
-fun distanceMeters(me: GeoPoint?, f: Finding): Double? = if (me != null && f.geo != null) Geo.distanceMeters(me, f.geo) else null
+fun distanceMeters(me: GeoPoint?, f: Finding): Double? = if (me != null && f.geo != null && vip.ringling.recon.domain.APPROXIMATE_TAG !in f.tags) Geo.distanceMeters(me, f.geo) else null
 
 @Composable
 fun distanceLabel(f: Finding): String? = distanceMeters(LocalUserLocation.current, f)?.let { Geo.formatDistance(it) }
