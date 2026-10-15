@@ -15,4 +15,26 @@ object BreachAdvice {
             if (isEmpty()) add("No password or financial data was reported, so urgent action is unlikely. Still be wary of phishing that mentions this service.")
         }
     }
+
+    /** One plain sentence on why a leaked data class matters; null for classes with nothing useful to add. */
+    fun explain(dataClass: String): String? {
+        val c = dataClass.lowercase()
+        return when {
+            c.contains("password hint") -> "Hints often give away the password itself."
+            c.contains("password") -> "Can unlock this account, and any other where it was reused."
+            c.contains("auth token") || c.contains("session") -> "Can let someone in without a password until it expires."
+            c.contains("security question") -> "Answers are reused to reset accounts. Change them where you can."
+            c.contains("credit card") || c.contains("bank") || c.contains("payment") || c.contains("financial") -> "Financial details: watch statements for charges you don't recognize."
+            c.contains("social security") || c.contains("passport") || c.contains("government") || c.contains("driver") -> "Identity documents are the hardest to replace and enable identity theft."
+            c.contains("physical address") -> "Where you live. Enables targeted scams and mail fraud."
+            c.contains("phone number") -> "Enables scam calls, texts and SIM-swap attempts."
+            c.contains("date of birth") -> "Often used to verify your identity elsewhere."
+            c.contains("email address") -> "Makes you a target for phishing that mentions this service."
+            c.contains("ip address") -> "Roughly where you connected from."
+            c.contains("geographic") -> "Approximate location."
+            c.contains("username") -> "Handles can be matched across sites."
+            c.contains("name") -> "Makes phishing messages more convincing."
+            else -> null
+        }
+    }
 }

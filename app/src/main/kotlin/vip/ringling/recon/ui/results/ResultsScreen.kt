@@ -155,6 +155,14 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
                     }
                 }
             }
+            val breaches = scored.filter { it.module == ModuleId.BREACH }.sortedBy { if (it.severity == Severity.EXPOSED) 0 else 1 }
+            if (breaches.isNotEmpty()) item(key = "breaches") {
+                FindingGroup("Breaches", "${breaches.size} · tap for details", breaches, actions.onFinding)
+            }
+            val others = scored.filter { it.module != ModuleId.BREACH }.sortedBy { if (it.severity == Severity.EXPOSED) 0 else 1 }
+            if (others.isNotEmpty()) item(key = "others") {
+                FindingGroup("Other findings", "${others.size}", others, actions.onFinding)
+            }
             if (steps.isNotEmpty()) item {
                 HairPanel(Modifier.fillMaxWidth()) {
                     Column(Modifier.padding(start = 14.dp, end = 14.dp, top = 12.dp, bottom = 4.dp)) {
@@ -380,6 +388,43 @@ fun RegistryRow(f: Finding, me: GeoPoint?, selected: Boolean, onClick: () -> Uni
             Column(horizontalAlignment = Alignment.End) {
                 dist?.let { Text(vip.ringling.recon.domain.Geo.formatDistance(it), color = sig.signal, style = ReconType.value.copy(fontSize = 12.sp)) }
                 Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = sig.muted)
+            }
+        }
+    }
+}
+
+/** Tappable list of findings on the exposure screen: logo, title, one summary line, the first data classes (risky ones red) and severity. */
+@Composable
+fun FindingGroup(title: String, trailing: String, items: List<Finding>, onOpen: (Finding) -> Unit) {
+    val sig = ReconTheme.signal
+    HairPanel(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(start = 14.dp, end = 6.dp, top = 12.dp, bottom = 4.dp)) {
+            Row(Modifier.fillMaxWidth().padding(end = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) { SignalLabel(title); SignalLabel(trailing) }
+            items.forEachIndexed { i, f ->
+                if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.07f)))
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 64.dp).clickable(onClickLabel = "Open details") { onOpen(f) }
+                        .semantics { contentDescription = "${f.title}, ${f.severity.name.lowercase()}" }.padding(vertical = 10.dp),
+                    verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    if (f.imageUrl != null) RemoteImage(f.imageUrl, "Logo", Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)), contentScale = androidx.compose.ui.layout.ContentScale.Fit, placeholderIcon = false)
+                    else Box(Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.06f)), contentAlignment = Alignment.Center) { Icon(f.module.icon(), null, tint = sig.muted, modifier = Modifier.size(20.dp)) }
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                        Text(f.title, color = sig.text, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(f.detail.lineSequence().first(), color = sig.muted, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        if (f.tags.isNotEmpty()) {
+                            val shown = (f.tags.filter { it in f.hotTags } + f.tags.filter { it !in f.hotTags }).take(3)
+                            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 2.dp)) {
+                                shown.forEach { StatusTag(it, if (it in f.hotTags) Tone.ALERT else Tone.INFO) }
+                                if (f.tags.size > shown.size) StatusTag("+${f.tags.size - shown.size}", Tone.MUTED)
+                            }
+                        }
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        StatusTag(if (f.severity == Severity.EXPOSED) "Exposed" else "Info", if (f.severity == Severity.EXPOSED) Tone.ALERT else Tone.INFO)
+                        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = sig.muted)
+                    }
+                }
             }
         }
     }

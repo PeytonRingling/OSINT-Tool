@@ -83,6 +83,7 @@ fun FindingDetail(
     contentPadding: PaddingValues = PaddingValues(),
 ) {
     val cs = MaterialTheme.colorScheme
+    val isBreach = finding.isBreachRecord()
     LazyColumn(
         modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -125,7 +126,7 @@ fun FindingDetail(
                             Modifier.fillMaxWidth().height(if (finding.imageLargeUrl ?: finding.imageUrl != null) 260.dp else 72.dp).clip(MaterialTheme.shapes.medium), contentScale = ContentScale.Fit,
                         )
                     }
-                    if (finding.tags.isNotEmpty()) {
+                    if (finding.tags.isNotEmpty() && !isBreach) {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             finding.tags.forEach { tag ->
                                 val hot = tag in finding.hotTags
@@ -143,12 +144,12 @@ fun FindingDetail(
                 }
             }
         }
-        item {
+        if (isBreach) breachSections(finding, actions) else item {
             DetailText(finding.detail, Modifier.padding(horizontal = 8.dp))
         }
         if (finding.pivots.isNotEmpty()) item { PivotsCard(finding.pivots, actions.onPivot) }
         if (finding.links.isNotEmpty()) item { LinksCard(finding.links, actions.onOpenUrl) }
-        if (finding.facts.isNotEmpty()) item { FactsCard(finding.facts) }
+        if (finding.facts.isNotEmpty() && !isBreach) item { FactsCard(finding.facts) }
         finding.geo?.let { g ->
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -162,7 +163,7 @@ fun FindingDetail(
                 }
             }
         }
-        finding.url?.let { url ->
+        finding.url?.takeIf { !isBreach }?.let { url ->
             item {
                 OutlinedButton(onClick = { actions.onOpenUrl(url) }, modifier = Modifier.heightIn(min = 48.dp)) {
                     Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(18.dp))
