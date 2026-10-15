@@ -42,9 +42,11 @@ class BreachDetailTest {
     }
 
     @Test fun flagsAreSurfaced() {
-        val f = HibpMapper.breachFinding(HibpBreach(name = "X", isVerified = false, isSpamList = true, isSensitive = true, dataClasses = listOf("Email addresses")))
+        val f = HibpMapper.breachFinding(HibpBreach(name = "X", isVerified = false, isSpamList = true, isSensitive = true, isStealerLog = true, attribution = "A researcher", disclosureUrl = "https://example.test/notice", dataClasses = listOf("Email addresses")))
         val flags = f.facts.first { it.label == "Flags" }.value
-        assertTrue("Unverified" in flags && "Spam list" in flags && "Sensitive" in flags, flags)
+        assertTrue("Unverified" in flags && "Spam list" in flags && "Sensitive" in flags && "Stealer log" in flags, flags)
+        assertEquals("A researcher", f.facts.first { it.label == "Attributed to" }.value)
+        assertEquals("example.test/notice", f.facts.first { it.label == "Company disclosure" }.value)
         assertEquals("No", f.facts.first { it.label == "Verified" }.value)
     }
 

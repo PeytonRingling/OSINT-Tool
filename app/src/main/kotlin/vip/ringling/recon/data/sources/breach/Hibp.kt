@@ -31,7 +31,9 @@ data class HibpBreach(
     @SerialName("IsRetired") val isRetired: Boolean = false,
     @SerialName("IsSpamList") val isSpamList: Boolean = false,
     @SerialName("IsMalware") val isMalware: Boolean = false,
-    @SerialName("IsStreamingLog") val isStreamingLog: Boolean = false,
+    @SerialName("IsStealerLog") val isStealerLog: Boolean = false,
+    @SerialName("Attribution") val attribution: String? = null,
+    @SerialName("DisclosureUrl") val disclosureUrl: String? = null,
 )
 
 @Serializable
@@ -122,7 +124,7 @@ object HibpMapper {
             if (b.isSensitive) add("Sensitive — hidden from public search")
             if (b.isSpamList) add("Spam list")
             if (b.isMalware) add("Malware-sourced")
-            if (b.isStreamingLog) add("Stealer log")
+            if (b.isStealerLog) add("Stealer log — malware-harvested credentials")
             if (b.isRetired) add("Retired")
             if (b.isFabricated) add("Fabricated")
         }
@@ -132,6 +134,8 @@ object HibpMapper {
             if (b.pwnCount > 0) add(Fact("Accounts affected", "%,d".format(b.pwnCount)))
             if (b.domain.isNotBlank()) add(Fact("Website", b.domain))
             add(Fact("Verified", if (b.isVerified) "Yes" else "No"))
+            b.attribution?.takeIf { it.isNotBlank() }?.let { add(Fact("Attributed to", it)) }
+            b.disclosureUrl?.takeIf { it.isNotBlank() }?.let { add(Fact("Company disclosure", it.removePrefix("https://").removePrefix("http://"))) }
             if (flags.isNotEmpty()) add(Fact("Flags", flags.joinToString(", ")))
         }
         return Finding(
