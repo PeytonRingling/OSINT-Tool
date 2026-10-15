@@ -44,7 +44,7 @@ import vip.ringling.recon.ui.AppShell
 import vip.ringling.recon.ui.HistoryPane
 import vip.ringling.recon.ui.HomePane
 import vip.ringling.recon.ui.ReconActions
-import vip.ringling.recon.ui.Tab
+import vip.ringling.recon.ui.signal.Tab
 import vip.ringling.recon.ui.detail.DetailActions
 import vip.ringling.recon.ui.detail.FindingDetail
 import vip.ringling.recon.ui.history.HistoryScreen
@@ -241,10 +241,6 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
                 }
             }
         }
-    }
-
-    @Test fun scan() = shot("08_scan", tab = Tab.SCAN) { _, pad ->
-        ScanScreen(ScanUiState(session = streaming, enabled = ModuleId.entries.toSet() - ModuleId.REGISTRY), { _, _ -> }, {}, contentPadding = pad)
     }
 
     @Test fun history() = shot("09_history", tab = Tab.HISTORY) { expanded, pad ->

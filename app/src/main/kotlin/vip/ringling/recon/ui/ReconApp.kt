@@ -84,13 +84,9 @@ import vip.ringling.recon.ui.settings.SettingsScreen
 import vip.ringling.recon.ui.settings.SettingsViewModel
 import vip.ringling.recon.ui.theme.ReconMotion
 import vip.ringling.recon.ui.theme.ReconTheme
-
-enum class Tab(val route: String, val label: String, val icon: ImageVector, val selected: ImageVector) {
-    HOME("home", "Home", Icons.Outlined.Home, Icons.Rounded.Home),
-    SCAN("scan", "Scan", Icons.Outlined.Radar, Icons.Rounded.Radar),
-    HISTORY("history", "History", Icons.Outlined.History, Icons.Rounded.History),
-    SETTINGS("settings", "Settings", Icons.Outlined.Settings, Icons.Rounded.Settings),
-}
+import vip.ringling.recon.ui.signal.Tab
+import vip.ringling.recon.ui.signal.ReconBottomBar
+import vip.ringling.recon.ui.signal.ReconRail
 
 @Composable
 fun ReconRoot(vm: MainViewModel = hiltViewModel()) {
@@ -145,11 +141,6 @@ fun ReconApp() {
                             HomeRoute(nav, expanded, actions, pad)
                         }
                     }
-                    composable(Tab.SCAN.route) {
-                        val vm: ScanViewModel = hiltViewModel()
-                        val st by vm.state.collectAsStateWithLifecycle()
-                        ScanScreen(st, vm::toggle, vm::rescan, contentPadding = pad)
-                    }
                     composable(Tab.HISTORY.route) {
                         CompositionLocalProvider(LocalSharedScopes provides if (expanded) null else SharedScopes(this@SharedTransitionLayout, this)) {
                             HistoryRoute(nav, expanded, actions, pad)
@@ -172,7 +163,7 @@ fun ReconApp() {
                             contentPadding = pad,
                         )
                     }
-                    composable("case") {
+                    composable(Tab.CASES.route) {
                         val vm: vip.ringling.recon.ui.casefile.CaseViewModel = hiltViewModel()
                         val st by vm.state.collectAsStateWithLifecycle()
                         val stamp = remember { java.time.LocalDate.now().toString() }
@@ -223,29 +214,20 @@ fun ReconApp() {
     }
 }
 
-/** Bottom bar on phones, rail from 600dp up. Stateless so screenshot tests render the real thing. */
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+/** Bottom bar on phones, 72dp rail from 600dp up. Stateless so screenshot tests render the real thing. */
 @Composable
 fun AppShell(
     selected: Tab?,
     useRail: Boolean,
     snackbar: SnackbarHostState,
     onTab: (Tab) -> Unit,
+    armed: Int = 11,
+    onLoadout: () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     if (useRail) {
         Row(Modifier.fillMaxSize()) {
-            NavigationRail(containerColor = MaterialTheme.colorScheme.background) {
-                Box(Modifier.weight(1f))
-                Tab.entries.forEach { tab ->
-                    val sel = tab == selected || (selected == null && tab == Tab.HOME)
-                    NavigationRailItem(
-                        selected = sel, onClick = { onTab(tab) },
-                        icon = { Icon(if (sel) tab.selected else tab.icon, null) }, label = { Text(tab.label) },
-                    )
-                }
-                Box(Modifier.weight(1f))
-            }
+            ReconRail(selected ?: Tab.HOME, onTab, armed, 11, onLoadout)
             Scaffold(
                 Modifier.weight(1f), containerColor = MaterialTheme.colorScheme.background,
                 snackbarHost = { SnackbarHost(snackbar) },
@@ -255,19 +237,7 @@ fun AppShell(
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { SnackbarHost(snackbar) },
-            bottomBar = {
-                if (selected != null) {
-                    ShortNavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerLow) {
-                        Tab.entries.forEach { tab ->
-                            val sel = tab == selected
-                            ShortNavigationBarItem(
-                                selected = sel, onClick = { onTab(tab) },
-                                icon = { Icon(if (sel) tab.selected else tab.icon, null) }, label = { Text(tab.label) },
-                            )
-                        }
-                    }
-                }
-            },
+            bottomBar = { if (selected != null) ReconBottomBar(selected, onTab) },
         ) { content(it) }
     }
 }
@@ -295,7 +265,7 @@ private fun HomeRoute(nav: NavHostController, expanded: Boolean, actions: ReconA
     androidx.compose.runtime.LaunchedEffect(hasRegistry) { if (hasRegistry && main.hasLocationPermission()) main.refreshLocation() }
     val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> uri?.let { vm.analyzePhoto(it.toString()) } }
     val ha = HomeActions(
-        onPickPhoto = { pickPhoto.launch("image/*") }, onOpenCase = { nav.navigate("case") { launchSingleTop = true } },
+        onPickPhoto = { pickPhoto.launch("image/*") }, onOpenCase = { nav.goTab(Tab.CASES) },
         onQueryChange = vm::onQueryChange, onOverride = vm::onOverride, onSubmit = vm::submit, onStop = vm::stop,
         onFindingClick = { f -> if (expanded) vm.select(f.id) else nav.navigate("finding/${f.id}") },
         onAckRegistry = vm::ackRegistry, onRecent = vm::reuse,

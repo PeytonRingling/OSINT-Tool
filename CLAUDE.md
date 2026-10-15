@@ -35,7 +35,7 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Dark-first, true-black AMOLED surfaces; optional Material You dynamic color toggle (off by default).
 - Accent palette: "volt" acid lime primary; severity colors: clean = mint-teal, info = azure,
   exposed = coral. Not default purple.
-- One display font (Space Grotesk, bundled in `res/font`) for headlines/numerals + system sans for body.
+- Design system "Recon // Signal" (see Signal section): Instrument Serif (titles, numerals), Geist (body), Geist Mono (labels, values, tags), all bundled in `res/font` (OFL licenses in `docs/fonts`).
 - Motion: expressive spring specs, shared-element transition list→detail, predictive back, haptic on
   scan complete, shimmer skeletons, animated risk-score rings.
 - Home: single smart search field, auto-detects email/phone/username/domain/ZIP, overridable

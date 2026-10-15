@@ -1,45 +1,64 @@
 package vip.ringling.recon.ui.theme
 
 import androidx.compose.material3.Typography
+import androidx.compose.ui.text.ExperimentalTextApi
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontVariation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import vip.ringling.recon.R
 
-/** The single display face. Everything else is the system sans. */
-val DisplayFont = FontFamily(
-    Font(R.font.space_grotesk_regular, FontWeight.Normal),
-    Font(R.font.space_grotesk_medium, FontWeight.Medium),
-    Font(R.font.space_grotesk_bold, FontWeight.Bold),
+/** Instrument Serif: page titles and large numerals (risk score, record counts). Regular + italic. */
+val SerifFont = FontFamily(
+    Font(R.font.instrument_serif_regular, FontWeight.Normal, FontStyle.Normal),
+    Font(R.font.instrument_serif_italic, FontWeight.Normal, FontStyle.Italic),
 )
 
-private val Sans = FontFamily.SansSerif
-
-private fun display(size: Int, weight: FontWeight, line: Int, tracking: Float) = TextStyle(
-    fontFamily = DisplayFont, fontWeight = weight, fontSize = size.sp, lineHeight = line.sp, letterSpacing = tracking.em,
+@OptIn(ExperimentalTextApi::class)
+private fun variable(res: Int) = FontFamily(
+    listOf(400, 500, 600, 700).map { w -> Font(res, FontWeight(w), variationSettings = FontVariation.Settings(FontVariation.weight(w))) },
 )
 
-private fun sans(size: Int, weight: FontWeight, line: Int, tracking: Float = 0f) = TextStyle(
-    fontFamily = Sans, fontWeight = weight, fontSize = size.sp, lineHeight = line.sp, letterSpacing = tracking.em,
+/** Geist: body. */
+val BodyFont = variable(R.font.geist)
+
+/** Geist Mono: labels, values and tags. */
+val MonoFont = variable(R.font.geist_mono)
+
+/** Kept for older call sites. */
+val DisplayFont = SerifFont
+
+private fun serif(size: Int, line: Int, italic: Boolean = false) = TextStyle(
+    fontFamily = SerifFont, fontWeight = FontWeight.Normal, fontStyle = if (italic) FontStyle.Italic else FontStyle.Normal,
+    fontSize = size.sp, lineHeight = line.sp, letterSpacing = (-0.01f).em,
 )
 
+private fun body(size: Int, weight: FontWeight, line: Int) = TextStyle(fontFamily = BodyFont, fontWeight = weight, fontSize = size.sp, lineHeight = line.sp)
+
+private fun mono(size: Float, line: Int, tracking: Float, weight: FontWeight = FontWeight.Normal) =
+    TextStyle(fontFamily = MonoFont, fontWeight = weight, fontSize = size.sp, lineHeight = line.sp, letterSpacing = tracking.em)
+
+/** Material roles mapped onto the three faces: serif for display/headline, Geist for title/body, Geist Mono for labels. */
 val ReconTypography = Typography(
-    displayLarge = display(76, FontWeight.Bold, 80, -0.04f),
-    displayMedium = display(56, FontWeight.Bold, 60, -0.035f),
-    displaySmall = display(40, FontWeight.Bold, 44, -0.03f),
-    headlineLarge = display(32, FontWeight.Medium, 38, -0.02f),
-    headlineMedium = display(26, FontWeight.Medium, 32, -0.015f),
-    headlineSmall = display(22, FontWeight.Medium, 28, -0.01f),
-    titleLarge = display(20, FontWeight.Medium, 26, -0.005f),
-    titleMedium = sans(16, FontWeight.Medium, 22, 0.005f),
-    titleSmall = sans(14, FontWeight.Medium, 20, 0.005f),
-    bodyLarge = sans(16, FontWeight.Normal, 24, 0.01f),
-    bodyMedium = sans(14, FontWeight.Normal, 20, 0.01f),
-    bodySmall = sans(12, FontWeight.Normal, 16, 0.02f),
-    labelLarge = sans(14, FontWeight.Medium, 20, 0.01f),
-    labelMedium = sans(12, FontWeight.Medium, 16, 0.04f),
-    labelSmall = sans(11, FontWeight.Medium, 16, 0.05f),
+    displayLarge = serif(104, 88), displayMedium = serif(72, 62), displaySmall = serif(52, 48),
+    headlineLarge = serif(38, 42, italic = true), headlineMedium = serif(30, 34), headlineSmall = serif(26, 30),
+    titleLarge = serif(24, 28), titleMedium = body(15, FontWeight.SemiBold, 20), titleSmall = body(13, FontWeight.SemiBold, 18),
+    bodyLarge = body(15, FontWeight.Normal, 22), bodyMedium = body(14, FontWeight.Normal, 20), bodySmall = body(12, FontWeight.Normal, 17),
+    labelLarge = mono(12f, 16, 0.08f, FontWeight.Medium), labelMedium = mono(10.5f, 14, 0.14f), labelSmall = mono(9.5f, 13, 0.12f),
 )
+
+/** Named text styles from the design spec. */
+object ReconType {
+    /** Mono label, uppercase by convention: 10.5sp with +0.14em tracking. */
+    val label = mono(10.5f, 14, 0.14f)
+    val labelSmall = mono(9.5f, 13, 0.12f)
+    val value = mono(13f, 18, 0.0f)
+    val tag = mono(10.5f, 14, 0.08f, FontWeight.Medium)
+    val button = mono(11f, 14, 0.12f, FontWeight.Medium)
+    val pageTitle = serif(60, 54, italic = true)
+    val numeral = serif(104, 86)
+}

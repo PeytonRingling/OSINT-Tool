@@ -5,102 +5,104 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
 
-// "Volt" — acid lime on true black. Severity hues are kept apart from the accent on purpose.
-private val Volt = Color(0xFFC8F751)
-private val VoltDeep = Color(0xFF3D5200)
-
-val ReconDarkScheme: ColorScheme = darkColorScheme(
-    primary = Volt,
-    onPrimary = Color(0xFF131A00),
-    primaryContainer = Color(0xFF2B3C00),
-    onPrimaryContainer = Color(0xFFE3FF8F),
-    secondary = Color(0xFFB7C29A),
-    onSecondary = Color(0xFF1B2208),
-    secondaryContainer = Color(0xFF2A3118),
-    onSecondaryContainer = Color(0xFFD3DFB4),
-    tertiary = Color(0xFF6DB8FF),
-    onTertiary = Color(0xFF00233F),
-    tertiaryContainer = Color(0xFF0B3558),
-    onTertiaryContainer = Color(0xFFD1E8FF),
-    error = Color(0xFFFF7A66),
-    onError = Color(0xFF3A0A02),
-    errorContainer = Color(0xFF5A1A0F),
-    onErrorContainer = Color(0xFFFFDAD3),
-    background = Color.Black,
-    onBackground = Color(0xFFECECE8),
-    surface = Color.Black,
-    onSurface = Color(0xFFECECE8),
-    surfaceVariant = Color(0xFF1B1B20),
-    onSurfaceVariant = Color(0xFFA8A8B0),
-    surfaceDim = Color.Black,
-    surfaceBright = Color(0xFF26262C),
-    surfaceContainerLowest = Color.Black,
-    surfaceContainerLow = Color(0xFF0B0B0D),
-    surfaceContainer = Color(0xFF111114),
-    surfaceContainerHigh = Color(0xFF18181C),
-    surfaceContainerHighest = Color(0xFF212127),
-    outline = Color(0xFF8A8A93),
-    outlineVariant = Color(0xFF2B2B32),
-    inverseSurface = Color(0xFFECECE8),
-    inverseOnSurface = Color(0xFF111114),
-    inversePrimary = VoltDeep,
-    scrim = Color.Black,
+/** "Recon // Signal" design tokens. */
+@Immutable
+class SignalColors(
+    val ground: Color, val panel: Color, val hairline: Color, val text: Color, val muted: Color,
+    val signal: Color, val onSignal: Color,
+    val alert: Color, val alertText: Color, val info: Color, val infoText: Color, val safe: Color, val safeText: Color,
+    /** Dim LED / disabled indicator. */
+    val ledOff: Color,
+    /** Hairline for inputs and secondary buttons. */
+    val line: Color,
 )
 
-val ReconLightScheme: ColorScheme = lightColorScheme(
-    primary = VoltDeep,
-    onPrimary = Color.White,
-    primaryContainer = Volt,
-    onPrimaryContainer = Color(0xFF172000),
-    secondary = Color(0xFF55603C),
-    onSecondary = Color.White,
-    secondaryContainer = Color(0xFFDAE6BB),
-    onSecondaryContainer = Color(0xFF141F02),
-    tertiary = Color(0xFF0A5DA8),
-    onTertiary = Color.White,
-    tertiaryContainer = Color(0xFFD3E7FF),
-    onTertiaryContainer = Color(0xFF001C38),
-    error = Color(0xFFB42318),
-    onError = Color.White,
-    errorContainer = Color(0xFFFFDAD4),
-    onErrorContainer = Color(0xFF410002),
-    background = Color(0xFFF5F4EE),
-    onBackground = Color(0xFF16160F),
-    surface = Color(0xFFF5F4EE),
-    onSurface = Color(0xFF16160F),
-    surfaceVariant = Color(0xFFE4E3D6),
-    onSurfaceVariant = Color(0xFF4A4A40),
-    surfaceDim = Color(0xFFDAD9CE),
-    surfaceBright = Color(0xFFFBFAF5),
-    surfaceContainerLowest = Color.White,
-    surfaceContainerLow = Color(0xFFFBFAF5),
-    surfaceContainer = Color(0xFFEFEEE5),
-    surfaceContainerHigh = Color(0xFFE9E8DE),
-    surfaceContainerHighest = Color(0xFFE2E1D6),
-    outline = Color(0xFF6E6E62),
-    outlineVariant = Color(0xFFCFCEC1),
-    inverseSurface = Color(0xFF2B2B24),
-    inverseOnSurface = Color(0xFFF5F4EE),
-    inversePrimary = Volt,
+val SignalDark = SignalColors(
+    ground = Color(0xFF050706), panel = Color(0xFF0B0F0C), hairline = Color(0xFFD2FF3F).copy(alpha = 0.14f),
+    text = Color(0xFFEEF2E8), muted = Color(0xFF8E978B),
+    signal = Color(0xFFD2FF3F), onSignal = Color(0xFF0A1000),
+    alert = Color(0xFFFF5B3A), alertText = Color(0xFFFF8466),
+    info = Color(0xFF5CC8FF), infoText = Color(0xFF7FD3FF),
+    safe = Color(0xFF46F0B0), safeText = Color(0xFF5BF2BC),
+    ledOff = Color(0xFF2C322B), line = Color.White.copy(alpha = 0.16f),
 )
 
-/** Semantic severity colors (not part of the Material scheme). */
+val SignalLight = SignalColors(
+    ground = Color(0xFFF3F5EC), panel = Color(0xFFFFFFFF), hairline = Color(0xFF3E5200).copy(alpha = 0.18f),
+    text = Color(0xFF111610), muted = Color(0xFF566053),
+    signal = Color(0xFF3E5200), onSignal = Color(0xFFFFFFFF),
+    alert = Color(0xFFC2331A), alertText = Color(0xFFB02A12),
+    info = Color(0xFF0A6AA8), infoText = Color(0xFF075A8F),
+    safe = Color(0xFF00805A), safeText = Color(0xFF00694A),
+    ledOff = Color(0xFFC9CFC2), line = Color.Black.copy(alpha = 0.18f),
+)
+
+private fun scheme(s: SignalColors, dark: Boolean): ColorScheme {
+    val sig = s.signal
+    return if (dark) darkColorScheme(
+        primary = sig, onPrimary = s.onSignal,
+        primaryContainer = Color(0xFF1B2306), onPrimaryContainer = sig,
+        secondary = s.muted, onSecondary = s.ground,
+        secondaryContainer = Color(0xFF151A14), onSecondaryContainer = s.text,
+        tertiary = s.info, onTertiary = Color(0xFF00233F),
+        tertiaryContainer = s.info.copy(alpha = 0.18f).compositeOver(s.ground), onTertiaryContainer = s.infoText,
+        error = s.alertText, onError = Color(0xFF1A0804),
+        errorContainer = s.alert.copy(alpha = 0.18f).compositeOver(s.ground), onErrorContainer = s.alertText,
+        background = s.ground, onBackground = s.text,
+        surface = s.ground, onSurface = s.text,
+        surfaceVariant = Color(0xFF141A15), onSurfaceVariant = s.muted,
+        surfaceDim = s.ground, surfaceBright = Color(0xFF1A201B),
+        surfaceContainerLowest = s.ground, surfaceContainerLow = Color(0xFF070A08),
+        surfaceContainer = s.panel, surfaceContainerHigh = Color(0xFF111612), surfaceContainerHighest = Color(0xFF181E19),
+        outline = s.muted, outlineVariant = Color(0xFF232B22),
+        inverseSurface = s.text, inverseOnSurface = s.ground, inversePrimary = Color(0xFF3E5200), scrim = Color.Black,
+    ) else lightColorScheme(
+        primary = sig, onPrimary = s.onSignal,
+        primaryContainer = Color(0xFFDCEB9C), onPrimaryContainer = Color(0xFF1B2600),
+        secondary = s.muted, onSecondary = Color.White,
+        secondaryContainer = Color(0xFFE5EAD9), onSecondaryContainer = s.text,
+        tertiary = s.info, onTertiary = Color.White,
+        tertiaryContainer = Color(0xFFD3E9F7), onTertiaryContainer = s.infoText,
+        error = s.alertText, onError = Color.White,
+        errorContainer = Color(0xFFFFDAD3), onErrorContainer = s.alertText,
+        background = s.ground, onBackground = s.text, surface = s.ground, onSurface = s.text,
+        surfaceVariant = Color(0xFFE3E8D8), onSurfaceVariant = s.muted,
+        surfaceDim = Color(0xFFD9DECF), surfaceBright = Color.White,
+        surfaceContainerLowest = Color.White, surfaceContainerLow = Color(0xFFF8FAF2),
+        surfaceContainer = s.panel, surfaceContainerHigh = Color(0xFFEDF0E4), surfaceContainerHighest = Color(0xFFE5E9DA),
+        outline = s.muted, outlineVariant = Color(0xFFCDD3C2),
+        inverseSurface = Color(0xFF1E231C), inverseOnSurface = Color(0xFFF3F5EC), inversePrimary = Color(0xFFD2FF3F),
+    )
+}
+
+val ReconDarkScheme: ColorScheme = scheme(SignalDark, true)
+val ReconLightScheme: ColorScheme = scheme(SignalLight, false)
+
+/** Semantic status colors (not part of the Material scheme). `x` = fill/dot, `onX`/`xText` = text on the tinted container. */
 @Immutable
 data class SeverityColors(
     val clean: Color, val onClean: Color, val cleanContainer: Color,
     val info: Color, val onInfo: Color, val infoContainer: Color,
     val exposed: Color, val onExposed: Color, val exposedContainer: Color,
+    val cleanText: Color = clean, val infoText: Color = info, val exposedText: Color = exposed,
 )
 
-val DarkSeverity = SeverityColors(
-    clean = Color(0xFF2EE6C5), onClean = Color(0xFF00241E), cleanContainer = Color(0xFF07312B),
-    info = Color(0xFF6DB8FF), onInfo = Color(0xFF00233F), infoContainer = Color(0xFF0B3558),
-    exposed = Color(0xFFFF7A66), onExposed = Color(0xFF3A0A02), exposedContainer = Color(0xFF5A1A0F),
-)
+val DarkSeverity = SignalDark.let { s ->
+    SeverityColors(
+        clean = s.safe, onClean = Color(0xFF00241A), cleanContainer = s.safe.copy(alpha = 0.14f).compositeOver(s.ground),
+        info = s.info, onInfo = Color(0xFF00233F), infoContainer = s.info.copy(alpha = 0.14f).compositeOver(s.ground),
+        exposed = s.alert, onExposed = Color(0xFF1A0804), exposedContainer = s.alert.copy(alpha = 0.16f).compositeOver(s.ground),
+        cleanText = s.safeText, infoText = s.infoText, exposedText = s.alertText,
+    )
+}
 
-val LightSeverity = SeverityColors(
-    clean = Color(0xFF00695A), onClean = Color.White, cleanContainer = Color(0xFFBFF5E6),
-    info = Color(0xFF0A5DA8), onInfo = Color.White, infoContainer = Color(0xFFD3E7FF),
-    exposed = Color(0xFFB42318), onExposed = Color.White, exposedContainer = Color(0xFFFFDAD4),
-)
+val LightSeverity = SignalLight.let { s ->
+    SeverityColors(
+        clean = s.safe, onClean = Color.White, cleanContainer = Color(0xFFD2F3E5),
+        info = s.info, onInfo = Color.White, infoContainer = Color(0xFFD3E9F7),
+        exposed = s.alert, onExposed = Color.White, exposedContainer = Color(0xFFFFDAD3),
+        cleanText = s.safeText, infoText = s.infoText, exposedText = s.alertText,
+    )
+}

@@ -19,17 +19,22 @@ import vip.ringling.recon.data.settings.ThemeMode
 
 val LocalSeverity = staticCompositionLocalOf { DarkSeverity }
 
+/** Small radii: tags 5dp, buttons 8dp, panels 10dp, sheets 18dp. */
 val ReconShapes = Shapes(
-    extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-    small = androidx.compose.foundation.shape.RoundedCornerShape(14.dp),
-    medium = androidx.compose.foundation.shape.RoundedCornerShape(22.dp),
-    large = androidx.compose.foundation.shape.RoundedCornerShape(30.dp),
-    extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(42.dp),
+    extraSmall = androidx.compose.foundation.shape.RoundedCornerShape(5.dp),
+    small = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+    medium = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+    large = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+    extraLarge = androidx.compose.foundation.shape.RoundedCornerShape(18.dp),
 )
+
+val LocalSignal = staticCompositionLocalOf { SignalDark }
 
 object ReconTheme {
     val severity: SeverityColors
         @Composable @ReadOnlyComposable get() = LocalSeverity.current
+    val signal: SignalColors
+        @Composable @ReadOnlyComposable get() = LocalSignal.current
 }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -51,7 +56,7 @@ fun ReconTheme(
         dark -> ReconDarkScheme
         else -> ReconLightScheme
     }
-    CompositionLocalProvider(LocalSeverity provides if (dark) DarkSeverity else LightSeverity) {
+    CompositionLocalProvider(LocalSeverity provides if (dark) DarkSeverity else LightSeverity, LocalSignal provides if (dark) SignalDark else SignalLight) {
         MaterialExpressiveTheme(
             colorScheme = scheme,
             motionScheme = MotionScheme.expressive(),
