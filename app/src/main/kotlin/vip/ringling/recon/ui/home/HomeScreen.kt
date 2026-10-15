@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -63,6 +64,7 @@ data class HomeActions(
     val onRecent: (ScanRecord) -> Unit = {},
     val onExportAll: () -> Unit = {},
     val onRequestLocation: () -> Unit = {},
+    val onPickPhoto: () -> Unit = {},
 )
 
 @Composable
@@ -97,6 +99,14 @@ fun HomeScreen(
         }
         item(key = "chips") {
             TypeChipRow(auto = state.detected, override = state.override, onOverride = actions.onOverride)
+        }
+        item(key = "photo") {
+            androidx.compose.material3.AssistChip(
+                onClick = actions.onPickPhoto,
+                label = { Text("Analyze a photo's metadata") },
+                leadingIcon = { Icon(androidx.compose.material.icons.Icons.Outlined.Image, null, Modifier.size(18.dp)) },
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
         }
         if (session == null) {
             item(key = "modules") { ModuleTiles() }

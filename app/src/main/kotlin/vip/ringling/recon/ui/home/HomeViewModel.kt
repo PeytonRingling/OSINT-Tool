@@ -66,6 +66,11 @@ class HomeViewModel @Inject constructor(
         controller.start(ScanInput(raw, type))
     }
 
+    fun analyzePhoto(uri: String) {
+        registryAck.value = false; selectedId.value = null
+        controller.start(ScanInput(uri, InputType.IMAGE))
+    }
+
     fun stop() = controller.cancel()
 
     fun reuse(r: ScanRecord) {

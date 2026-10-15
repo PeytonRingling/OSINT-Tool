@@ -15,6 +15,7 @@ import vip.ringling.recon.data.secret.KeystoreApiKeys
 import vip.ringling.recon.data.sources.breach.BreachSource
 import vip.ringling.recon.data.sources.domain.DomainSource
 import vip.ringling.recon.data.sources.phone.PhoneSource
+import vip.ringling.recon.data.sources.image.ImageSource
 import vip.ringling.recon.data.sources.identity.AssetSiteList
 import vip.ringling.recon.data.sources.identity.IdentitySource
 import vip.ringling.recon.data.sources.identity.SiteListProvider
@@ -34,6 +35,7 @@ abstract class AppModule {
     @Binds @IntoSet abstract fun identity(s: IdentitySource): OsintSource
     @Binds @Singleton abstract fun siteList(s: AssetSiteList): SiteListProvider
     @Binds @IntoSet abstract fun phone(s: PhoneSource): OsintSource
+    @Binds @IntoSet abstract fun image(s: ImageSource): OsintSource
     @Binds @IntoSet abstract fun domain(s: DomainSource): OsintSource
     @Binds @IntoSet abstract fun registry(s: RegistrySource): OsintSource
     @Binds @IntoSet abstract fun idaho(a: IdahoRegistryAdapter): RegistryAdapter

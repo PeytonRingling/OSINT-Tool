@@ -140,7 +140,7 @@ fun TypeChipRow(
         modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        InputType.entries.forEach { type ->
+        InputType.entries.filter { it != InputType.IMAGE }.forEach { type ->
             val selected = effective == type
             val label = when {
                 selected && override == null -> "${type.label} · auto"

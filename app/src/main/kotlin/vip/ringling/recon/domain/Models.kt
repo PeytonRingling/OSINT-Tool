@@ -9,6 +9,8 @@ enum class InputType(val label: String) {
     USERNAME("Username"),
     DOMAIN("Domain"),
     ZIP("ZIP"),
+    /** Never auto-detected: raw is a content URI picked by the user. */
+    IMAGE("Photo"),
 }
 
 @Serializable
@@ -28,6 +30,7 @@ enum class ModuleId(val label: String, val tagline: String) {
     PHONE("Phone intel", "Region · carrier · spam reports"),
     DOMAIN("Domain recon", "DNS · mail auth · RDAP"),
     REGISTRY("Offender registry", "Idaho · live lookup"),
+    IMAGE("Photo metadata", "EXIF · GPS · camera · hashes"),
 }
 
 @Serializable

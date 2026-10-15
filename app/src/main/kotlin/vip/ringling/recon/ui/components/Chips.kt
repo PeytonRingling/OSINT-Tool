@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.Fingerprint
 import androidx.compose.material.icons.outlined.Gavel
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Pin
@@ -41,6 +42,7 @@ fun ModuleId.icon(): ImageVector = when (this) {
     ModuleId.PHONE -> Icons.Outlined.Phone
     ModuleId.DOMAIN -> Icons.Outlined.Dns
     ModuleId.REGISTRY -> Icons.Outlined.Gavel
+    ModuleId.IMAGE -> Icons.Outlined.Image
 }
 
 fun InputType.icon(): ImageVector = when (this) {
@@ -49,6 +51,7 @@ fun InputType.icon(): ImageVector = when (this) {
     InputType.USERNAME -> Icons.Outlined.AlternateEmail
     InputType.DOMAIN -> Icons.Outlined.Language
     InputType.ZIP -> Icons.Outlined.Pin
+    InputType.IMAGE -> Icons.Outlined.Image
 }
 
 @Composable

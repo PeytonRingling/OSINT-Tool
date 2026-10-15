@@ -30,6 +30,7 @@ object InputDetector {
             InputType.PHONE -> (if (s.startsWith("+")) "+" else "") + s.filter(Char::isDigit)
             InputType.USERNAME -> s.removePrefix("@")
             InputType.ZIP -> s.take(5)
+            InputType.IMAGE -> s
         }
     }
 }

@@ -94,6 +94,7 @@ dependencies {
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.datastore)
+    implementation(libs.androidx.exif)
 
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)

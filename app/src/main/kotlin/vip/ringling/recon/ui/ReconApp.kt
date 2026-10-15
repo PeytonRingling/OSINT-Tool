@@ -266,7 +266,9 @@ private fun HomeRoute(nav: NavHostController, expanded: Boolean, actions: ReconA
     // Registry results on screen + permission already granted → quietly fetch a position for distances.
     val hasRegistry = st.session?.findings?.any { it.geo != null } == true
     androidx.compose.runtime.LaunchedEffect(hasRegistry) { if (hasRegistry && main.hasLocationPermission()) main.refreshLocation() }
+    val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> uri?.let { vm.analyzePhoto(it.toString()) } }
     val ha = HomeActions(
+        onPickPhoto = { pickPhoto.launch("image/*") },
         onQueryChange = vm::onQueryChange, onOverride = vm::onOverride, onSubmit = vm::submit, onStop = vm::stop,
         onFindingClick = { f -> if (expanded) vm.select(f.id) else nav.navigate("finding/${f.id}") },
         onAckRegistry = vm::ackRegistry, onRecent = vm::reuse,

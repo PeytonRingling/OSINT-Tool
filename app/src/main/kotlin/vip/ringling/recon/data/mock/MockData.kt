@@ -108,6 +108,7 @@ object MockData {
         ModuleId.BREACH -> breach(input)
         ModuleId.IDENTITY -> identity(input)
         ModuleId.PHONE -> emptyList()
+        ModuleId.IMAGE -> emptyList()
         ModuleId.DOMAIN -> domain(input)
         ModuleId.REGISTRY -> registry(input)
     }
@@ -137,5 +138,6 @@ object MockData {
         InputType.USERNAME -> setOf(ModuleId.BREACH, ModuleId.IDENTITY)
         InputType.DOMAIN -> setOf(ModuleId.DOMAIN)
         InputType.ZIP -> setOf(ModuleId.REGISTRY)
+        InputType.IMAGE -> setOf(ModuleId.IMAGE)
     }
 }
