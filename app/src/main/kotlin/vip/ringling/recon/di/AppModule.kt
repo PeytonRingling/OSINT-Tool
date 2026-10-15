@@ -8,6 +8,8 @@ import dagger.multibindings.IntoSet
 import javax.inject.Singleton
 import vip.ringling.recon.data.HistoryRepository
 import vip.ringling.recon.data.RoomHistoryRepository
+import vip.ringling.recon.data.location.AndroidUserLocation
+import vip.ringling.recon.data.location.UserLocation
 import vip.ringling.recon.data.secret.ApiKeys
 import vip.ringling.recon.data.secret.KeystoreApiKeys
 import vip.ringling.recon.data.sources.breach.BreachSource
@@ -24,6 +26,7 @@ import vip.ringling.recon.domain.OsintSource
 @InstallIn(SingletonComponent::class)
 abstract class AppModule {
     @Binds @Singleton abstract fun history(impl: RoomHistoryRepository): HistoryRepository
+    @Binds @Singleton abstract fun userLocation(impl: AndroidUserLocation): UserLocation
     @Binds @Singleton abstract fun apiKeys(impl: KeystoreApiKeys): ApiKeys
 
     @Binds @IntoSet abstract fun breach(s: BreachSource): OsintSource

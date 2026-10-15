@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import vip.ringling.recon.domain.Confidence
 import vip.ringling.recon.domain.Finding
+import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.OsintSource
@@ -14,7 +15,16 @@ import vip.ringling.recon.domain.Severity
 data class RegistryQuery(val zip: String? = null, val city: String? = null, val county: String? = null)
 
 /** One registrant, already summarized for display. Nothing here is persisted. */
-data class RegistryEntry(val name: String, val summary: String, val sourceUrl: String)
+data class RegistryEntry(
+    val name: String,
+    val summary: String,
+    val sourceUrl: String,
+    val severity: Severity = Severity.INFO,
+    val geo: GeoPoint? = null,
+    val imageUrl: String? = null,
+    val imageLargeUrl: String? = null,
+    val tags: List<String> = emptyList(),
+)
 
 /** [totalMatches] is what the registry reports; [entries] is only the first page we fetched. */
 data class RegistryResult(val totalMatches: Int, val entries: List<RegistryEntry>, val searchUrl: String, val notes: List<String> = emptyList())
@@ -65,7 +75,8 @@ class RegistrySource @Inject constructor(private val adapters: Set<@JvmSuppressW
             emit(
                 Finding(
                     id = "REGISTRY-${adapter.stateCode}-$i", module = ModuleId.REGISTRY, title = e.name, detail = e.summary,
-                    severity = Severity.INFO, url = e.sourceUrl, raw = "", confidence = Confidence.HIGH,
+                    severity = e.severity, url = e.sourceUrl, raw = "", confidence = Confidence.HIGH,
+                    geo = e.geo, imageUrl = e.imageUrl, imageLargeUrl = e.imageLargeUrl, tags = e.tags,
                 ),
             )
         }

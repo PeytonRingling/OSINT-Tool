@@ -29,7 +29,10 @@ enum class ModuleId(val label: String, val tagline: String) {
     REGISTRY("Offender registry", "Idaho · live lookup"),
 }
 
-/** Normalized result emitted by every source. */
+@Serializable
+data class GeoPoint(val lat: Double, val lng: Double)
+
+/** Normalized result emitted by every source. Optional fields let any module attach a photo, a place or labels. */
 @Serializable
 data class Finding(
     val id: String,
@@ -40,6 +43,10 @@ data class Finding(
     val url: String? = null,
     val raw: String = "",
     val confidence: Confidence? = null,
+    val geo: GeoPoint? = null,
+    val imageUrl: String? = null,
+    val imageLargeUrl: String? = null,
+    val tags: List<String> = emptyList(),
 )
 
 data class ScanInput(val raw: String, val type: InputType)

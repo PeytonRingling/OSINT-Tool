@@ -15,6 +15,13 @@ class ExportTest {
         assertTrue(Json.decodeFromString<Finding>(Export.finding(f)) == f)
     }
 
+    @Test fun registryRecordsAreNeverExported() {
+        val reg = Finding("r", ModuleId.REGISTRY, "SOMEONE", "addr", Severity.INFO)
+        val out = Export.scan(ScanInput("83702", InputType.ZIP), listOf(reg, f))
+        assertTrue("SOMEONE" !in out && "Adobe" in out)
+        assertTrue(runCatching { Export.finding(reg) }.isFailure)
+    }
+
     @Test fun scanJsonIncludesRisk() {
         val obj = Json.parseToJsonElement(Export.scan(ScanInput("a@b.com", InputType.EMAIL), listOf(f))).jsonObject
         assertTrue(obj["risk"]!!.jsonPrimitive.content == "14")

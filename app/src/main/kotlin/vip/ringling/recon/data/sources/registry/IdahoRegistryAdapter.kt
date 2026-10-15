@@ -6,6 +6,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import okhttp3.FormBody
+import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
 import org.jsoup.Jsoup
@@ -13,21 +14,29 @@ import vip.ringling.recon.data.net.Endpoints
 import vip.ringling.recon.data.net.Http
 import vip.ringling.recon.data.net.HttpException
 import vip.ringling.recon.data.sources.identity.RateLimiter
+import vip.ringling.recon.domain.GeoPoint
+import vip.ringling.recon.domain.Severity
 
-/** Parsed search-result row. */
-data class IdahoRow(val id: String, val href: String, val name: String, val kno: String, val address: String, val city: String, val county: String, val zip: String, val status: String)
+/** Parsed search-result row. [href], [photoHref], [mapHref] are relative to the /sor_id/ page that produced them. */
+data class IdahoRow(
+    val id: String, val href: String, val name: String, val kno: String, val address: String,
+    val city: String, val county: String, val zip: String, val status: String,
+    val photoHref: String? = null, val mapHref: String? = null,
+)
 data class IdahoPage(val totalMatches: Int, val pages: Int, val rows: List<IdahoRow>)
 data class IdahoOffense(val statute: String, val description: String, val date: String, val place: String)
-data class IdahoDetail(val regStatus: String?, val lastRegistered: String?, val offenses: List<IdahoOffense>)
+data class IdahoDetail(val regStatus: String?, val lastRegistered: String?, val offenses: List<IdahoOffense>, val photoHref: String? = null)
 
 /**
  * apps.isp.idaho.gov/sor_id — server-rendered HTML. Confirmed against the live site:
- *  - ZIP search: POST SOR  form=5 & zip=NNNNN & rad=A & sz=400   (form=3 cty=…, form=4 cnt=… for city/county)
- *  - results: 15 rows per page, "N matches found in M pages", cells td#nam_field/kno_field/adr_field/cty_field×2/zip_field/stat_field
- *  - detail: GET SOR?id=N&sz=400, label cells td#sor_detail_lead, offenses table under "Offenses Requiring Registration"
- * Both the adult (rad=A) and juvenile (rad=J) databases are queried, first results page only, for the query the user typed.
- * Nothing is cached or stored.
- * Date of birth, physical description, aliases and photos are deliberately not read.
+ *  - ZIP search: POST SOR  form=5 & zip=NNNNN & rad=A|J & sz=400   (form=3 cty=…, form=4 cnt=… for city/county)
+ *  - results: 15 rows/page, "N matches found in M pages", cells td#nam_field/kno_field/adr_field/cty_field×2/zip_field/stat_field,
+ *    a thumbnail at td#off_img img and a map link at td#map_field a
+ *  - detail: GET SOR?id=N&sz=400 (labels td#sor_detail_lead, offenses table, full photo img)
+ *  - map page: jsp/sor_map_display.jsp?… embeds the registry's own geocoded coordinates as google.maps.LatLng(lat, lng);
+ *    we read those numbers only, so no address is ever sent to a geocoder.
+ * Both adult (rad=A) and juvenile (rad=J) databases are queried, first results page only, for the query the user typed.
+ * Nothing is cached or stored. Date of birth, physical description and aliases are deliberately not read.
  */
 class IdahoRegistryAdapter @Inject constructor(
     private val http: Http,
@@ -37,7 +46,8 @@ class IdahoRegistryAdapter @Inject constructor(
     override val stateName = "Idaho"
     override fun handlesZip(zip: String) = zip.take(3).toIntOrNull() in 832..838
 
-    private val limiter = RateLimiter(maxConcurrent = 3, minIntervalMs = 150)
+    private val limiter = RateLimiter(maxConcurrent = 4, minIntervalMs = 100)
+    private val base: HttpUrl get() = "${endpoints.idahoSor}/".toHttpUrl()
 
     override suspend fun search(query: RegistryQuery): RegistryResult = coroutineScope {
         // Adult ("A") and juvenile ("J") are separate databases on the same site; each gets one first-page query.
@@ -70,40 +80,75 @@ class IdahoRegistryAdapter @Inject constructor(
         val entries = coroutineScope {
             page.rows.map { row ->
                 async {
-                    val detail = try {
-                        limiter.run { fetchDetail(row.href) }
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
-                        null
-                    }
-                    RegistryEntry(row.name, "$label registry · " + summarize(row, detail), "${endpoints.idahoSor}/${row.href}")
+                    // Detail and map are best-effort: a row is still useful without them.
+                    val detail = optional { limiter.run { fetch(row.href) { parseDetail(it) } } }
+                    val geo = row.mapHref?.let { href -> optional { limiter.run { fetch(href) { parseGeo(it) } } } }
+                    toEntry(row, detail, geo, label)
                 }
             }.awaitAll()
         }
         return DbResult(page.totalMatches, entries)
     }
 
-    /** [href] is the relative link taken from the results page, so adult and juvenile records both resolve. */
-    private suspend fun fetchDetail(href: String): IdahoDetail {
-        val html = http.execute(Request.Builder().url("${endpoints.idahoSor}/$href".toHttpUrl()).build()) { r ->
-            if (r.code != 200) throw HttpException(r.code, "Idaho registry detail returned HTTP ${r.code}")
-            r.body.string()
-        }
-        return parseDetail(html)
+    private suspend fun <T> optional(block: suspend () -> T): T? = try {
+        block()
+    } catch (e: CancellationException) {
+        throw e
+    } catch (e: Exception) {
+        null
     }
 
-    internal fun summarize(row: IdahoRow, d: IdahoDetail?): String = buildList {
-        add(listOf(row.address, row.city, row.county.takeIf { it.isNotBlank() }?.let { "$it County" }, row.zip).filter { !it.isNullOrBlank() }.joinToString(", "))
-        (d?.regStatus ?: row.status).takeIf { it.isNotBlank() }?.let { add("Status: $it") }
-        d?.lastRegistered?.takeIf { it.isNotBlank() }?.let { add("Last registered: $it") }
-        if (d == null) add("Offense details unavailable (open the official record).")
-        else if (d.offenses.isNotEmpty()) add("Offenses: " + d.offenses.joinToString("; ") { o -> listOf(o.statute, o.description, o.date).filter { it.isNotBlank() }.joinToString(" – ") })
-    }.joinToString(" · ")
+    /** [href] comes from the results page (relative to /sor_id/), so adult and juvenile pages both resolve. */
+    private suspend fun <T> fetch(href: String, parse: (String) -> T): T {
+        val url = base.resolve(href) ?: throw HttpException(0, "bad registry link")
+        val html = http.execute(Request.Builder().url(url).build()) { r ->
+            if (r.code != 200) throw HttpException(r.code, "Idaho registry returned HTTP ${r.code}")
+            r.body.string()
+        }
+        return parse(html)
+    }
+
+    internal fun toEntry(row: IdahoRow, d: IdahoDetail?, geo: GeoPoint?, label: String): RegistryEntry {
+        val status = (d?.regStatus ?: row.status).takeIf { it.isNotBlank() }
+        val nonCompliant = status?.contains("NON", ignoreCase = true) == true
+        val dates = d?.offenses?.map { it.date }?.filter { it.isNotBlank() }?.distinct().orEmpty()
+        val multiple = dates.size >= 2
+        val tags = buildList {
+            add("$label registry")
+            if (nonCompliant) add("Non-compliant")
+            if (multiple) add("Multiple convictions")
+        }
+        val place = listOf(row.address, row.city, row.county.takeIf { it.isNotBlank() }?.let { "$it County" }, row.zip).filter { !it.isNullOrBlank() }.joinToString(", ")
+        val lines = buildList {
+            add(place)
+            add(listOfNotNull(status?.let { "Status: $it" }, d?.lastRegistered?.takeIf { it.isNotBlank() }?.let { "Last registered: $it" }).joinToString(" · "))
+            when {
+                d == null -> add("Offense details unavailable (open the official record).")
+                d.offenses.isEmpty() -> add("No offenses listed.")
+                else -> {
+                    add("Offenses (${d.offenses.size}):")
+                    d.offenses.forEach { o -> add("• " + listOf(o.statute, o.description, o.date, o.place).filter { it.isNotBlank() }.joinToString(" – ")) }
+                    if (multiple) add("Convictions on ${dates.size} separate dates. The registry does not state whether this is a repeat offence; this is inferred from the dates.")
+                }
+            }
+        }.filter { it.isNotBlank() }
+        fun abs(href: String?) = href?.let { base.resolve(it)?.toString() }
+        return RegistryEntry(
+            name = row.name,
+            summary = lines.joinToString("\n"),
+            sourceUrl = abs(row.href) ?: "${endpoints.idahoSor}/",
+            severity = if (nonCompliant || multiple) Severity.EXPOSED else Severity.INFO,
+            geo = geo,
+            imageUrl = abs(row.photoHref),
+            imageLargeUrl = abs(d?.photoHref ?: row.photoHref),
+            tags = tags,
+        )
+    }
 
     companion object {
         // Seen live: "60 matches found in 4 pages.", "4 matches found.", "1 match.", "0 matches found".
         private val matchRe = Regex("""(\d+)\s+match(?:es)?(?:\s+found)?(?:\s+in\s+(\d+)\s+pages?)?""", RegexOption.IGNORE_CASE)
+        private val latLngRe = Regex("""google\.maps\.LatLng\(\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\)""")
 
         private fun clean(s: String?) = s.orEmpty().replace(' ', ' ').replace(Regex("\\s+"), " ").trim()
 
@@ -124,9 +169,17 @@ class IdahoRegistryAdapter @Inject constructor(
                     county = clean(cells.getOrNull(1)?.text()),
                     zip = clean(tr.selectFirst("td[id=zip_field]")?.text()),
                     status = clean(tr.selectFirst("td[id=stat_field]")?.text()),
+                    photoHref = tr.selectFirst("td[id=off_img] img")?.attr("src")?.takeIf { it.contains("photos/") },
+                    mapHref = tr.selectFirst("td[id=map_field] a")?.attr("href")?.takeIf { it.isNotBlank() },
                 )
             }.filter { it.id.isNotEmpty() }
             return IdahoPage(m?.groupValues?.get(1)?.toInt() ?: rows.size, m?.groupValues?.get(2)?.takeIf { it.isNotEmpty() }?.toInt() ?: 1, rows)
+        }
+
+        /** First LatLng on the registry's map page is the address marker/center. Out-of-range values are rejected. */
+        fun parseGeo(html: String): GeoPoint? = latLngRe.find(html)?.let { m ->
+            val lat = m.groupValues[1].toDouble(); val lng = m.groupValues[2].toDouble()
+            if (lat in -90.0..90.0 && lng in -180.0..180.0 && !(lat == 0.0 && lng == 0.0)) GeoPoint(lat, lng) else null
         }
 
         fun parseDetail(html: String): IdahoDetail {
@@ -140,7 +193,8 @@ class IdahoRegistryAdapter @Inject constructor(
                     val c = tr.children().map { clean(it.text()) }
                     IdahoOffense(c[0], c[1], c[2], c[3])
                 }.orEmpty()
-            return IdahoDetail(sideValue("Reg Status"), sideValue("Last Registered"), offenses)
+            val photo = doc.select("img[src]").map { it.attr("src") }.firstOrNull { it.contains("photos/") && !it.contains("thumbs/") }
+            return IdahoDetail(sideValue("Reg Status"), sideValue("Last Registered"), offenses, photo)
         }
     }
 }
