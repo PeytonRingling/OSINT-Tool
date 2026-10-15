@@ -115,7 +115,7 @@ fun ReconApp() {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val main: MainViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
-    val actions = rememberReconActions(snackbar, onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) })
+    val actions = rememberReconActions(snackbar, onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) }, onAddToCase = main::addToCase)
     val updateState by main.update.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { main.checkForUpdateQuietly() }
     LaunchedEffect((updateState as? UpdateState.Available)?.info?.build) {
@@ -161,6 +161,23 @@ fun ReconApp() {
                         SettingsScreen(
                             st,
                             SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock),
+                            contentPadding = pad,
+                        )
+                    }
+                    composable("case") {
+                        val vm: vip.ringling.recon.ui.casefile.CaseViewModel = hiltViewModel()
+                        val st by vm.state.collectAsStateWithLifecycle()
+                        val stamp = remember { java.time.LocalDate.now().toString() }
+                        vip.ringling.recon.ui.casefile.CaseScreen(
+                            st,
+                            vip.ringling.recon.ui.casefile.CaseActions(
+                                onBack = { nav.popBackStack() },
+                                onNote = vm::setNote, onRemove = vm::remove,
+                                onSearch = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) },
+                                onSaveMarkdown = { actions.saveFile("recon-case-$stamp.md", vip.ringling.recon.domain.CaseReport.markdown(st.items, stamp).toByteArray()) },
+                                onSavePdf = { actions.saveFile("recon-case-$stamp.pdf", vip.ringling.recon.data.PdfWriter.fromMarkdown(vip.ringling.recon.domain.CaseReport.markdown(st.items, stamp))) },
+                                onShare = { actions.shareText("Recon case report", vip.ringling.recon.domain.CaseReport.markdown(st.items, stamp)) },
+                            ),
                             contentPadding = pad,
                         )
                     }
@@ -268,7 +285,7 @@ private fun HomeRoute(nav: NavHostController, expanded: Boolean, actions: ReconA
     androidx.compose.runtime.LaunchedEffect(hasRegistry) { if (hasRegistry && main.hasLocationPermission()) main.refreshLocation() }
     val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> uri?.let { vm.analyzePhoto(it.toString()) } }
     val ha = HomeActions(
-        onPickPhoto = { pickPhoto.launch("image/*") },
+        onPickPhoto = { pickPhoto.launch("image/*") }, onOpenCase = { nav.navigate("case") { launchSingleTop = true } },
         onQueryChange = vm::onQueryChange, onOverride = vm::onOverride, onSubmit = vm::submit, onStop = vm::stop,
         onFindingClick = { f -> if (expanded) vm.select(f.id) else nav.navigate("finding/${f.id}") },
         onAckRegistry = vm::ackRegistry, onRecent = vm::reuse,

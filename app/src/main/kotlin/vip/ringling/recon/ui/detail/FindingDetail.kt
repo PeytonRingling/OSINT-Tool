@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.rounded.BookmarkAdd
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.foundation.clickable
@@ -62,6 +63,7 @@ data class DetailActions(
     val onOpenUrl: (String) -> Unit = {},
     val onOpenMap: (vip.ringling.recon.domain.GeoPoint) -> Unit = {},
     val onPivot: (String) -> Unit = {},
+    val onAddToCase: (Finding) -> Unit = {},
 )
 
 private fun Finding.weight() = when (severity) {
@@ -178,6 +180,9 @@ fun FindingDetail(
                 // Registry records can't be exported: a saved file of registrants is a compiled list (Idaho Code §74-120).
                 if (Export.exportable(finding)) FilledTonalButton(onClick = { actions.onExport(finding) }, Modifier.heightIn(min = 48.dp)) {
                     Icon(Icons.Rounded.FileDownload, null, Modifier.size(18.dp)); Text("Export JSON", Modifier.padding(start = 8.dp))
+                }
+                if (Export.exportable(finding)) FilledTonalButton(onClick = { actions.onAddToCase(finding) }, Modifier.heightIn(min = 48.dp)) {
+                    Icon(Icons.Rounded.BookmarkAdd, null, Modifier.size(18.dp)); Text("Add to case", Modifier.padding(start = 8.dp))
                 }
             }
         }

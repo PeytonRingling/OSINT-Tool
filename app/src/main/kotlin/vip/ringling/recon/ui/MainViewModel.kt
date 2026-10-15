@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import vip.ringling.recon.data.HistoryRepository
@@ -31,7 +32,10 @@ class MainViewModel @Inject constructor(
     private val controller: ScanController,
     private val userLocation: UserLocation,
     private val updates: UpdateManager,
+    private val cases: vip.ringling.recon.data.CaseRepository,
 ) : ViewModel() {
+    fun addToCase(f: Finding) { viewModelScope.launch { cases.add(f) } }
+    val caseCount: StateFlow<Int> = cases.items.map { it.size }.stateIn(viewModelScope, SharingStarted.Eagerly, 0)
     val update: StateFlow<UpdateState> = updates.state
     fun checkForUpdateQuietly() = updates.checkQuietly()
     fun requestSearch(query: String) = controller.requestSearch(query)

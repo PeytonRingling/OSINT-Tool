@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +51,7 @@ data class HomeUiState(
     val recents: List<ScanRecord> = emptyList(),
     val registryAck: Boolean = false,
     val selectedId: String? = null,
+    val caseCount: Int = 0,
 ) {
     val effective: InputType? get() = override ?: detected
 }
@@ -65,6 +67,7 @@ data class HomeActions(
     val onExportAll: () -> Unit = {},
     val onRequestLocation: () -> Unit = {},
     val onPickPhoto: () -> Unit = {},
+    val onOpenCase: () -> Unit = {},
 )
 
 @Composable
@@ -101,12 +104,18 @@ fun HomeScreen(
             TypeChipRow(auto = state.detected, override = state.override, onOverride = actions.onOverride)
         }
         item(key = "photo") {
-            androidx.compose.material3.AssistChip(
-                onClick = actions.onPickPhoto,
-                label = { Text("Analyze a photo's metadata") },
-                leadingIcon = { Icon(androidx.compose.material.icons.Icons.Outlined.Image, null, Modifier.size(18.dp)) },
-                modifier = Modifier.padding(horizontal = 16.dp),
-            )
+            Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.AssistChip(
+                    onClick = actions.onPickPhoto,
+                    label = { Text("Analyze a photo") },
+                    leadingIcon = { Icon(androidx.compose.material.icons.Icons.Outlined.Image, null, Modifier.size(18.dp)) },
+                )
+                androidx.compose.material3.AssistChip(
+                    onClick = actions.onOpenCase,
+                    label = { Text(if (state.caseCount > 0) "Case (${state.caseCount})" else "Case") },
+                    leadingIcon = { Icon(androidx.compose.material.icons.Icons.Outlined.BookmarkBorder, null, Modifier.size(18.dp)) },
+                )
+            }
         }
         if (session == null) {
             item(key = "modules") { ModuleTiles() }

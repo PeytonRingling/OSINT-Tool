@@ -8,6 +8,8 @@ import androidx.room.OnConflictStrategy
 import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -43,9 +45,73 @@ interface ScanDao {
     suspend fun clear()
 }
 
-@Database(entities = [ScanEntity::class], version = 1, exportSchema = false)
+/** A finding the user pinned to the case, plus their note. Registry findings are never added (see [vip.ringling.recon.domain.Export.exportable]). */
+@Entity(tableName = "case_items")
+data class CaseEntity(
+    @PrimaryKey val id: String,
+    val findingJson: String,
+    val note: String,
+    val addedAt: Long,
+)
+
+/** A watched email: the background worker alerts when a new breach shows up. [knownJson] is the list of breach names already seen. */
+@Entity(tableName = "watch")
+data class WatchEntity(
+    @PrimaryKey val id: String,
+    val raw: String,
+    val type: String,
+    val knownJson: String,
+    val lastChecked: Long,
+    val lastChange: Long,
+)
+
+@Dao
+interface CaseDao {
+    @Query("SELECT * FROM case_items ORDER BY addedAt DESC")
+    fun all(): Flow<List<CaseEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(e: CaseEntity)
+
+    @Query("UPDATE case_items SET note = :note WHERE id = :id")
+    suspend fun setNote(id: String, note: String)
+
+    @Query("DELETE FROM case_items WHERE id = :id")
+    suspend fun delete(id: String)
+
+    @Query("DELETE FROM case_items")
+    suspend fun clear()
+}
+
+@Dao
+interface WatchDao {
+    @Query("SELECT * FROM watch ORDER BY lastChecked DESC")
+    fun all(): Flow<List<WatchEntity>>
+
+    @Query("SELECT * FROM watch")
+    suspend fun snapshot(): List<WatchEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsert(e: WatchEntity)
+
+    @Query("DELETE FROM watch WHERE id = :id")
+    suspend fun delete(id: String)
+}
+
+@Database(entities = [ScanEntity::class, CaseEntity::class, WatchEntity::class], version = 2, exportSchema = false)
 abstract class HistoryDb : RoomDatabase() {
     abstract fun scans(): ScanDao
+    abstract fun cases(): CaseDao
+    abstract fun watches(): WatchDao
+
+    companion object {
+        val MIGRATION_1_2 = object : Migration(1, 2) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS `case_items` (`id` TEXT NOT NULL, `findingJson` TEXT NOT NULL, `note` TEXT NOT NULL, `addedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+                db.execSQL("CREATE TABLE IF NOT EXISTS `watch` (`id` TEXT NOT NULL, `raw` TEXT NOT NULL, `type` TEXT NOT NULL, `knownJson` TEXT NOT NULL, `lastChecked` INTEGER NOT NULL, `lastChange` INTEGER NOT NULL, PRIMARY KEY(`id`))")
+            }
+        }
+    }
 }
 
 private val json = Json { ignoreUnknownKeys = true }

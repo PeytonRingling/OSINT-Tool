@@ -22,6 +22,7 @@ import vip.ringling.recon.domain.ScanRecord
 class HomeViewModel @Inject constructor(
     private val controller: ScanController,
     history: HistoryRepository,
+    cases: vip.ringling.recon.data.CaseRepository,
 ) : ViewModel() {
     private val query = MutableStateFlow("")
     private val override = MutableStateFlow<InputType?>(null)
@@ -41,9 +42,9 @@ class HomeViewModel @Inject constructor(
     private val selectedId = MutableStateFlow<String?>(null)
 
     val state: StateFlow<HomeUiState> = combine(
-        query, override, controller.session, history.records, combine(registryAck, selectedId) { a, s -> a to s },
-    ) { q, o, session, recents, (ack, sel) ->
-        HomeUiState(q, o, InputDetector.detect(q), session, recents, ack, sel)
+        query, override, controller.session, history.records, combine(registryAck, selectedId, cases.items) { a, s, c -> Triple(a, s, c.size) },
+    ) { q, o, session, recents, (ack, sel, caseCount) ->
+        HomeUiState(q, o, InputDetector.detect(q), session, recents, ack, sel, caseCount)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 
     val selectedFinding = combine(controller.session, selectedId) { s, id -> s?.findings?.firstOrNull { it.id == id } }

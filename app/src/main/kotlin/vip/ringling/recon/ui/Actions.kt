@@ -23,10 +23,13 @@ import vip.ringling.recon.ui.detail.DetailActions
 class ReconActions(
     val detail: DetailActions,
     val exportScan: (ScanInput, List<Finding>) -> Unit,
+    /** Save arbitrary bytes through the system file picker (case reports). */
+    val saveFile: (String, ByteArray) -> Unit = { _, _ -> },
+    val shareText: (String, String) -> Unit = { _, _ -> },
 )
 
 @Composable
-fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit = {}): ReconActions {
+fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit = {}, onAddToCase: (Finding) -> Unit = {}): ReconActions {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val holder = remember { arrayOfNulls<String>(1) }
@@ -41,8 +44,18 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
         }
     }
     fun export(name: String, json: String) { holder[0] = json; launcher.launch(name) }
+    val bytesHolder = remember { arrayOfNulls<ByteArray>(1) }
+    val bytesLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
+        val data = bytesHolder[0]
+        bytesHolder[0] = null
+        if (uri != null && data != null) {
+            val ok = runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(data) } }.isSuccess
+            scope.launch { snackbar.showSnackbar(if (ok) "Saved" else "Save failed") }
+        }
+    }
 
     val pivot by androidx.compose.runtime.rememberUpdatedState(onPivot)
+    val addToCase by androidx.compose.runtime.rememberUpdatedState(onAddToCase)
     return remember(context) {
         ReconActions(
             detail = DetailActions(
@@ -57,6 +70,7 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
                 },
                 onExport = { f -> export("recon-${f.module.name.lowercase()}-${f.id.takeLast(12)}.json", Export.finding(f)) },
                 onPivot = { pivot(it) },
+                onAddToCase = { f -> addToCase(f); scope.launch { snackbar.showSnackbar("Added to case") } },
                 onOpenMap = { g ->
                     // Coordinates only: nothing about who is at this address is passed to the maps app.
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, "geo:${g.lat},${g.lng}?q=${g.lat},${g.lng}".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
@@ -66,6 +80,11 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
                 },
             ),
             exportScan = { input, findings -> export("recon-scan-${input.type.name.lowercase()}.json", Export.scan(input, findings)) },
+            saveFile = { name, data -> bytesHolder[0] = data; bytesLauncher.launch(name) },
+            shareText = { title, text ->
+                val send = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_TEXT, text); putExtra(Intent.EXTRA_SUBJECT, title) }
+                context.startActivity(Intent.createChooser(send, title).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            },
         )
     }
 }

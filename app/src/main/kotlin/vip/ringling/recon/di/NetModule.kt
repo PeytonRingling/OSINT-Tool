@@ -19,6 +19,8 @@ object NetModule {
     @Provides @Singleton fun http(): Http = Http()
     @Provides @Singleton fun endpoints(): Endpoints = Endpoints()
     @Provides @Singleton fun db(@ApplicationContext c: Context): HistoryDb =
-        Room.databaseBuilder(c, HistoryDb::class.java, "recon.db").build()
+        Room.databaseBuilder(c, HistoryDb::class.java, "recon.db").addMigrations(HistoryDb.MIGRATION_1_2).build()
     @Provides fun scanDao(db: HistoryDb): ScanDao = db.scans()
+    @Provides fun caseDao(db: HistoryDb) = db.cases()
+    @Provides fun watchDao(db: HistoryDb) = db.watches()
 }
