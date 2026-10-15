@@ -41,12 +41,14 @@ class LeakCheckClient(private val http: Http, private val apiUrl: String, privat
 
     /** Keyed v2 API when [apiKey] is set, otherwise the limited public endpoint (email only). */
     suspend fun lookup(query: String, type: InputType, apiKey: String?): LeakCheckResult {
-        val q = URLEncoder.encode(query, "UTF-8")
         return if (apiKey != null) {
+            val q = URLEncoder.encode(query, "UTF-8")
             val kind = when (type) { InputType.EMAIL -> "email"; InputType.PHONE -> "phone"; else -> "username" }
             val req = Request.Builder().url("$apiUrl/query/$q?type=$kind").header("X-API-Key", apiKey).header("Accept", "application/json").build()
             parseV2(fetch(req))
         } else {
+            // The public endpoint auto-detects the type; it rejects "+" so phones go digits-only.
+            val q = URLEncoder.encode(if (type == InputType.PHONE) query.filter(Char::isDigit) else query, "UTF-8")
             val req = Request.Builder().url("$publicUrl?check=$q").header("Accept", "application/json").build()
             parsePublic(fetch(req))
         }
@@ -63,16 +65,21 @@ class LeakCheckClient(private val http: Http, private val apiUrl: String, privat
         }
     }
 
+    /** Live behaviour: no results arrive as {"success":false,"error":"Not found"}, which is an answer, not a failure. */
+    private fun emptyOrThrow(error: String?): LeakCheckResult =
+        if (error.equals("Not found", ignoreCase = true)) LeakCheckResult(0, emptyList(), emptyList(), viaPublic = false)
+        else throw HttpException(400, "LeakCheck: ${error ?: "unknown error"}")
+
     internal fun parseV2(body: String): LeakCheckResult {
         val r = json.decodeFromString<V2Response>(body)
-        if (!r.success) throw HttpException(400, "LeakCheck: ${r.error ?: "unknown error"}")
+        if (!r.success) return emptyOrThrow(r.error)
         val sources = r.result.mapNotNull { e -> e.source?.let { LeakSource(it.name, it.breachDate) } }.distinct()
         return LeakCheckResult(r.found, sources, r.result.flatMap { it.fields }.distinct(), viaPublic = false)
     }
 
     internal fun parsePublic(body: String): LeakCheckResult {
         val r = json.decodeFromString<PublicResponse>(body)
-        if (!r.success) throw HttpException(400, "LeakCheck: ${r.error ?: "unknown error"}")
+        if (!r.success) return emptyOrThrow(r.error)
         return LeakCheckResult(r.found, r.sources.map { LeakSource(it.name, it.date) }, r.fields, viaPublic = true)
     }
 }
@@ -85,7 +92,7 @@ object LeakCheckMapper {
         val names = r.sources.map { it.name }.filter { it.isNotBlank() }
         val creds = r.fields.any { it.equals("password", true) || it.equals("hash", true) }
         val shown = names.take(4).joinToString(", ") + if (names.size > 4) " +${names.size - 4} more" else ""
-        val fields = if (r.fields.isEmpty()) "" else " Fields: ${r.fields.joinToString(", ")}."
+        val fields = if (r.fields.isEmpty()) "" else " Fields: ${r.fields.take(8).joinToString(", ")}${if (r.fields.size > 8) " +${r.fields.size - 8} more" else ""}."
         return Finding(
             id = "BREACH-leakcheck",
             module = ModuleId.BREACH,

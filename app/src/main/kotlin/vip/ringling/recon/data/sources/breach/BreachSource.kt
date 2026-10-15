@@ -50,15 +50,11 @@ class BreachSource @Inject constructor(
             }
         }
 
-        val leakUsable = leakKey != null || input.type == InputType.EMAIL
-        if (leakUsable) {
-            launch {
-                attempted++
-                runCatching { send(LeakCheckMapper.finding(leak.lookup(input.raw, input.type, leakKey))) }
-                    .onFailure { e -> failures++; errors += e.message.orEmpty(); send(failure("leakcheck", "LeakCheck", e)) }
-            }
-        } else {
-            send(note("leakcheck-nokey", "LeakCheck skipped", "A LeakCheck API key is required for ${input.type.label.lowercase()} lookups. Add one in Settings."))
+        // Keyed v2 API when a key is set, otherwise the rate-limited public endpoint (works for email, username and phone).
+        launch {
+            attempted++
+            runCatching { send(LeakCheckMapper.finding(leak.lookup(input.raw, input.type, leakKey))) }
+                .onFailure { e -> failures++; errors += e.message.orEmpty(); send(failure("leakcheck", "LeakCheck", e)) }
         }
     }
 

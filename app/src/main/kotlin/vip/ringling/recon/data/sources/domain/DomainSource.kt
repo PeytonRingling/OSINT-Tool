@@ -47,7 +47,7 @@ class DomainSource @Inject constructor(
             // coroutineScope contains a failing lookup so it surfaces here, not as a cancellation of the whole scan.
             val hits = coroutineScope {
                 DomainAnalysis.DKIM_SELECTORS.map { sel -> async { sel to doh.txt("$sel._domainkey.$d") } }.awaitAll()
-            }.filter { (_, txt) -> txt.any { it.contains("v=DKIM1", true) || Regex("""\bp=""").containsMatchIn(it) } }.map { it.first }
+            }.filter { (_, txt) -> txt.any(DomainAnalysis::isActiveDkim) }.map { it.first }
             send(DomainAnalysis.dkim(hits))
         }
         check("bimi", "BIMI") { send(DomainAnalysis.bimi(doh.txt("default._bimi.$d"))) }

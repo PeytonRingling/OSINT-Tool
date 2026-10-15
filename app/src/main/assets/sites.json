@@ -1,12 +1,12 @@
 {
  "version": 1,
- "note": "Curated username probes. Detection is heuristic; sites change. method: status|message|redirect. confidence: HIGH (API/stable) or MEDIUM (HTML page).",
+ "note": "Curated username probes, calibrated against live responses on 2026-10-15 (existing vs nonexistent handle). Sites that answer 200 for any name were dropped. confidence LOW = could not be verified from the build environment (bot-walled there).",
  "sites": [
   {
    "name": "GitHub",
    "url": "https://github.com/{u}",
    "method": "status",
-   "confidence": "HIGH",
+   "confidence": "MEDIUM",
    "usernameRegex": "^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$"
   },
   {
@@ -27,13 +27,13 @@
    "name": "Codeberg",
    "url": "https://codeberg.org/{u}",
    "method": "status",
-   "confidence": "HIGH"
+   "confidence": "LOW"
   },
   {
    "name": "SourceForge",
    "url": "https://sourceforge.net/u/{u}/",
    "method": "status",
-   "confidence": "MEDIUM"
+   "confidence": "LOW"
   },
   {
    "name": "Docker Hub",
@@ -46,13 +46,7 @@
    "name": "npm",
    "url": "https://www.npmjs.com/~{u}",
    "method": "status",
-   "confidence": "MEDIUM"
-  },
-  {
-   "name": "PyPI",
-   "url": "https://pypi.org/user/{u}/",
-   "method": "status",
-   "confidence": "HIGH"
+   "confidence": "LOW"
   },
   {
    "name": "Replit",
@@ -64,7 +58,7 @@
    "name": "CodePen",
    "url": "https://codepen.io/{u}",
    "method": "status",
-   "confidence": "MEDIUM"
+   "confidence": "LOW"
   },
   {
    "name": "Kaggle",
@@ -73,16 +67,11 @@
    "confidence": "MEDIUM"
   },
   {
-   "name": "LeetCode",
-   "url": "https://leetcode.com/{u}/",
-   "method": "status",
-   "confidence": "MEDIUM"
-  },
-  {
    "name": "HackerRank",
    "url": "https://www.hackerrank.com/{u}",
-   "method": "status",
-   "confidence": "MEDIUM"
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "{u} | HackerRank"
   },
   {
    "name": "Hacker News",
@@ -90,7 +79,8 @@
    "method": "message",
    "confidence": "HIGH",
    "errorMsg": "null",
-   "profileUrl": "https://news.ycombinator.com/user?id={u}"
+   "profileUrl": "https://news.ycombinator.com/user?id={u}",
+   "usernameRegex": "^[A-Za-z0-9_-]{2,15}$"
   },
   {
    "name": "Dev.to",
@@ -102,7 +92,7 @@
    "name": "Reddit",
    "url": "https://www.reddit.com/user/{u}/about.json",
    "method": "status",
-   "confidence": "MEDIUM",
+   "confidence": "LOW",
    "profileUrl": "https://www.reddit.com/user/{u}"
   },
   {
@@ -111,7 +101,8 @@
    "method": "message",
    "confidence": "HIGH",
    "errorMsg": "\"them\":[null]",
-   "profileUrl": "https://keybase.io/{u}"
+   "profileUrl": "https://keybase.io/{u}",
+   "usernameRegex": "^[A-Za-z0-9_]{2,16}$"
   },
   {
    "name": "Mastodon (mastodon.social)",
@@ -138,12 +129,6 @@
    "errorMsg": "The specified profile could not be found"
   },
   {
-   "name": "Twitch",
-   "url": "https://www.twitch.tv/{u}",
-   "method": "status",
-   "confidence": "MEDIUM"
-  },
-  {
    "name": "Chess.com",
    "url": "https://api.chess.com/pub/player/{u}",
    "method": "status",
@@ -161,13 +146,13 @@
    "name": "Last.fm",
    "url": "https://www.last.fm/user/{u}",
    "method": "status",
-   "confidence": "MEDIUM"
+   "confidence": "LOW"
   },
   {
    "name": "Letterboxd",
    "url": "https://letterboxd.com/{u}/",
    "method": "status",
-   "confidence": "MEDIUM"
+   "confidence": "LOW"
   },
   {
    "name": "SoundCloud",
@@ -197,7 +182,7 @@
    "name": "Patreon",
    "url": "https://www.patreon.com/{u}",
    "method": "status",
-   "confidence": "MEDIUM"
+   "confidence": "LOW"
   },
   {
    "name": "Linktree",
@@ -219,20 +204,8 @@
    "profileUrl": "https://gravatar.com/{u}"
   },
   {
-   "name": "Imgur",
-   "url": "https://imgur.com/user/{u}",
-   "method": "status",
-   "confidence": "MEDIUM"
-  },
-  {
    "name": "Pastebin",
    "url": "https://pastebin.com/u/{u}",
-   "method": "status",
-   "confidence": "MEDIUM"
-  },
-  {
-   "name": "Wikipedia",
-   "url": "https://en.wikipedia.org/wiki/User:{u}",
    "method": "status",
    "confidence": "MEDIUM"
   },
@@ -246,9 +219,10 @@
   {
    "name": "WordPress.com",
    "url": "https://{u}.wordpress.com",
-   "method": "status",
+   "method": "redirect",
    "confidence": "MEDIUM",
-   "usernameRegex": "^[A-Za-z0-9-]{1,32}$"
+   "usernameRegex": "^[A-Za-z0-9-]{1,32}$",
+   "errorUrl": "wordpress.com/typo"
   },
   {
    "name": "itch.io",

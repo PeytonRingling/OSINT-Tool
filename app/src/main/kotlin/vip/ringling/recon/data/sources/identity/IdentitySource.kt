@@ -18,6 +18,7 @@ import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.Request
+import vip.ringling.recon.data.net.BROWSER_USER_AGENT
 import vip.ringling.recon.data.net.Endpoints
 import vip.ringling.recon.data.net.Http
 import vip.ringling.recon.domain.Confidence
@@ -121,30 +122,31 @@ class IdentitySource @Inject constructor(
         )
     }
 
+    private val challengeMarkers = listOf("just a moment", "client challenge", "attention required", "checking your browser", "cf-browser-verification", "enable javascript and cookies")
+
     internal suspend fun probe(site: Site, username: String): Probe {
         val enc = URLEncoder.encode(username, "UTF-8")
         val target = site.url.replace("{u}", enc)
-        val req = Request.Builder().url(target).header("Accept", "text/html,application/json;q=0.9,*/*;q=0.5").build()
+        val req = Request.Builder().url(target).header("User-Agent", BROWSER_USER_AGENT)
+            .header("Accept", "text/html,application/json;q=0.9,*/*;q=0.5").header("Accept-Language", "en-US,en;q=0.8").build()
         return http.execute(req) { r ->
             val code = r.code
             val absentCodes = setOf(404, 410) + site.absentCodes
+            // Bot walls answer 403/503 (or even 200) with an interstitial; that says nothing about the account.
+            val head = if (code in 200..299 || code == 403 || code == 503) r.peekBody(200_000).string() else ""
+            val challenged = head.isNotEmpty() && challengeMarkers.any { head.contains(it, ignoreCase = true) } && head.length < 20_000
             when {
+                challenged -> Probe.Inconclusive("bot challenge")
                 code in absentCodes -> Probe.Absent
-                code == 429 -> Probe.Inconclusive("rate-limited")
+                code == 429 || code == 406 -> Probe.Inconclusive("rate-limited")
                 code == 403 || code == 401 -> Probe.Inconclusive("blocked")
-                code in 500..599 -> Probe.Inconclusive("HTTP $code")
                 code !in 200..299 -> Probe.Inconclusive("HTTP $code")
-                else -> when (site.method) {
-                    Method.status -> Probe.Found
-                    Method.message -> {
-                        val body = r.peekBody(200_000).string()
-                        if (site.errorMsg != null && body.contains(site.errorMsg, ignoreCase = true)) Probe.Absent else Probe.Found
-                    }
-                    Method.redirect -> {
-                        val finalUrl = r.request.url.toString()
-                        if (site.errorUrl != null && finalUrl.contains(site.errorUrl)) Probe.Absent else Probe.Found
-                    }
-                }
+                site.foundMsg != null -> if (head.contains(site.foundMsg.replace("{u}", username), ignoreCase = true)) Probe.Found else Probe.Absent
+                site.method == Method.message ->
+                    if (site.errorMsg != null && head.contains(site.errorMsg, ignoreCase = true)) Probe.Absent else Probe.Found
+                site.method == Method.redirect ->
+                    if (site.errorUrl != null && r.request.url.toString().contains(site.errorUrl)) Probe.Absent else Probe.Found
+                else -> Probe.Found
             }
         }
     }

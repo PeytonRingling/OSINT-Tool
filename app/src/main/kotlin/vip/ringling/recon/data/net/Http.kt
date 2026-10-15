@@ -38,7 +38,10 @@ suspend fun Call.await(): Response = suspendCancellableCoroutine { cont ->
 /** Thin wrapper so sources are testable and never touch OkHttp directly. */
 class Http(val client: OkHttpClient = buildHttpClient()) {
     suspend fun <T> execute(request: Request, block: (Response) -> T): T =
-        client.newCall(request.newBuilder().header("User-Agent", USER_AGENT).build()).await().use(block)
+        client.newCall(if (request.header("User-Agent") == null) request.newBuilder().header("User-Agent", USER_AGENT).build() else request).await().use(block)
 }
+
+/** Browser-like UA for site probes: many sites 403 non-browser agents. Requests run from the user's own device. */
+const val BROWSER_USER_AGENT = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
 
 class HttpException(val code: Int, message: String) : IOException(message)

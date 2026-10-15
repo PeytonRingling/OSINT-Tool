@@ -22,6 +22,8 @@ data class Site(
     val profileUrl: String? = null,
     /** message: the body contains this when the account does NOT exist. */
     val errorMsg: String? = null,
+    /** message variant: the body must CONTAIN this ({u} is substituted) for the account to count as found. */
+    val foundMsg: String? = null,
     /** redirect: the final URL contains this when the account does NOT exist. */
     val errorUrl: String? = null,
     /** Extra status codes that mean "does not exist" (default 404/410). */

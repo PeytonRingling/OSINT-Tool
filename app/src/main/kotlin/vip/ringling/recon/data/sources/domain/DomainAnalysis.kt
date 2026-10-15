@@ -75,6 +75,12 @@ object DomainAnalysis {
 
     val DKIM_SELECTORS = listOf("default", "google", "selector1", "selector2", "k1", "k2", "s1", "s2", "mail", "dkim", "smtp", "mandrill", "mxvout", "cm", "zendesk1", "fm1", "protonmail")
 
+    /** A DKIM record with an empty p= is a revoked key (e.g. example.com publishes one on a wildcard), not a signer. */
+    fun isActiveDkim(txt: String): Boolean {
+        val tags = txt.split(";").map { it.trim() }.filter { "=" in it }.associate { it.substringBefore("=").trim().lowercase() to it.substringAfter("=").trim() }
+        return !tags["p"].isNullOrBlank() && (tags["v"]?.equals("DKIM1", true) != false)
+    }
+
     fun dkim(found: List<String>): Finding =
         if (found.isEmpty()) f("dkim", "DKIM", "None of ${DKIM_SELECTORS.size} common selectors found. The domain may use a custom selector, or not sign mail.", Severity.INFO)
         else f("dkim", "DKIM", "Selector${if (found.size == 1) "" else "s"} found: ${found.joinToString(", ")}.", Severity.CLEAN, raw = found.joinToString(","))
@@ -92,12 +98,14 @@ object DomainAnalysis {
 
     private val internalHints = setOf("staging", "stage", "dev", "test", "qa", "uat", "vpn", "admin", "internal", "intranet", "jira", "grafana", "jenkins", "git", "gitlab", "sso", "kibana", "prometheus", "ci", "vault", "backup", "old")
 
+    private val hostname = Regex("^[a-z0-9_](?:[a-z0-9_.-]*[a-z0-9_])?$")
+
     /** crt.sh JSON → distinct subdomain names (wildcards and the apex dropped). */
     fun parseCrtNames(body: String, domain: String): List<String> {
         val arr = Json.parseToJsonElement(body).jsonArray
         return arr.flatMap { (it as? JsonObject)?.get("name_value")?.jsonPrimitive?.contentOrNull?.split("\n").orEmpty() }
             .map { it.trim().lowercase().removePrefix("*.") }
-            .filter { it.endsWith(".$domain") }
+            .filter { it.endsWith(".$domain") && hostname.matches(it) } // crt.sh also lists e-mail SANs and oddities
             .distinct().sorted()
     }
 

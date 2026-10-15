@@ -60,6 +60,14 @@ class DomainAnalysisTest {
         assertEquals(Severity.INFO, DomainAnalysis.subdomains(listOf("www.a.com", "shop.a.com"), "a.com").severity)
     }
 
+    @Test fun revokedDkimKeysAreNotSigners() {
+        assertTrue(!DomainAnalysis.isActiveDkim("v=DKIM1; p="), "example.com publishes a revoked wildcard key")
+        assertTrue(!DomainAnalysis.isActiveDkim("v=DKIM1; k=rsa; p= "))
+        assertTrue(DomainAnalysis.isActiveDkim("v=DKIM1; k=rsa; p=MIIBIjANBgkqh"))
+        assertTrue(DomainAnalysis.isActiveDkim("k=rsa; p=MIIBIj"), "v= is optional")
+        assertTrue(!DomainAnalysis.isActiveDkim("v=spf1 -all"))
+    }
+
     @Test fun rdapParsesRegistrarAndDates() {
         val f = DomainAnalysis.rdap(fixture("rdap.json"), "northwind.io", now = Instant.parse("2026-10-14T00:00:00Z"))
         assertEquals(Severity.CLEAN, f.severity)

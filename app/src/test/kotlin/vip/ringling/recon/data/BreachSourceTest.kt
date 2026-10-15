@@ -117,16 +117,32 @@ class BreachSourceTest {
         }
     }
 
-    @Test fun phoneAndUsernameNeedLeakCheckKey() = runTest {
-        val (srv, router) = server("/lc/v2/query/" to { json(fixture("leakcheck_v2.json")) })
+    @Test fun phoneAndUsernameWorkKeylessViaPublicEndpointAndKeyedViaV2() = runTest {
+        val (srv, router) = server(
+            "/lc/public" to { json(fixture("leakcheck_public.json")) },
+            "/lc/v2/query/" to { json(fixture("leakcheck_v2.json")) },
+        )
         srv.use {
-            val none = BreachSource(Http(), srv.endpoints(), InMemoryApiKeys()).collect(ScanInput("+12085550142", InputType.PHONE))
-            assertEquals("BREACH-leakcheck-nokey", none.single().id)
-            assertTrue(router.seen.isEmpty())
+            val keyless = BreachSource(Http(), srv.endpoints(), InMemoryApiKeys())
+            val phone = keyless.collect(ScanInput("+1 (208) 555-0142".filter { it.isDigit() || it == '+' }, InputType.PHONE))
+            assertEquals("BREACH-leakcheck", phone.single().id)
+            assertTrue(router.seen.single().path!!.endsWith("check=12085550142"), "public endpoint rejects '+', so digits only: ${router.seen.single().path}")
+            keyless.collect(ScanInput("ghost", InputType.USERNAME))
+            assertTrue(router.seen.last().path!!.endsWith("check=ghost"))
 
             val keyed = BreachSource(Http(), srv.endpoints(), InMemoryApiKeys(mapOf(ApiKeyId.LEAKCHECK to "lk")))
             keyed.collect(ScanInput("ghost", InputType.USERNAME))
-            assertTrue(router.seen.single().path!!.contains("type=username"))
+            assertTrue(router.seen.last().path!!.contains("type=username"))
+        }
+    }
+
+    @Test fun leakCheckNotFoundIsCleanNotAnError() = runTest {
+        val (srv, _) = server("/lc/public" to { json(fixture("leakcheck_notfound.json")) }, "/lc/v2/query/" to { json(fixture("leakcheck_notfound.json")) })
+        srv.use {
+            val pub = BreachSource(Http(), srv.endpoints(), InMemoryApiKeys()).collect(ScanInput("ghost", InputType.USERNAME)).single()
+            assertEquals(Severity.CLEAN, pub.severity); assertEquals("LeakCheck: no results", pub.title)
+            val keyed = BreachSource(Http(), srv.endpoints(), InMemoryApiKeys(mapOf(ApiKeyId.LEAKCHECK to "k"))).collect(ScanInput("ghost", InputType.USERNAME)).single()
+            assertEquals(Severity.CLEAN, keyed.severity)
         }
     }
 

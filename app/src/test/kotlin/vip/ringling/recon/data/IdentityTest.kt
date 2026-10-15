@@ -24,12 +24,13 @@ class IdentityTest {
         val text = checkNotNull(javaClass.getResourceAsStream("/../../../../../src/main/assets/sites.json") ?: java.io.File("src/main/assets/sites.json").takeIf { it.exists() }?.inputStream())
             .bufferedReader().readText()
         val sites = SiteList.parse(text)
-        assertTrue(sites.size >= 35, "expected a curated list, got ${sites.size}")
+        assertTrue(sites.size >= 30, "expected a curated list, got ${sites.size}")
         assertEquals(sites.size, sites.map { it.name }.distinct().size, "duplicate site names")
         sites.forEach { s ->
             assertTrue("{u}" in s.url, "${s.name} url has no {u}")
             assertTrue(s.url.startsWith("https://"), "${s.name} must be https")
-            if (s.method == Method.message) assertTrue(s.errorMsg != null, "${s.name} needs errorMsg")
+            if (s.method == Method.message) assertTrue(s.errorMsg != null || s.foundMsg != null, "${s.name} needs errorMsg or foundMsg")
+            if (s.method == Method.redirect) assertTrue(s.errorUrl != null, "${s.name} needs errorUrl")
             s.usernameRegex?.let { Regex(it) } // must compile
         }
     }
@@ -75,6 +76,35 @@ class IdentityTest {
             assertTrue("1 skipped" in summary.detail, summary.detail)
             assertTrue("Blocked (blocked)" in summary.raw && "Limited (rate-limited)" in summary.raw, summary.raw)
             assertTrue(router.seen.none { it.path!!.startsWith("/strict") }, "invalid username for site must not be probed")
+        }
+    }
+
+    @Test fun foundMsgRedirectChallengeAndBrowserUserAgent() = runTest {
+        val (srv, router) = server(
+            "/hr/ghost" to { MockResponse().setResponseCode(200).setBody("<title>ghost | HackerRank</title>") },
+            "/hr/nobody" to { MockResponse().setResponseCode(200).setBody("<title>Programming Problems :: HackerRank</title>") },
+            "/wp/" to { MockResponse().setResponseCode(302).setHeader("Location", "/wordpress.com/typo?subdomain=x") },
+            "/wordpress.com/typo" to { MockResponse().setResponseCode(200).setBody("create a site") },
+            "/wall/" to { MockResponse().setResponseCode(200).setBody("<title>Just a moment...</title>") },
+            "/cf/" to { MockResponse().setResponseCode(403).setBody("<title>Attention Required! | Cloudflare</title>") },
+        )
+        srv.use {
+            val base = srv.url("/").toString().trimEnd('/')
+            val list = listOf(
+                Site("HR", "$base/hr/{u}", Method.message, foundMsg = "{u} | HackerRank"),
+                Site("WP", "$base/wp/{u}", Method.redirect, errorUrl = "wordpress.com/typo"),
+                Site("Wall", "$base/wall/{u}", Method.status),
+                Site("CF", "$base/cf/{u}", Method.status),
+            )
+            val src = IdentitySource(Http(), srv.endpoints(), { list }).also { it.limiter = RateLimiter(4, 0) }
+            val hits = src.collect(ScanInput("ghost", InputType.USERNAME))
+            assertEquals(listOf("HR"), hits.filter { it.id != "IDENTITY-summary" }.map { it.title }, "only the foundMsg site matches")
+            val s = hits.single { it.id == "IDENTITY-summary" }
+            assertTrue("1 found, 1 not found" in s.detail && "2 inconclusive" in s.detail, s.detail)
+            assertTrue("Wall (bot challenge)" in s.raw && "CF (bot challenge)" in s.raw, s.raw)
+            assertTrue(router.seen.all { it.getHeader("User-Agent")!!.startsWith("Mozilla/5.0") }, "site probes use a browser UA")
+            val none = src.collect(ScanInput("nobody", InputType.USERNAME))
+            assertTrue(none.none { it.title == "HR" }, "page without the profile marker is absent")
         }
     }
 
