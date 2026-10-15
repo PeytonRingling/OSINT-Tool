@@ -60,6 +60,7 @@ data class SettingsUiState(
     val versionName: String = "0.1.0",
     val installedBuild: Int = 1,
     val update: UpdateState = UpdateState.Idle,
+    val watches: List<vip.ringling.recon.data.watch.WatchItem> = emptyList(),
 )
 
 data class SettingsActions(
@@ -75,6 +76,8 @@ data class SettingsActions(
     val onProxyHost: (String) -> Unit = {},
     val onProxyPort: (Int) -> Unit = {},
     val onAppLock: (Boolean) -> Unit = {},
+    val onAddWatch: (String) -> Unit = {},
+    val onRemoveWatch: (String) -> Unit = {},
 )
 
 @Composable
@@ -96,7 +99,7 @@ fun SettingsScreen(
             if (wide) {
                 Row(Modifier.padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                        UpdatesSection(state, actions); AppearanceSection(state, actions); PrivacySection(state, actions); DataSection(state, actions)
+                        UpdatesSection(state, actions); AppearanceSection(state, actions); PrivacySection(state, actions); WatchSection(state, actions); DataSection(state, actions)
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                         KeysSection(state, actions); LegalSection(state)
@@ -104,7 +107,7 @@ fun SettingsScreen(
                 }
             } else {
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                    UpdatesSection(state, actions); AppearanceSection(state, actions); PrivacySection(state, actions); KeysSection(state, actions); DataSection(state, actions); LegalSection(state)
+                    UpdatesSection(state, actions); AppearanceSection(state, actions); PrivacySection(state, actions); WatchSection(state, actions); KeysSection(state, actions); DataSection(state, actions); LegalSection(state)
                 }
             }
         }
@@ -192,6 +195,34 @@ private fun PrivacySection(state: SettingsUiState, a: SettingsActions) {
         }
         HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = cs.outlineVariant.copy(alpha = 0.5f))
         ToggleRow("App lock", "Ask for fingerprint, face or device PIN when opening the app, and hide it from the recents screen.", state.settings.appLock, a.onAppLock)
+    }
+}
+
+@Composable
+private fun WatchSection(state: SettingsUiState, a: SettingsActions) {
+    val cs = MaterialTheme.colorScheme
+    var input by remember { mutableStateOf("") }
+    Section("Watchlist") {
+        Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Text(
+                "Checks watched email addresses against your breach sources once a day in the background and notifies you when a new breach appears. Needs a HIBP or LeakCheck key.",
+                style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
+            )
+            state.watches.forEach { w ->
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(w.email, style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+                        Text(
+                            if (w.lastChecked == 0L) "Waiting for first check…" else "${w.knownCount.coerceAtLeast(0)} known · checked ${java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT).format(w.lastChecked)}",
+                            style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
+                        )
+                    }
+                    TextButton(onClick = { a.onRemoveWatch(w.email) }) { Text("Remove") }
+                }
+            }
+            ProxyField("Email", input, KeyboardType.Email) { input = it }
+            Button(onClick = { a.onAddWatch(input); input = "" }, enabled = input.contains('@'), modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp)) { Text("Watch this address") }
+        }
     }
 }
 

@@ -34,6 +34,8 @@ data class Site(
     val extract: Extract? = null,
     /** Free-form grouping (WhatsMyName category). */
     val category: String? = null,
+    /** A handle known to exist, used by tools/check_sites.py to detect drifted detection rules. Unused at runtime. */
+    val known: String? = null,
 )
 
 @Serializable

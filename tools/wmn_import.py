@@ -39,7 +39,7 @@ def calibrate(item):
     bogus = "zq" + "".join(random.choices(string.ascii_lowercase + string.digits, k=9))
     for k in known[:2]:
         if " " in k: continue
-        if state(site, k) == "found" and state(site, bogus) == "absent": return site
+        if state(site, k) == "found" and state(site, bogus) == "absent": return {**site, "known": k}
     return None
 
 conv = [c for c in map(convert, src["sites"]) if c]

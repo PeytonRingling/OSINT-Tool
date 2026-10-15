@@ -95,6 +95,7 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.datastore)
     implementation(libs.androidx.exif)
+    implementation(libs.androidx.work)
 
     implementation(libs.okhttp)
     implementation(libs.kotlinx.serialization.json)

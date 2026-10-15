@@ -64,3 +64,38 @@ class CaseTest {
         db.close()
     }
 }
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [36])
+class WatchTest {
+    private val ctx: Context get() = ApplicationProvider.getApplicationContext()
+    private fun hibp(name: String) = Finding("BREACH-hibp-$name", ModuleId.BREACH, name, "d", Severity.INFO)
+
+    @Test fun signatureIgnoresPastesAndFailsOnErrors() {
+        val ok = listOf(hibp("Adobe"), hibp("LinkedIn"), Finding("BREACH-hibp-pastes", ModuleId.BREACH, "p", "d", Severity.INFO),
+            Finding("BREACH-leakcheck", ModuleId.BREACH, "L", "d", Severity.INFO, facts = listOf(Fact("Records found", "2"), Fact("Endpoint", "x"), Fact("Combo Foo", "2020"))))
+        assertEquals(setOf("hibp-Adobe", "hibp-LinkedIn", "leakcheck-combo foo"), vip.ringling.recon.data.watch.WatchLogic.signature(ok))
+        assertEquals(null, vip.ringling.recon.data.watch.WatchLogic.signature(ok + Finding("BREACH-hibp-error", ModuleId.BREACH, "x", "d", Severity.INFO)))
+        assertEquals(emptySet(), vip.ringling.recon.data.watch.WatchLogic.newItems(null, setOf("a")), "first run is a silent baseline")
+        assertEquals(setOf("b"), vip.ringling.recon.data.watch.WatchLogic.newItems(setOf("a"), setOf("a", "b")))
+    }
+
+    @Test fun checkerAlertsOnlyOnNewBreaches() = runTest {
+        val db = Room.inMemoryDatabaseBuilder(ctx, HistoryDb::class.java).allowMainThreadQueries().build()
+        val repo = vip.ringling.recon.data.watch.WatchRepository(db.watches())
+        var current = listOf(hibp("Adobe"))
+        val source = object : vip.ringling.recon.domain.OsintSource {
+            override val id = ModuleId.BREACH
+            override val supportedInputTypes = setOf(vip.ringling.recon.domain.InputType.EMAIL)
+            override suspend fun run(input: vip.ringling.recon.domain.ScanInput) = kotlinx.coroutines.flow.flowOf(*current.toTypedArray())
+        }
+        val checker = vip.ringling.recon.data.watch.WatchChecker(repo, source)
+        repo.add("Jane@X.com")
+        assertEquals(emptyMap(), checker.run(10), "baseline is silent")
+        assertEquals(emptyMap(), checker.run(20), "unchanged")
+        current = listOf(hibp("Adobe"), hibp("Dropbox"))
+        assertEquals(mapOf("jane@x.com" to setOf("hibp-Dropbox")), checker.run(30))
+        assertEquals(emptyMap(), checker.run(40), "already reported")
+        db.close()
+    }
+}

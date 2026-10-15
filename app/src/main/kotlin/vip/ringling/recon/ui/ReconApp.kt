@@ -158,9 +158,17 @@ fun ReconApp() {
                     composable(Tab.SETTINGS.route) {
                         val vm: SettingsViewModel = hiltViewModel()
                         val st by vm.state.collectAsStateWithLifecycle()
+                        var pendingWatch by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+                        val notifPermission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) {
+                            pendingWatch?.let(vm::addWatch); pendingWatch = null
+                        }
+                        val watchAdd: (String) -> Unit = { email ->
+                            pendingWatch = email
+                            if (android.os.Build.VERSION.SDK_INT >= 33) notifPermission.launch(android.Manifest.permission.POST_NOTIFICATIONS) else { vm.addWatch(email); pendingWatch = null }
+                        }
                         SettingsScreen(
                             st,
-                            SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock),
+                            SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock, watchAdd, vm::removeWatch),
                             contentPadding = pad,
                         )
                     }

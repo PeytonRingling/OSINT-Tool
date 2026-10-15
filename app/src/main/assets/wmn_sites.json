@@ -8,7 +8,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "userNameBlock",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "mike007"
   },
   {
    "name": "3dtoday",
@@ -16,7 +17,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"header_user_name",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "anforma"
   },
   {
    "name": "7dach",
@@ -24,7 +26,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Информация / Профиль",
-   "category": "social"
+   "category": "social",
+   "known": "lana"
   },
   {
    "name": "ACF",
@@ -32,7 +35,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "bbp-user-body",
-   "category": "coding"
+   "category": "coding",
+   "known": "mike"
   },
   {
    "name": "alik",
@@ -40,7 +44,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Vizitka – Alík.cz</title>",
-   "category": "social"
+   "category": "social",
+   "known": "igor"
   },
   {
    "name": "Alura",
@@ -48,7 +53,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Perfil de",
-   "category": "tech"
+   "category": "tech",
+   "known": "edmilson"
   },
   {
    "name": "AmericanThinker",
@@ -56,7 +62,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"author_image\"",
-   "category": "political"
+   "category": "political",
+   "known": "james_g_robertson"
   },
   {
    "name": "Arduino (Forum)",
@@ -65,7 +72,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "tech",
-   "profileUrl": "https://forum.arduino.cc/u/{u}/summary"
+   "profileUrl": "https://forum.arduino.cc/u/{u}/summary",
+   "known": "martinhouse"
   },
   {
    "name": "Arduino (Project Hub)",
@@ -73,7 +81,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"userInfo\":{",
-   "category": "tech"
+   "category": "tech",
+   "known": "peter"
   },
   {
    "name": "Artbreeder",
@@ -81,7 +90,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "data-tutorial=\"profile-filter\"",
-   "category": "art"
+   "category": "art",
+   "known": "dolores"
   },
   {
    "name": "ArtStation",
@@ -90,7 +100,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "art",
-   "profileUrl": "https://www.artstation.com/{u}"
+   "profileUrl": "https://www.artstation.com/{u}",
+   "known": "kongaxl_design"
   },
   {
    "name": "asciinema",
@@ -98,7 +109,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"profile-page\"",
-   "category": "coding"
+   "category": "coding",
+   "known": "john"
   },
   {
    "name": "AtCoder",
@@ -106,7 +118,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<h3>Contest Status</h3>",
-   "category": "coding"
+   "category": "coding",
+   "known": "apiad"
   },
   {
    "name": "au.ru",
@@ -114,7 +127,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Лоты пользователя ",
-   "category": "misc"
+   "category": "misc",
+   "known": "Svetlana7"
   },
   {
    "name": "Audiojungle",
@@ -122,7 +136,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "s profile on AudioJungle",
-   "category": "music"
+   "category": "music",
+   "known": "john"
   },
   {
    "name": "Bandlab",
@@ -131,7 +146,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"username\":",
    "category": "music",
-   "profileUrl": "https://www.bandlab.com/{u}"
+   "profileUrl": "https://www.bandlab.com/{u}",
+   "known": "rave_flawless"
   },
   {
    "name": "BiggerPockets",
@@ -139,7 +155,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "| BiggerPockets</title>",
-   "category": "finance"
+   "category": "finance",
+   "known": "chasel9"
   },
   {
    "name": "BIGO Live",
@@ -147,7 +164,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "userInfo:{nickName",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "Jacin19"
   },
   {
    "name": "Bimpos",
@@ -155,7 +173,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<title>User ",
-   "category": "tech"
+   "category": "tech",
+   "known": "john"
   },
   {
    "name": "Bio Site",
@@ -163,7 +182,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "— Bio Sites</title>",
-   "category": "social"
+   "category": "social",
+   "known": "leticiabufoni"
   },
   {
    "name": "biolink",
@@ -171,7 +191,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "profile:username",
-   "category": "misc"
+   "category": "misc",
+   "known": "adli_hm"
   },
   {
    "name": "blogi.pl",
@@ -179,7 +200,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Informacje ogólne",
-   "category": "blog"
+   "category": "blog",
+   "known": "naukowa"
   },
   {
    "name": "Blogspot",
@@ -187,7 +209,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "_WidgetManager._Init",
-   "category": "blog"
+   "category": "blog",
+   "known": "kalenderimlek"
   },
   {
    "name": "Bluesky Domain as User",
@@ -195,7 +218,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "on Bluesky</title>",
-   "category": "social"
+   "category": "social",
+   "known": "bsky.app"
   },
   {
    "name": "BoardGameGeek",
@@ -204,7 +228,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"message\":\"Sorry, this username is already taken.\"",
    "category": "gaming",
-   "profileUrl": "https://boardgamegeek.com/user/{u}"
+   "profileUrl": "https://boardgamegeek.com/user/{u}",
+   "known": "ntrautner"
   },
   {
    "name": "Boosty",
@@ -213,7 +238,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "social",
-   "profileUrl": "https://boosty.to/{u}"
+   "profileUrl": "https://boosty.to/{u}",
+   "known": "evdokia"
   },
   {
    "name": "Brickset",
@@ -221,7 +247,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Member since:</dt>",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "lowlead"
   },
   {
    "name": "Bugcrowd",
@@ -230,7 +257,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"username\":",
    "category": "tech",
-   "profileUrl": "https://bugcrowd.com/h/{u}"
+   "profileUrl": "https://bugcrowd.com/h/{u}",
+   "known": "BlackMist"
   },
   {
    "name": "Bunpro",
@@ -238,7 +266,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "username",
-   "category": "social"
+   "category": "social",
+   "known": "blacktide"
   },
   {
    "name": "BuzzFeed",
@@ -246,7 +275,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": " on BuzzFeed</title><meta",
-   "category": "social"
+   "category": "social",
+   "known": "janelytvynenko"
   },
   {
    "name": "cafecito",
@@ -254,7 +284,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": " | Cafecito</title>",
-   "category": "misc"
+   "category": "misc",
+   "known": "braftty"
   },
   {
    "name": "Calendy",
@@ -263,7 +294,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "misc",
-   "profileUrl": "https://calendly.com/{u}"
+   "profileUrl": "https://calendly.com/{u}",
+   "known": "honey"
   },
   {
    "name": "Cameo",
@@ -272,7 +304,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"_id\":",
    "category": "shopping",
-   "profileUrl": "https://www.cameo.com/{u}"
+   "profileUrl": "https://www.cameo.com/{u}",
+   "known": "michael_owen10"
   },
   {
    "name": "Carbonmade",
@@ -280,7 +313,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<meta name=\"description\" content=\"",
-   "category": "business"
+   "category": "business",
+   "known": "danreeves"
   },
   {
    "name": "Career.habr",
@@ -288,7 +322,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "— Хабр Карьера</title>",
-   "category": "business"
+   "category": "business",
+   "known": "sergey-kobets3"
   },
   {
    "name": "carrd.co",
@@ -296,7 +331,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "( Made with Carrd )",
-   "category": "business"
+   "category": "business",
+   "known": "liam"
   },
   {
    "name": "cda.pl",
@@ -304,7 +340,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Foldery",
-   "category": "video"
+   "category": "video",
+   "known": "test2"
   },
   {
    "name": "Cent",
@@ -313,7 +350,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "social",
-   "profileUrl": "https://beta.cent.co/{u}/"
+   "profileUrl": "https://beta.cent.co/{u}/",
+   "known": "alex"
   },
   {
    "name": "cfx.re",
@@ -322,7 +360,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "created_at",
    "category": "gaming",
-   "profileUrl": "https://forum.cfx.re/u/{u}/summary"
+   "profileUrl": "https://forum.cfx.re/u/{u}/summary",
+   "known": "masiball"
   },
   {
    "name": "Chamsko",
@@ -330,7 +369,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "W serwisie od",
-   "category": "images"
+   "category": "images",
+   "known": "test"
   },
   {
    "name": "CHEEZburger",
@@ -338,7 +378,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<title>Recent Posts from",
-   "category": "news"
+   "category": "news",
+   "known": "BarMorHazut"
   },
   {
    "name": "Chocolatey",
@@ -346,7 +387,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "id =\"bioSection\"",
-   "category": "tech"
+   "category": "tech",
+   "known": "daronmcintosh"
   },
   {
    "name": "Choko.Link",
@@ -354,7 +396,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "--title-font-family: Roboto;",
-   "category": "social"
+   "category": "social",
+   "known": "ForgedSteelTools"
   },
   {
    "name": "Chomikuj.pl",
@@ -362,7 +405,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Foldery",
-   "category": "misc"
+   "category": "misc",
+   "known": "test"
   },
   {
    "name": "Clubhouse",
@@ -370,7 +414,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"user\":",
-   "category": "social"
+   "category": "social",
+   "known": "kirbyplessas"
   },
   {
    "name": "cnet",
@@ -378,7 +423,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"author-header__stat-label\"",
-   "category": "news"
+   "category": "news",
+   "known": "mlong"
   },
   {
    "name": "Coda",
@@ -386,7 +432,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "- Coda Profile</title>",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "huizer"
   },
   {
    "name": "Codecademy",
@@ -394,7 +441,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"type\":\"User\"",
-   "category": "coding"
+   "category": "coding",
+   "known": "ocean.war"
   },
   {
    "name": "CodeChef",
@@ -402,7 +450,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"user-profile-container\"",
-   "category": "coding"
+   "category": "coding",
+   "known": "maroonrk"
   },
   {
    "name": "codementor",
@@ -410,7 +459,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "ABOUT ME",
-   "category": "coding"
+   "category": "coding",
+   "known": "e4c5"
   },
   {
    "name": "Coderwall",
@@ -418,7 +468,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "s profile |",
-   "category": "coding"
+   "category": "coding",
+   "known": "john"
   },
   {
    "name": "Codewars",
@@ -427,7 +478,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "coding",
-   "profileUrl": "https://www.codewars.com/users/{u}"
+   "profileUrl": "https://www.codewars.com/users/{u}",
+   "known": "john"
   },
   {
    "name": "Commudle",
@@ -436,7 +488,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"status\":200",
    "category": "tech",
-   "profileUrl": "https://www.commudle.com/users/{u}"
+   "profileUrl": "https://www.commudle.com/users/{u}",
+   "known": "akaashtripathi"
   },
   {
    "name": "Coub",
@@ -445,7 +498,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"user_id\":",
    "category": "social",
-   "profileUrl": "https://coub.com/{u}/"
+   "profileUrl": "https://coub.com/{u}/",
+   "known": "djantidog"
   },
   {
    "name": "crevado",
@@ -453,7 +507,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Portfolio",
-   "category": "images"
+   "category": "images",
+   "known": "john"
   },
   {
    "name": "Cropty",
@@ -462,7 +517,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"name\":",
    "category": "finance",
-   "profileUrl": "https://www.cropty.io/@{u}"
+   "profileUrl": "https://www.cropty.io/@{u}",
+   "known": "mailmal"
   },
   {
    "name": "Daily Kos",
@@ -470,7 +526,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"@type\":\"ProfilePage\"",
-   "category": "news"
+   "category": "news",
+   "known": "Hunter"
   },
   {
    "name": "Dailymotion",
@@ -479,7 +536,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "video",
-   "profileUrl": "https://www.dailymotion.com/user/{u}"
+   "profileUrl": "https://www.dailymotion.com/user/{u}",
+   "known": "chinesedramastudio"
   },
   {
    "name": "dateinasia",
@@ -487,7 +545,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "About me",
-   "category": "dating"
+   "category": "dating",
+   "known": "shime"
   },
   {
    "name": "Dating.ru",
@@ -495,7 +554,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "| dating.ru",
-   "category": "dating"
+   "category": "dating",
+   "known": "john"
   },
   {
    "name": "Demotywatory",
@@ -503,7 +563,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Z nami od:",
-   "category": "images"
+   "category": "images",
+   "known": "test"
   },
   {
    "name": "Designspriation",
@@ -511,7 +572,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "has discovered on Designspiration",
-   "category": "art"
+   "category": "art",
+   "known": "sam"
   },
   {
    "name": "destream",
@@ -520,7 +582,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"userName\":",
    "category": "finance",
-   "profileUrl": "https://destream.net/live/{u}"
+   "profileUrl": "https://destream.net/live/{u}",
+   "known": "skromnuy_fifa"
   },
   {
    "name": "Destructoid",
@@ -528,7 +591,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Follow",
-   "category": "social"
+   "category": "social",
+   "known": "john"
   },
   {
    "name": "DeviantArt",
@@ -536,7 +600,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": " on DeviantArt</title>",
-   "category": "images"
+   "category": "images",
+   "known": "rattybike"
   },
   {
    "name": "devRant",
@@ -548,7 +613,8 @@
    "profileUrl": "https://devrant.com/users/{u}",
    "absentCodes": [
     400
-   ]
+   ],
+   "known": "dfox"
   },
   {
    "name": "Diablo",
@@ -556,7 +622,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Viewing profile - ",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "Mike01"
   },
   {
    "name": "DIBIZ",
@@ -564,7 +631,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Add to contacts</span>",
-   "category": "business"
+   "category": "business",
+   "known": "fractalhue"
   },
   {
    "name": "diigo",
@@ -573,7 +641,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "regist_at",
    "category": "images",
-   "profileUrl": "https://www.diigo.com/profile/{u}"
+   "profileUrl": "https://www.diigo.com/profile/{u}",
+   "known": "whoami"
   },
   {
    "name": "Discogs",
@@ -582,7 +651,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "music",
-   "profileUrl": "https://www.discogs.com/user/{u}"
+   "profileUrl": "https://www.discogs.com/user/{u}",
+   "known": "damiano84"
   },
   {
    "name": "Discord (Invite)",
@@ -591,7 +661,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"channel\":",
    "category": "social",
-   "profileUrl": "https://discord.com/invite/{u}"
+   "profileUrl": "https://discord.com/invite/{u}",
+   "known": "test"
   },
   {
    "name": "Discourse",
@@ -600,7 +671,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "topics",
    "category": "misc",
-   "profileUrl": "https://meta.discourse.org/u/{u}"
+   "profileUrl": "https://meta.discourse.org/u/{u}",
+   "known": "ndalliard"
   },
   {
    "name": "discuss.elastic.co",
@@ -608,7 +680,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<title>  Profile",
-   "category": "tech"
+   "category": "tech",
+   "known": "whoami"
   },
   {
    "name": "Disqus",
@@ -620,7 +693,8 @@
    "profileUrl": "https://disqus.com/by/{u}/",
    "absentCodes": [
     400
-   ]
+   ],
+   "known": "Aristotelian1"
   },
   {
    "name": "Dojoverse",
@@ -628,7 +702,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Joined",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "eric"
   },
   {
    "name": "donate.stream",
@@ -637,7 +712,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"response\":",
    "category": "finance",
-   "profileUrl": "https://donate.stream/{u}"
+   "profileUrl": "https://donate.stream/{u}",
+   "known": "requiemzxc_komaru"
   },
   {
    "name": "Donatello",
@@ -645,7 +721,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "UserPage.init",
-   "category": "finance"
+   "category": "finance",
+   "known": "Selezenka"
   },
   {
    "name": "Donatik",
@@ -656,7 +733,8 @@
    "category": "finance",
    "absentCodes": [
     500
-   ]
+   ],
+   "known": "gypsyjitsu"
   },
   {
    "name": "Donation Alerts",
@@ -665,7 +743,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"data\":",
    "category": "finance",
-   "profileUrl": "https://www.donationalerts.com/r/{u}"
+   "profileUrl": "https://www.donationalerts.com/r/{u}",
+   "known": "gorou"
   },
   {
    "name": "DonationPay",
@@ -673,7 +752,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "id=\"dp-payment-form\"",
-   "category": "finance"
+   "category": "finance",
+   "known": "rareimpact"
   },
   {
    "name": "Donatty",
@@ -682,7 +762,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"response\":",
    "category": "business",
-   "profileUrl": "https://donatty.com/{u}"
+   "profileUrl": "https://donatty.com/{u}",
+   "known": "takaisekai"
   },
   {
    "name": "Dota2.ru",
@@ -690,7 +771,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"forum-section__item forum-section__item--first\"",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "narancha"
   },
   {
    "name": "DOTAFire",
@@ -698,7 +780,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "href=\"/profile/",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "DotaCoachApp"
   },
   {
    "name": "DOU",
@@ -706,7 +789,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"page-profile\"",
-   "category": "social"
+   "category": "social",
+   "known": "doucommunity"
   },
   {
    "name": "Duolingo",
@@ -715,7 +799,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "joinedClassroomIds",
    "category": "hobby",
-   "profileUrl": "https://www.duolingo.com/profile/{u}"
+   "profileUrl": "https://www.duolingo.com/profile/{u}",
+   "known": "sdfsdf"
   },
   {
    "name": "easyen",
@@ -723,7 +808,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "День рождения",
-   "category": "social"
+   "category": "social",
+   "known": "wd"
   },
   {
    "name": "ebay_stores",
@@ -734,7 +820,8 @@
    "category": "shopping",
    "absentCodes": [
     410
-   ]
+   ],
+   "known": "tactical"
   },
   {
    "name": "Etoro",
@@ -743,7 +830,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"gcid\":",
    "category": "finance",
-   "profileUrl": "https://www.etoro.com/people/{u}"
+   "profileUrl": "https://www.etoro.com/people/{u}",
+   "known": "jeepsontrading"
   },
   {
    "name": "Expressional.social (Mastodon Instance)",
@@ -752,7 +840,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://expressional.social/@{u}"
+   "profileUrl": "https://expressional.social/@{u}",
+   "known": "jippi"
   },
   {
    "name": "Fabswingers",
@@ -760,7 +849,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "View Profile",
-   "category": "dating"
+   "category": "dating",
+   "known": "justusboth2013"
   },
   {
    "name": "FACEIT",
@@ -769,7 +859,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"result\":\"OK\"",
    "category": "gaming",
-   "profileUrl": "https://www.faceit.com/en/players/{u}"
+   "profileUrl": "https://www.faceit.com/en/players/{u}",
+   "known": "w0nderful"
   },
   {
    "name": "Figma",
@@ -778,7 +869,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"status\":200",
    "category": "tech",
-   "profileUrl": "https://www.figma.com/@{u}"
+   "profileUrl": "https://www.figma.com/@{u}",
+   "known": "bob"
   },
   {
    "name": "Filmweb",
@@ -787,7 +879,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"userId\":",
    "category": "hobby",
-   "profileUrl": "https://www.filmweb.pl/user/{u}"
+   "profileUrl": "https://www.filmweb.pl/user/{u}",
+   "known": "MajkelBlack"
   },
   {
    "name": "fine_art_america",
@@ -795,7 +888,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Shop for artwork by",
-   "category": "shopping"
+   "category": "shopping",
+   "known": "scott-norris"
   },
   {
    "name": "FL.ru",
@@ -803,7 +897,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"page-profile\"",
-   "category": "social"
+   "category": "social",
+   "known": "makediffdev"
   },
   {
    "name": "Flickr",
@@ -811,7 +906,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "| Flickr",
-   "category": "images"
+   "category": "images",
+   "known": "glaciernps"
   },
   {
    "name": "Flightradar24",
@@ -819,7 +915,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"profile-card\" data-profile-user=",
-   "category": "misc"
+   "category": "misc",
+   "known": "finn"
   },
   {
    "name": "Flipboard",
@@ -827,7 +924,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": ") on Flipboard",
-   "category": "tech"
+   "category": "tech",
+   "known": "cosmopolitan"
   },
   {
    "name": "flowcode",
@@ -835,7 +933,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"page\":{",
-   "category": "social"
+   "category": "social",
+   "known": "irina"
   },
   {
    "name": "Fosstodon.org (Mastodon Instance)",
@@ -844,7 +943,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://fosstodon.org/@{u}"
+   "profileUrl": "https://fosstodon.org/@{u}",
+   "known": "linux"
   },
   {
    "name": "fotka",
@@ -853,7 +953,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"profil\":",
    "category": "social",
-   "profileUrl": "https://fotka.com/profil/{u}"
+   "profileUrl": "https://fotka.com/profil/{u}",
+   "known": "Asiaaa17"
   },
   {
    "name": "Fotolog Archived Profile",
@@ -862,7 +963,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"archived_snapshots\": {\"closest\"",
    "category": "archived",
-   "profileUrl": "https://web.archive.org/web/2/fotolog.com/{u}"
+   "profileUrl": "https://web.archive.org/web/2/fotolog.com/{u}",
+   "known": "angelito"
   },
   {
    "name": "freeCodeCamp",
@@ -871,7 +973,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"user\":",
    "category": "coding",
-   "profileUrl": "https://www.freecodecamp.org/{u}"
+   "profileUrl": "https://www.freecodecamp.org/{u}",
+   "known": "zaira"
   },
   {
    "name": "Freelance.ua",
@@ -879,7 +982,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "p-profile-avatar",
-   "category": "social"
+   "category": "social",
+   "known": "tkachenkoalex"
   },
   {
    "name": "Freelancer",
@@ -888,7 +992,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"users\":{\"",
    "category": "business",
-   "profileUrl": "https://www.freelancer.com/u/{u}"
+   "profileUrl": "https://www.freelancer.com/u/{u}",
+   "known": "desiaunty"
   },
   {
    "name": "Game Jolt",
@@ -897,7 +1002,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "created_on",
    "category": "gaming",
-   "profileUrl": "https://gamejolt.com/@{u}"
+   "profileUrl": "https://gamejolt.com/@{u}",
+   "known": "nilllzz"
   },
   {
    "name": "Garmin Connect",
@@ -905,7 +1011,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "window.VIEWER_USERPREFERENCES = {",
-   "category": "health"
+   "category": "health",
+   "known": "tommy"
   },
   {
    "name": "GDBrowser",
@@ -917,7 +1024,8 @@
    "profileUrl": "https://gdbrowser.com/u/{u}",
    "absentCodes": [
     500
-   ]
+   ],
+   "known": "SorkoPiko"
   },
   {
    "name": "GeeksForGeeks",
@@ -929,7 +1037,8 @@
    "profileUrl": "https://www.geeksforgeeks.org/profile/{u}/",
    "absentCodes": [
     400
-   ]
+   ],
+   "known": "nath_789"
   },
   {
    "name": "Geocaching",
@@ -937,7 +1046,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"hax-profile\"",
-   "category": "social"
+   "category": "social",
+   "known": "moun10bike"
   },
   {
    "name": "Gettr",
@@ -949,7 +1059,8 @@
    "profileUrl": "https://gettr.com/user/{u}",
    "absentCodes": [
     400
-   ]
+   ],
+   "known": "gettr"
   },
   {
    "name": "Giphy (Channel)",
@@ -957,7 +1068,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\\\"user_id\\\"",
-   "category": "images"
+   "category": "images",
+   "known": "teddy_99"
   },
   {
    "name": "Gitea",
@@ -966,7 +1078,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "coding",
-   "profileUrl": "https://gitea.com/{u}"
+   "profileUrl": "https://gitea.com/{u}",
+   "known": "xin"
   },
   {
    "name": "GNOME (Shell Extensions)",
@@ -974,7 +1087,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"user-details\"",
-   "category": "coding"
+   "category": "coding",
+   "known": "johnny"
   },
   {
    "name": "Goodgame_Russia",
@@ -985,7 +1099,8 @@
    "category": "gaming",
    "absentCodes": [
     400
-   ]
+   ],
+   "known": "ejysarmat"
   },
   {
    "name": "gpodder.net",
@@ -993,7 +1108,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "mdash; gpodder.net",
-   "category": "music"
+   "category": "music",
+   "known": "blue"
   },
   {
    "name": "Graphics.social (Mastodon Instance)",
@@ -1002,7 +1118,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://graphics.social/@{u}"
+   "profileUrl": "https://graphics.social/@{u}",
+   "known": "brian"
   },
   {
    "name": "Greasy Fork",
@@ -1010,7 +1127,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"user-list\"",
-   "category": "tech"
+   "category": "tech",
+   "known": "TScofield"
   },
   {
    "name": "gumroad",
@@ -1018,7 +1136,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "s profile picture",
-   "category": "shopping"
+   "category": "shopping",
+   "known": "ellietalksmoney"
   },
   {
    "name": "Habbo.com",
@@ -1027,7 +1146,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId\":",
    "category": "gaming",
-   "profileUrl": "https://www.habbo.com/profile/{u}"
+   "profileUrl": "https://www.habbo.com/profile/{u}",
+   "known": "john"
   },
   {
    "name": "Habbo.com.br",
@@ -1036,7 +1156,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId\":",
    "category": "gaming",
-   "profileUrl": "https://www.habbo.com.br/profile/{u}"
+   "profileUrl": "https://www.habbo.com.br/profile/{u}",
+   "known": "jeaniucas"
   },
   {
    "name": "Habbo.com.tr",
@@ -1045,7 +1166,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId\":",
    "category": "gaming",
-   "profileUrl": "https://www.habbo.com.tr/profile/{u}"
+   "profileUrl": "https://www.habbo.com.tr/profile/{u}",
+   "known": "fatma9180"
   },
   {
    "name": "Habbo.de",
@@ -1054,7 +1176,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId\":",
    "category": "gaming",
-   "profileUrl": "https://www.habbo.de/profile/{u}"
+   "profileUrl": "https://www.habbo.de/profile/{u}",
+   "known": "klaus"
   },
   {
    "name": "Habbo.es",
@@ -1063,7 +1186,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId\":",
    "category": "gaming",
-   "profileUrl": "https://www.habbo.es/profile/{u}"
+   "profileUrl": "https://www.habbo.es/profile/{u}",
+   "known": "juan"
   },
   {
    "name": "Habbo.fi",
@@ -1072,7 +1196,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId\":",
    "category": "gaming",
-   "profileUrl": "https://www.habbo.fi/profile/{u}"
+   "profileUrl": "https://www.habbo.fi/profile/{u}",
+   "known": "cucumberz"
   },
   {
    "name": "Habbo.fr",
@@ -1081,7 +1206,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId\":",
    "category": "gaming",
-   "profileUrl": "https://www.habbo.fr/profile/{u}"
+   "profileUrl": "https://www.habbo.fr/profile/{u}",
+   "known": "2006"
   },
   {
    "name": "Habbo.it",
@@ -1090,7 +1216,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId\":",
    "category": "gaming",
-   "profileUrl": "https://www.habbo.it/profile/{u}"
+   "profileUrl": "https://www.habbo.it/profile/{u}",
+   "known": "samsebek"
   },
   {
    "name": "Habbo.nl",
@@ -1099,7 +1226,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId\":",
    "category": "gaming",
-   "profileUrl": "https://www.habbo.nl/profile/{u}"
+   "profileUrl": "https://www.habbo.nl/profile/{u}",
+   "known": "XOTWOD.xx"
   },
   {
    "name": "Habr (Q&A)",
@@ -1107,7 +1235,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"page-header__info\"",
-   "category": "coding"
+   "category": "coding",
+   "known": "Masthead"
   },
   {
    "name": "Habr (User)",
@@ -1115,7 +1244,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "tm-page tm-user",
-   "category": "social"
+   "category": "social",
+   "known": "Bo0oM"
   },
   {
    "name": "Habtium",
@@ -1123,7 +1253,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<div class=\"profile-info",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "diegjeremy"
   },
   {
    "name": "Hackaday.io",
@@ -1131,7 +1262,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"following-container \"",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "john"
   },
   {
    "name": "HackAdvisor",
@@ -1140,7 +1272,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"username\":",
    "category": "tech",
-   "profileUrl": "https://hackadvisor.io/hacker/{u}"
+   "profileUrl": "https://hackadvisor.io/hacker/{u}",
+   "known": "WorstWurst"
   },
   {
    "name": "hackerearth",
@@ -1148,7 +1281,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "| Developer Profile on HackerEarth",
-   "category": "coding"
+   "category": "coding",
+   "known": "peter"
   },
   {
    "name": "Hackster",
@@ -1156,7 +1290,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "data-hypernova-key=\"UserProfile\"",
-   "category": "coding"
+   "category": "coding",
+   "known": "hendra"
   },
   {
    "name": "hamaha",
@@ -1164,7 +1299,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "id=\"profile\"",
-   "category": "finance"
+   "category": "finance",
+   "known": "oleg"
   },
   {
    "name": "Hcommons.social (Mastodon Instance)",
@@ -1173,7 +1309,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://hcommons.social/@{u}"
+   "profileUrl": "https://hcommons.social/@{u}",
+   "known": "hello"
   },
   {
    "name": "HiHello",
@@ -1181,7 +1318,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"mainEntity\": {",
-   "category": "business"
+   "category": "business",
+   "known": "pascal-theriault"
   },
   {
    "name": "Home Design 3D",
@@ -1189,7 +1327,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "id=\"user_content\"",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "carlos01"
   },
   {
    "name": "Hometech.social (Mastodon Instance)",
@@ -1198,7 +1337,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://hometech.social/@{u}"
+   "profileUrl": "https://hometech.social/@{u}",
+   "known": "one4ll"
   },
   {
    "name": "Hostux.social (Mastodon Instance)",
@@ -1207,7 +1347,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://hostux.social/@{u}"
+   "profileUrl": "https://hostux.social/@{u}",
+   "known": "alarig"
   },
   {
    "name": "Houzz",
@@ -1215,7 +1356,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Followers",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "liam"
   },
   {
    "name": "HubPages",
@@ -1223,7 +1365,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "name\">Followers",
-   "category": "blog"
+   "category": "blog",
+   "known": "greeneyes1607"
   },
   {
    "name": "HudsonRock",
@@ -1231,7 +1374,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "This username is associated with a computer that was infected by an info-stealer",
-   "category": "tech"
+   "category": "tech",
+   "known": "testadmin"
   },
   {
    "name": "icq-chat",
@@ -1239,7 +1383,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"memberHeader-mainContent",
-   "category": "social"
+   "category": "social",
+   "known": "brookenora.54"
   },
   {
    "name": "IFTTT",
@@ -1247,7 +1392,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Joined",
-   "category": "misc"
+   "category": "misc",
+   "known": "nr9992"
   },
   {
    "name": "ILGM Growers Forum",
@@ -1256,7 +1402,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "user_summary\":{",
    "category": "social",
-   "profileUrl": "https://ilgmforum.com/u/{u}/summary"
+   "profileUrl": "https://ilgmforum.com/u/{u}/summary",
+   "known": "spc95b00"
   },
   {
    "name": "ImageShack",
@@ -1264,7 +1411,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "s Images</title>",
-   "category": "images"
+   "category": "images",
+   "known": "test"
   },
   {
    "name": "iMGSRC.RU",
@@ -1272,7 +1420,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Присоединился",
-   "category": "images"
+   "category": "images",
+   "known": "natalisn"
   },
   {
    "name": "Imgur",
@@ -1281,7 +1430,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"username\":",
    "category": "images",
-   "profileUrl": "https://imgur.com/user/{u}/about"
+   "profileUrl": "https://imgur.com/user/{u}/about",
+   "known": "OliverClothesoff70"
   },
   {
    "name": "inaturalist",
@@ -1290,7 +1440,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"results\":[{",
    "category": "hobby",
-   "profileUrl": "https://inaturalist.nz/people/{u}"
+   "profileUrl": "https://inaturalist.nz/people/{u}",
+   "known": "greg"
   },
   {
    "name": "InsaneJournal",
@@ -1298,7 +1449,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "User:",
-   "category": "social"
+   "category": "social",
+   "known": "test"
   },
   {
    "name": "Instagram_archives",
@@ -1306,7 +1458,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"archived_snapshots\": {\"closest\"",
-   "category": "social"
+   "category": "social",
+   "known": "zuck"
   },
   {
    "name": "Instructables",
@@ -1315,7 +1468,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"exists\": true",
    "category": "hobby",
-   "profileUrl": "https://www.instructables.com/member/{u}/"
+   "profileUrl": "https://www.instructables.com/member/{u}/",
+   "known": "davidandora"
   },
   {
    "name": "Internet Archive User Contribution Search",
@@ -1324,7 +1478,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "backup_location",
    "category": "misc",
-   "profileUrl": "https://archive.org/search.php?query=creator:{u}"
+   "profileUrl": "https://archive.org/search.php?query=creator:{u}",
+   "known": "brewster_kahle"
   },
   {
    "name": "Internet Archive Username Mentions",
@@ -1333,7 +1488,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "backup_location",
    "category": "misc",
-   "profileUrl": "https://archive.org/search.php?query={u}"
+   "profileUrl": "https://archive.org/search.php?query={u}",
+   "known": "anazgnos"
   },
   {
    "name": "Intigriti",
@@ -1342,7 +1498,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"userName\":",
    "category": "tech",
-   "profileUrl": "https://app.intigriti.com/profile/{u}"
+   "profileUrl": "https://app.intigriti.com/profile/{u}",
+   "known": "vampire01"
   },
   {
    "name": "itch.io",
@@ -1350,7 +1507,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"user_data\"",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "obliviist"
   },
   {
    "name": "JBZD",
@@ -1358,7 +1516,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Dzidy użytkownika",
-   "category": "images"
+   "category": "images",
+   "known": "test"
   },
   {
    "name": "jeja.pl",
@@ -1366,7 +1525,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Profil użytkownika",
-   "category": "misc"
+   "category": "misc",
+   "known": "kowal"
   },
   {
    "name": "Jeuxvideo",
@@ -1374,7 +1534,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "- jeuxvideo.com",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "jane"
   },
   {
    "name": "Kick",
@@ -1383,7 +1544,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\"",
    "category": "social",
-   "profileUrl": "https://kick.com/{u}"
+   "profileUrl": "https://kick.com/{u}",
+   "known": "deepak"
   },
   {
    "name": "kik",
@@ -1391,7 +1553,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "/thumb.jpg\"/>",
-   "category": "social"
+   "category": "social",
+   "known": "adam"
   },
   {
    "name": "KnowYourMeme",
@@ -1402,7 +1565,8 @@
    "category": "social",
    "absentCodes": [
     400
-   ]
+   ],
+   "known": "ayumukasuga"
   },
   {
    "name": "Ko-Fi",
@@ -1410,7 +1574,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "id=\"profile-header\"",
-   "category": "social"
+   "category": "social",
+   "known": "frank"
   },
   {
    "name": "komi",
@@ -1419,7 +1584,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "accountStatus\":\"active",
    "category": "social",
-   "profileUrl": "https://{u}.komi.io"
+   "profileUrl": "https://{u}.komi.io",
+   "known": "abbysage"
   },
   {
    "name": "Kongregate",
@@ -1427,7 +1593,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Member Since",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "test"
   },
   {
    "name": "kwejk.pl",
@@ -1435,7 +1602,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Kwejki użytkownika",
-   "category": "images"
+   "category": "images",
+   "known": "test"
   },
   {
    "name": "LeakIX",
@@ -1446,7 +1614,8 @@
    "category": "tech",
    "absentCodes": [
     500
-   ]
+   ],
+   "known": "Chocapikk"
   },
   {
    "name": "Libretooth.gr (Mastodon Instance)",
@@ -1455,7 +1624,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://libretooth.gr/@{u}"
+   "profileUrl": "https://libretooth.gr/@{u}",
+   "known": "infolibre"
   },
   {
    "name": "linux.org.ru",
@@ -1463,15 +1633,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Дата регистрации",
-   "category": "tech"
-  },
-  {
-   "name": "Livejournal",
-   "url": "https://{u}.livejournal.com",
-   "method": "message",
-   "confidence": "MEDIUM",
-   "foundMsg": "<link rel=\"canonical\" href=\"",
-   "category": "blog"
+   "category": "tech",
+   "known": "john"
   },
   {
    "name": "lobste.rs",
@@ -1479,7 +1642,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Joined",
-   "category": "tech"
+   "category": "tech",
+   "known": "john"
   },
   {
    "name": "Malpedia Actors",
@@ -1487,7 +1651,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "href=\"/actors\"",
-   "category": "tech"
+   "category": "tech",
+   "known": "USDoD"
   },
   {
    "name": "Mapstodon.space (Mastodon Instance)",
@@ -1496,7 +1661,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://mapstodon.space/@{u}"
+   "profileUrl": "https://mapstodon.space/@{u}",
+   "known": "Autumnhussar"
   },
   {
    "name": "Martech",
@@ -1504,7 +1670,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "twitter:site",
-   "category": "business"
+   "category": "business",
+   "known": "mani-karthik"
   },
   {
    "name": "masto.ai",
@@ -1513,7 +1680,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "social",
-   "profileUrl": "https://masto.ai/@{u}"
+   "profileUrl": "https://masto.ai/@{u}",
+   "known": "rbreich"
   },
   {
    "name": "Masto.nyc (Mastodon Instance)",
@@ -1522,7 +1690,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://masto.nyc/@{u}"
+   "profileUrl": "https://masto.nyc/@{u}",
+   "known": "seano"
   },
   {
    "name": "Mastodon-101010.pl",
@@ -1530,7 +1699,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "@101010.pl",
-   "category": "social"
+   "category": "social",
+   "known": "szekspir"
   },
   {
    "name": "Mastodon-C.IM",
@@ -1538,7 +1708,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "@c.im) - C.IM</title>",
-   "category": "social"
+   "category": "social",
+   "known": "admin"
   },
   {
    "name": "Mastodon-Defcon",
@@ -1546,7 +1717,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "- DEF CON Social</title>",
-   "category": "social"
+   "category": "social",
+   "known": "defcon"
   },
   {
    "name": "Mastodon-rigcz.club",
@@ -1554,7 +1726,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "@rigcz.club",
-   "category": "social"
+   "category": "social",
+   "known": "blazej"
   },
   {
    "name": "Mastodon-Toot.Community",
@@ -1562,7 +1735,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "@toot.community) - toot.community</title>",
-   "category": "social"
+   "category": "social",
+   "known": "Johnny"
   },
   {
    "name": "MAX",
@@ -1570,7 +1744,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "в мессенджере MAX</title>",
-   "category": "social"
+   "category": "social",
+   "known": "er_molnia"
   },
   {
    "name": "Meta-Wiki (Wikimedia)",
@@ -1578,7 +1753,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "id='mw-centralauth-info'",
-   "category": "news"
+   "category": "news",
+   "known": "sector051"
   },
   {
    "name": "Microsoft Learn",
@@ -1587,7 +1763,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"userId\":",
    "category": "tech",
-   "profileUrl": "https://learn.microsoft.com/en-us/users/{u}/"
+   "profileUrl": "https://learn.microsoft.com/en-us/users/{u}/",
+   "known": "nityan"
   },
   {
    "name": "Minds",
@@ -1596,7 +1773,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"valid\":false",
    "category": "social",
-   "profileUrl": "https://www.minds.com/{u}/"
+   "profileUrl": "https://www.minds.com/{u}/",
+   "known": "gigan996"
   },
   {
    "name": "Minecraft List",
@@ -1605,7 +1783,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"found\":true",
    "category": "gaming",
-   "profileUrl": "https://minecraftlist.com/players/{u}"
+   "profileUrl": "https://minecraftlist.com/players/{u}",
+   "known": "fear837"
   },
   {
    "name": "mintme",
@@ -1613,7 +1792,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "token | mintMe",
-   "category": "finance"
+   "category": "finance",
+   "known": "john"
   },
   {
    "name": "Mixcloud",
@@ -1622,7 +1802,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"username\":",
    "category": "music",
-   "profileUrl": "https://www.mixcloud.com/{u}/"
+   "profileUrl": "https://www.mixcloud.com/{u}/",
+   "known": "DjHunnyBee"
   },
   {
    "name": "Mixlr",
@@ -1631,7 +1812,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "music",
-   "profileUrl": "https://mixlr.com/{u}/"
+   "profileUrl": "https://mixlr.com/{u}/",
+   "known": "test"
   },
   {
    "name": "MobileGTA.net",
@@ -1639,7 +1821,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "userpage_user",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "daniel"
   },
   {
    "name": "Monkeytype",
@@ -1648,7 +1831,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"message\":\"Profile retrieved\"",
    "category": "coding",
-   "profileUrl": "https://monkeytype.com/profile/{u}"
+   "profileUrl": "https://monkeytype.com/profile/{u}",
+   "known": "rocket"
   },
   {
    "name": "Moxfield",
@@ -1657,7 +1841,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"userName\":",
    "category": "gaming",
-   "profileUrl": "https://www.moxfield.com/users/{u}"
+   "profileUrl": "https://www.moxfield.com/users/{u}",
+   "known": "gamer"
   },
   {
    "name": "mssg.me",
@@ -1665,7 +1850,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "property=\"og:title\"",
-   "category": "social"
+   "category": "social",
+   "known": "drrry"
   },
   {
    "name": "Muck Rack",
@@ -1673,7 +1859,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "on Muck Rack",
-   "category": "news"
+   "category": "news",
+   "known": "john"
   },
   {
    "name": "my_instants",
@@ -1681,7 +1868,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": " | Myinstants</title>",
-   "category": "music"
+   "category": "music",
+   "known": "daniel01"
   },
   {
    "name": "MyAnimeList",
@@ -1689,7 +1877,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Profile - MyAnimeList.net",
-   "category": "social"
+   "category": "social",
+   "known": "test"
   },
   {
    "name": "MyLot",
@@ -1697,7 +1886,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "on myLot</title>",
-   "category": "social"
+   "category": "social",
+   "known": "Tampa_girl7"
   },
   {
    "name": "MYM",
@@ -1705,7 +1895,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"page profile\"",
-   "category": "social"
+   "category": "social",
+   "known": "Unmissabl"
   },
   {
    "name": "MyNickname",
@@ -1713,7 +1904,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "nickname found:</h2>",
-   "category": "misc"
+   "category": "misc",
+   "known": "tw1st"
   },
   {
    "name": "MySpace",
@@ -1721,7 +1913,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<!-- Profile -->",
-   "category": "social"
+   "category": "social",
+   "known": "alice"
   },
   {
    "name": "naija_planet",
@@ -1729,7 +1922,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "dating Profile, ",
-   "category": "dating"
+   "category": "dating",
+   "known": "daniel01"
   },
   {
    "name": "NaturalNews",
@@ -1737,7 +1931,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"Headline\"",
-   "category": "political"
+   "category": "political",
+   "known": "jdheyes"
   },
   {
    "name": "Neocities",
@@ -1745,7 +1940,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "noindex, follow",
-   "category": "social"
+   "category": "social",
+   "known": "fauux"
   },
   {
    "name": "Nightbot",
@@ -1754,7 +1950,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"status\":200",
    "category": "social",
-   "profileUrl": "https://nightbot.tv/t/{u}/commands"
+   "profileUrl": "https://nightbot.tv/t/{u}/commands",
+   "known": "saevid"
   },
   {
    "name": "Nih Buat Jajan",
@@ -1763,7 +1960,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"name\":",
    "category": "social",
-   "profileUrl": "https://www.nihbuatjajan.com/{u}"
+   "profileUrl": "https://www.nihbuatjajan.com/{u}",
+   "known": "banyusadewa"
   },
   {
    "name": "Nitecrew (Mastodon Instance)",
@@ -1772,7 +1970,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://nitecrew.rip/@{u}"
+   "profileUrl": "https://nitecrew.rip/@{u}",
+   "known": "Myxx"
   },
   {
    "name": "Note",
@@ -1781,7 +1980,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"data\":{",
    "category": "social",
-   "profileUrl": "https://note.com/{u}"
+   "profileUrl": "https://note.com/{u}",
+   "known": "honey"
   },
   {
    "name": "oglaszamy24h.pl",
@@ -1789,7 +1989,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Profil użytkownika:",
-   "category": "shopping"
+   "category": "shopping",
+   "known": "kowal"
   },
   {
    "name": "ok.ru",
@@ -1797,7 +1998,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "| OK",
-   "category": "social"
+   "category": "social",
+   "known": "john"
   },
   {
    "name": "omg.lol",
@@ -1806,7 +2008,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"success\": true",
    "category": "social",
-   "profileUrl": "https://{u}.omg.lol"
+   "profileUrl": "https://{u}.omg.lol",
+   "known": "cwa"
   },
   {
    "name": "Opencollective",
@@ -1814,7 +2017,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "- Open Collective",
-   "category": "finance"
+   "category": "finance",
+   "known": "john"
   },
   {
    "name": "OpenStreetMap",
@@ -1822,7 +2026,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Mapper since:",
-   "category": "social"
+   "category": "social",
+   "known": "kemkim"
   },
   {
    "name": "OpenStreetMap Wiki",
@@ -1831,7 +2036,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"userid\":",
    "category": "social",
-   "profileUrl": "https://wiki.openstreetmap.org/wiki/User:{u}"
+   "profileUrl": "https://wiki.openstreetmap.org/wiki/User:{u}",
+   "known": "kemkim"
   },
   {
    "name": "Oper.ru",
@@ -1839,7 +2045,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Информация о пользователе",
-   "category": "tech"
+   "category": "tech",
+   "known": "Goblin"
   },
   {
    "name": "Origins.Habbo.com",
@@ -1847,7 +2054,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "john"
   },
   {
    "name": "Origins.Habbo.com.br",
@@ -1855,7 +2063,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "carlos"
   },
   {
    "name": "Origins.Habbo.es",
@@ -1863,7 +2072,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "uniqueId",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "carlos"
   },
   {
    "name": "Paragraph",
@@ -1872,7 +2082,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"user\":{",
    "category": "blog",
-   "profileUrl": "https://paragraph.com/@{u}"
+   "profileUrl": "https://paragraph.com/@{u}",
+   "known": "wibtal"
   },
   {
    "name": "PatientsLikeMe",
@@ -1880,7 +2091,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "s profile | PatientsLikeMe</title>",
-   "category": "health"
+   "category": "health",
+   "known": "thjuland"
   },
   {
    "name": "Patriots Win",
@@ -1889,7 +2101,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"users\":[{",
    "category": "political",
-   "profileUrl": "https://patriots.win/u/{u}/"
+   "profileUrl": "https://patriots.win/u/{u}/",
+   "known": "r3deleven"
   },
   {
    "name": "Patronite",
@@ -1897,7 +2110,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Zostań Patronem",
-   "category": "finance"
+   "category": "finance",
+   "known": "radio357"
   },
   {
    "name": "PayPal Business",
@@ -1906,7 +2120,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"payerId\":",
    "category": "finance",
-   "profileUrl": "https://www.paypal.com/biz/profile/{u}"
+   "profileUrl": "https://www.paypal.com/biz/profile/{u}",
+   "known": "chaminajjan"
   },
   {
    "name": "PayPal.Me",
@@ -1914,7 +2129,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"recipientSlugDetails\":",
-   "category": "finance"
+   "category": "finance",
+   "known": "ckl94"
   },
   {
    "name": "Peerlist",
@@ -1926,7 +2142,8 @@
    "profileUrl": "https://peerlist.io/{u}",
    "absentCodes": [
     500
-   ]
+   ],
+   "known": "taher_max_"
   },
   {
    "name": "Peing",
@@ -1934,7 +2151,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "data-route-user-id-main=''",
-   "category": "social"
+   "category": "social",
+   "known": "sumiyoshiryosai"
   },
   {
    "name": "Periscope",
@@ -1942,7 +2160,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<label>Followers",
-   "category": "video"
+   "category": "video",
+   "known": "john"
   },
   {
    "name": "Picsart",
@@ -1951,7 +2170,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"status\":\"success\"",
    "category": "art",
-   "profileUrl": "https://picsart.com/u/{u}"
+   "profileUrl": "https://picsart.com/u/{u}",
+   "known": "john"
   },
   {
    "name": "Pillowfort",
@@ -1960,7 +2180,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"posts\":",
    "category": "social",
-   "profileUrl": "https://www.pillowfort.social/{u}"
+   "profileUrl": "https://www.pillowfort.social/{u}",
+   "known": "MissMoonified"
   },
   {
    "name": "pixelfed.social",
@@ -1968,7 +2189,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "- Pixelfed</title>",
-   "category": "social"
+   "category": "social",
+   "known": "sarah"
   },
   {
    "name": "Planoly",
@@ -1976,7 +2198,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"creatorLink\":{",
-   "category": "misc"
+   "category": "misc",
+   "known": "divinemystique"
   },
   {
    "name": "Plink",
@@ -1984,7 +2207,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"user-page\"",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "CryptonianTV"
   },
   {
    "name": "Poe.com",
@@ -1992,7 +2216,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"__isNode\":\"PoeUser\"",
-   "category": "tech"
+   "category": "tech",
+   "known": "spdustin"
   },
   {
    "name": "pokemonshowdown",
@@ -2000,7 +2225,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Official ladder",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "blue"
   },
   {
    "name": "Poll Everywhere",
@@ -2009,7 +2235,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "name",
    "category": "tech",
-   "profileUrl": "https://pollev.com/{u}"
+   "profileUrl": "https://pollev.com/{u}",
+   "known": "josh"
   },
   {
    "name": "Poshmark",
@@ -2017,7 +2244,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": " is using Poshmark to sell items from their closet.",
-   "category": "shopping"
+   "category": "shopping",
+   "known": "alice"
   },
   {
    "name": "Poweredbygay.social (Mastodon Instance)",
@@ -2026,7 +2254,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://poweredbygay.social/@{u}"
+   "profileUrl": "https://poweredbygay.social/@{u}",
+   "known": "aggiepm"
   },
   {
    "name": "Pr0gramm",
@@ -2035,7 +2264,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"user\":",
    "category": "social",
-   "profileUrl": "https://pr0gramm.com/user/{u}"
+   "profileUrl": "https://pr0gramm.com/user/{u}",
+   "known": "kaizernero"
   },
   {
    "name": "Pravda.me",
@@ -2043,7 +2273,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Социальная сеть - Правда (by mastodon)</title>",
-   "category": "social"
+   "category": "social",
+   "known": "tass"
   },
   {
    "name": "Privacy Guides",
@@ -2052,7 +2283,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"user_badges\":",
    "category": "tech",
-   "profileUrl": "https://discuss.privacyguides.net/u/{u}/summary"
+   "profileUrl": "https://discuss.privacyguides.net/u/{u}/summary",
+   "known": "jonah"
   },
   {
    "name": "Pronouny",
@@ -2064,7 +2296,8 @@
    "profileUrl": "https://pronouny.xyz/users/{u}",
    "absentCodes": [
     400
-   ]
+   ],
+   "known": "donna"
   },
   {
    "name": "Prose",
@@ -2072,7 +2305,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "blog-title",
-   "category": "blog"
+   "category": "blog",
+   "known": "endeavorance"
   },
   {
    "name": "Rant.li",
@@ -2080,7 +2314,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "blog-title",
-   "category": "blog"
+   "category": "blog",
+   "known": "baretri"
   },
   {
    "name": "Refsheet",
@@ -2088,7 +2323,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "og:title",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "razzyaurealis"
   },
   {
    "name": "resumes_actorsaccess",
@@ -2096,7 +2332,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "- Resume | Actors Access</title>",
-   "category": "social"
+   "category": "social",
+   "known": "veronicashelby"
   },
   {
    "name": "Revolut",
@@ -2105,7 +2342,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"firstName\"",
    "category": "finance",
-   "profileUrl": "https://revolut.me/{u}"
+   "profileUrl": "https://revolut.me/{u}",
+   "known": "theaswdc"
   },
   {
    "name": "Roberts Space Industries",
@@ -2113,7 +2351,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Query\",\"creator",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "BASXIII"
   },
   {
    "name": "Roblox",
@@ -2122,7 +2361,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "Username is already in use",
    "category": "gaming",
-   "profileUrl": "https://www.roblox.com/search/users?keyword={u}"
+   "profileUrl": "https://www.roblox.com/search/users?keyword={u}",
+   "known": "LeetPawn"
   },
   {
    "name": "RubyGems.org",
@@ -2131,7 +2371,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "coding",
-   "profileUrl": "https://rubygems.org/profiles/{u}"
+   "profileUrl": "https://rubygems.org/profiles/{u}",
+   "known": "awscloud"
   },
   {
    "name": "RuneScape",
@@ -2140,7 +2381,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"name\":",
    "category": "hobby",
-   "profileUrl": "https://apps.runescape.com/runemetrics/app/overview/player/{u}"
+   "profileUrl": "https://apps.runescape.com/runemetrics/app/overview/player/{u}",
+   "known": "Thomas"
   },
   {
    "name": "ruVoIP.net",
@@ -2148,7 +2390,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "id=\"user-xprofile\"",
-   "category": "tech"
+   "category": "tech",
+   "known": "dominique"
   },
   {
    "name": "Salon24",
@@ -2156,7 +2399,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<span>Obserwujących</span>",
-   "category": "blog"
+   "category": "blog",
+   "known": "matuzalem"
   },
   {
    "name": "Scored",
@@ -2165,7 +2409,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"status\":true",
    "category": "social",
-   "profileUrl": "https://scored.co/u/{u}"
+   "profileUrl": "https://scored.co/u/{u}",
+   "known": "LowEnergyFaggot"
   },
   {
    "name": "ScoutWiki",
@@ -2173,7 +2418,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "NewPP limit report",
-   "category": "social"
+   "category": "social",
+   "known": "Mlh_nl"
   },
   {
    "name": "Scribd (Document)",
@@ -2182,7 +2428,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"compilationId\":\"",
    "category": "hobby",
-   "profileUrl": "https://www.scribd.com/search?query={u}&verbatim=true"
+   "profileUrl": "https://www.scribd.com/search?query={u}&verbatim=true",
+   "known": "WebBreacher"
   },
   {
    "name": "Searchengines",
@@ -2190,7 +2437,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"search-result__item\"",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "admin"
   },
   {
    "name": "SEOClerks",
@@ -2198,7 +2446,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<div class=\"user-info container\">",
-   "category": "social"
+   "category": "social",
+   "known": "Vfmseo"
   },
   {
    "name": "Sepia Search (PeerTube)",
@@ -2207,15 +2456,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"data\":[{",
    "category": "video",
-   "profileUrl": "https://sepiasearch.org/search?search=%22{u}%22&page=1&resultType=channels"
-  },
-  {
-   "name": "setlist.fm",
-   "url": "https://www.setlist.fm/user/{u}",
-   "method": "message",
-   "confidence": "MEDIUM",
-   "foundMsg": "s setlist.fm | setlist.fm</title>",
-   "category": "music"
+   "profileUrl": "https://sepiasearch.org/search?search=%22{u}%22&page=1&resultType=channels",
+   "known": "sustainable_sailing"
   },
   {
    "name": "SFD",
@@ -2223,7 +2465,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Tematy użytkownika",
-   "category": "health"
+   "category": "health",
+   "known": "janek"
   },
   {
    "name": "Shikimori",
@@ -2231,7 +2474,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"profile-head\"",
-   "category": "social"
+   "category": "social",
+   "known": "STARHun"
   },
   {
    "name": "shopify",
@@ -2239,7 +2483,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "home",
-   "category": "shopping"
+   "category": "shopping",
+   "known": "john"
   },
   {
    "name": "SimplePlanes",
@@ -2247,7 +2492,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<h5>joined",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "realSavageMan"
   },
   {
    "name": "slides",
@@ -2255,7 +2501,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Presentations by",
-   "category": "social"
+   "category": "social",
+   "known": "arunthomas"
   },
   {
    "name": "SmashRun",
@@ -2263,7 +2510,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Miles run overall",
-   "category": "health"
+   "category": "health",
+   "known": "john.young"
   },
   {
    "name": "SmugMug",
@@ -2271,7 +2519,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "schema.org/Person",
-   "category": "images"
+   "category": "images",
+   "known": "wow"
   },
   {
    "name": "Snapchat",
@@ -2279,7 +2528,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "is on Snapchat!",
-   "category": "social"
+   "category": "social",
+   "known": "djkhaled305"
   },
   {
    "name": "soc.citizen4.eu",
@@ -2287,7 +2537,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "@soc.citizen4.eu",
-   "category": "social"
+   "category": "social",
+   "known": "admin"
   },
   {
    "name": "social.bund.de",
@@ -2295,7 +2546,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "@social.bund.de) - social.bund.de</title>",
-   "category": "social"
+   "category": "social",
+   "known": "bfdi"
   },
   {
    "name": "Soup",
@@ -2303,7 +2555,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Author at Soup.io",
-   "category": "blog"
+   "category": "blog",
+   "known": "john"
   },
   {
    "name": "Speaker Deck",
@@ -2311,7 +2564,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": ") on Speaker Deck</title>",
-   "category": "social"
+   "category": "social",
+   "known": "petecheslock"
   },
   {
    "name": "Sports Tracker",
@@ -2320,7 +2574,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"uuid\":",
    "category": "health",
-   "profileUrl": "https://sports-tracker.com/view_profile/{u}"
+   "profileUrl": "https://sports-tracker.com/view_profile/{u}",
+   "known": "petriola"
   },
   {
    "name": "Spotify",
@@ -2328,7 +2583,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "content=\"profile\"",
-   "category": "music"
+   "category": "music",
+   "known": "kexp_official"
   },
   {
    "name": "StackOverflow",
@@ -2337,7 +2593,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"items\":[{",
    "category": "coding",
-   "profileUrl": "https://stackoverflow.com/users/filter?search={u}"
+   "profileUrl": "https://stackoverflow.com/users/filter?search={u}",
+   "known": "vonc"
   },
   {
    "name": "stats.fm",
@@ -2346,7 +2603,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"item\":{",
    "category": "music",
-   "profileUrl": "https://stats.fm/{u}"
+   "profileUrl": "https://stats.fm/{u}",
+   "known": "korel"
   },
   {
    "name": "Statuspage",
@@ -2355,7 +2613,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "updated_at",
    "category": "tech",
-   "profileUrl": "https://{u}.statuspage.io/"
+   "profileUrl": "https://{u}.statuspage.io/",
+   "known": "8713981tpdlg"
   },
   {
    "name": "StoryCorps",
@@ -2363,7 +2622,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "archive author",
-   "category": "blog"
+   "category": "blog",
+   "known": "jthorstad"
   },
   {
    "name": "StreamElements",
@@ -2372,7 +2632,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"providerId\"",
    "category": "finance",
-   "profileUrl": "https://streamelements.com/{u}"
+   "profileUrl": "https://streamelements.com/{u}",
+   "known": "honey"
   },
   {
    "name": "Substack",
@@ -2381,7 +2642,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "social",
-   "profileUrl": "https://substack.com/@{u}"
+   "profileUrl": "https://substack.com/@{u}",
+   "known": "janellehardacre"
   },
   {
    "name": "Suzuri",
@@ -2389,7 +2651,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Items",
-   "category": "business"
+   "category": "business",
+   "known": "itochanxxx"
   },
   {
    "name": "Tanuki.pl",
@@ -2397,7 +2660,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Dołączył",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "ania"
   },
   {
    "name": "TAPiTAG",
@@ -2406,16 +2670,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "User details are Showing",
    "category": "business",
-   "profileUrl": "https://account.tapitag.co/{u}"
-  },
-  {
-   "name": "Taringa Archived Profile",
-   "url": "https://archive.org/wayback/available?url=https://www.taringa.net/{u}",
-   "method": "message",
-   "confidence": "MEDIUM",
-   "foundMsg": "\"archived_snapshots\": {\"closest\"",
-   "category": "archived",
-   "profileUrl": "https://web.archive.org/web/2/taringa.net/{u}"
+   "profileUrl": "https://account.tapitag.co/{u}",
+   "known": "JonathanWallace"
   },
   {
    "name": "Teletype",
@@ -2423,7 +2679,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"layout__content m_main blog\"",
-   "category": "blog"
+   "category": "blog",
+   "known": "mart11"
   },
   {
    "name": "Tenor",
@@ -2431,7 +2688,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"ProfilePage page\"",
-   "category": "images"
+   "category": "images",
+   "known": "maggie342"
   },
   {
    "name": "TETR.IO",
@@ -2440,7 +2698,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"success\":true",
    "category": "gaming",
-   "profileUrl": "https://ch.tetr.io/u/{u}"
+   "profileUrl": "https://ch.tetr.io/u/{u}",
+   "known": "icly"
   },
   {
    "name": "The Gateway Pundit",
@@ -2448,7 +2707,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "meta property=\"og:type\" content=\"profile\"",
-   "category": "political"
+   "category": "political",
+   "known": "andrewmeyer"
   },
   {
    "name": "theguardian",
@@ -2456,7 +2716,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "content=\"&#x3C;p&#x3E;",
-   "category": "news"
+   "category": "news",
+   "known": "minna-salami"
   },
   {
    "name": "themeforest",
@@ -2464,7 +2725,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "s profile on ThemeForest",
-   "category": "art"
+   "category": "art",
+   "known": "john"
   },
   {
    "name": "TikTok",
@@ -2476,7 +2738,8 @@
    "profileUrl": "https://www.tiktok.com/@{u}?lang=en",
    "absentCodes": [
     400
-   ]
+   ],
+   "known": "gordonramsayofficial"
   },
   {
    "name": "Tilde.zone (Mastodon Instance)",
@@ -2485,7 +2748,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://tilde.zone/@{u}"
+   "profileUrl": "https://tilde.zone/@{u}",
+   "known": "ben"
   },
   {
    "name": "Tinder",
@@ -2493,7 +2757,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": ") | Tinder</title>",
-   "category": "dating"
+   "category": "dating",
+   "known": "Alexey"
   },
   {
    "name": "TipeeeStream",
@@ -2502,7 +2767,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "finance",
-   "profileUrl": "https://www.tipeeestream.com/{u}/"
+   "profileUrl": "https://www.tipeeestream.com/{u}/",
+   "known": "gagzzz"
   },
   {
    "name": "Tooting.ch (Mastodon Instance)",
@@ -2511,7 +2777,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://tooting.ch/@{u}"
+   "profileUrl": "https://tooting.ch/@{u}",
+   "known": "mikebeganyi"
   },
   {
    "name": "TradingView",
@@ -2519,7 +2786,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"js-user-profile\"",
-   "category": "finance"
+   "category": "finance",
+   "known": "liam"
   },
   {
    "name": "TRAKTRAIN",
@@ -2527,7 +2795,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "id=\"userId\"",
-   "category": "music"
+   "category": "music",
+   "known": "terrotuga"
   },
   {
    "name": "Trello",
@@ -2536,7 +2805,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "social",
-   "profileUrl": "https://trello.com/{u}"
+   "profileUrl": "https://trello.com/{u}",
+   "known": "naranjasan"
   },
   {
    "name": "TruckersMP.Ru",
@@ -2544,7 +2814,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"b-user-page\"",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "ramanbardashevich"
   },
   {
    "name": "tunefind",
@@ -2553,7 +2824,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"user-stats-engagement\":",
    "category": "music",
-   "profileUrl": "https://www.tunefind.com/user/profile/{u}"
+   "profileUrl": "https://www.tunefind.com/user/profile/{u}",
+   "known": "baywolfmusic"
   },
   {
    "name": "Twitcast",
@@ -2562,7 +2834,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"user\":{",
    "category": "social",
-   "profileUrl": "https://twitcasting.tv/{u}"
+   "profileUrl": "https://twitcasting.tv/{u}",
+   "known": "yuno___nico"
   },
   {
    "name": "twpro",
@@ -2571,7 +2844,8 @@
    "confidence": "MEDIUM",
    "foundMsg": ",200,\"/",
    "category": "social",
-   "profileUrl": "https://twpro.jp/{u}"
+   "profileUrl": "https://twpro.jp/{u}",
+   "known": "kipuron_ghibli"
   },
   {
    "name": "UEF CONNECT",
@@ -2579,7 +2853,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "profile-page-header__info",
-   "category": "business"
+   "category": "business",
+   "known": "heli.mutanen"
   },
   {
    "name": "Ultimate Guitar",
@@ -2590,7 +2865,8 @@
    "category": "hobby",
    "absentCodes": [
     410
-   ]
+   ],
+   "known": "LYNX-Music"
   },
   {
    "name": "Unlisted Videos",
@@ -2598,7 +2874,17 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Date submitted",
-   "category": "archived"
+   "category": "archived",
+   "known": "emudshit"
+  },
+  {
+   "name": "USA Life",
+   "url": "https://usa.life/{u}",
+   "method": "message",
+   "confidence": "MEDIUM",
+   "foundMsg": "Please log in to like, share and comment",
+   "category": "social",
+   "known": "abaynes79"
   },
   {
    "name": "uwu.ai",
@@ -2606,7 +2892,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "property=\"twitter:card\"",
-   "category": "social"
+   "category": "social",
+   "known": "elite"
   },
   {
    "name": "Uwumarket",
@@ -2614,7 +2901,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "data-collection-filters",
-   "category": "business"
+   "category": "business",
+   "known": "saki"
   },
   {
    "name": "Vero",
@@ -2622,7 +2910,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "name=\"username",
-   "category": "art"
+   "category": "art",
+   "known": "alex"
   },
   {
    "name": "vibilagare",
@@ -2630,7 +2919,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"user-profile\"",
-   "category": "misc"
+   "category": "misc",
+   "known": "lars01"
   },
   {
    "name": "VIEWBUG",
@@ -2638,7 +2928,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"top-profile-membership\"",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "soulcraft"
   },
   {
    "name": "Vine",
@@ -2647,7 +2938,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "userId",
    "category": "video",
-   "profileUrl": "https://vine.co/{u}"
+   "profileUrl": "https://vine.co/{u}",
+   "known": "TomHarlock"
   },
   {
    "name": "visnesscard",
@@ -2656,7 +2948,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "end_point",
    "category": "business",
-   "profileUrl": "https://my.visnesscard.com/{u}"
+   "profileUrl": "https://my.visnesscard.com/{u}",
+   "known": "Lisa-Gordon"
   },
   {
    "name": "Vivino",
@@ -2665,7 +2958,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"id\":",
    "category": "shopping",
-   "profileUrl": "https://www.vivino.com/users/{u}"
+   "profileUrl": "https://www.vivino.com/users/{u}",
+   "known": "laurauncorked"
   },
   {
    "name": "Vkl.world (Mastodon Instance)",
@@ -2674,7 +2968,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "display_name",
    "category": "social",
-   "profileUrl": "https://vkl.world/@{u}"
+   "profileUrl": "https://vkl.world/@{u}",
+   "known": "king"
   },
   {
    "name": "Voice123",
@@ -2683,7 +2978,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "user_id",
    "category": "hobby",
-   "profileUrl": "https://voice123.com/{u}"
+   "profileUrl": "https://voice123.com/{u}",
+   "known": "maheshsaha1992"
   },
   {
    "name": "W3Schools",
@@ -2691,7 +2987,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "\"createdAt\":",
-   "category": "tech"
+   "category": "tech",
+   "known": "test"
   },
   {
    "name": "Wakatime",
@@ -2700,7 +2997,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"data\":",
    "category": "coding",
-   "profileUrl": "https://wakatime.com/@{u}"
+   "profileUrl": "https://wakatime.com/@{u}",
+   "known": "jake"
   },
   {
    "name": "Warmerise",
@@ -2708,7 +3006,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<div id='profile_photo",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "alfrevid"
   },
   {
    "name": "warriorforum",
@@ -2719,7 +3018,8 @@
    "category": "hobby",
    "absentCodes": [
     400
-   ]
+   ],
+   "known": "alex"
   },
   {
    "name": "Wattpad",
@@ -2731,7 +3031,8 @@
    "profileUrl": "https://www.wattpad.com/user/{u}",
    "absentCodes": [
     400
-   ]
+   ],
+   "known": "Test123"
   },
   {
    "name": "WeTransfer",
@@ -2739,7 +3040,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "name\":\"WePresent | ",
-   "category": "art"
+   "category": "art",
+   "known": "orly-anan"
   },
   {
    "name": "Wikidot",
@@ -2747,7 +3049,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<h1 class=\"profile-title\">",
-   "category": "social"
+   "category": "social",
+   "known": "jack"
   },
   {
    "name": "Wimkin-PublicProfile",
@@ -2755,7 +3058,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "is on WIMKIN",
-   "category": "political"
+   "category": "political",
+   "known": "alex"
   },
   {
    "name": "Wishlistr",
@@ -2764,7 +3068,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "+:var res = \"",
    "category": "shopping",
-   "profileUrl": "https://www.wishlistr.com/{u}/"
+   "profileUrl": "https://www.wishlistr.com/{u}/",
+   "known": "bodymodgrrrl"
   },
   {
    "name": "WordPress.com (Public)",
@@ -2773,7 +3078,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"ID\":",
    "category": "blog",
-   "profileUrl": "https://{u}.wordpress.com"
+   "profileUrl": "https://{u}.wordpress.com",
+   "known": "dukeupress"
   },
   {
    "name": "WordPress.org (Forums)",
@@ -2782,7 +3088,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"error\":\"That username is already in use.",
    "category": "blog",
-   "profileUrl": "https://wordpress.org/support/users/{u}/"
+   "profileUrl": "https://wordpress.org/support/users/{u}/",
+   "known": "jane"
   },
   {
    "name": "WordPress.org (Profiles)",
@@ -2791,7 +3098,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"error\":\"That username is already in use.",
    "category": "blog",
-   "profileUrl": "https://profiles.wordpress.org/{u}/"
+   "profileUrl": "https://profiles.wordpress.org/{u}/",
+   "known": "toszcze"
   },
   {
    "name": "Wykop",
@@ -2799,7 +3107,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<title>Profil:",
-   "category": "social"
+   "category": "social",
+   "known": "test"
   },
   {
    "name": "X",
@@ -2808,7 +3117,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"reason\":\"taken\"",
    "category": "social",
-   "profileUrl": "https://x.com/{u}"
+   "profileUrl": "https://x.com/{u}",
+   "known": "WebBreacher"
   },
   {
    "name": "Xakep.ru",
@@ -2816,7 +3126,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "authorBlock-avatar",
-   "category": "tech"
+   "category": "tech",
+   "known": "tr3harder"
   },
   {
    "name": "Xanga",
@@ -2824,7 +3135,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"module module-weblog\"",
-   "category": "blog"
+   "category": "blog",
+   "known": "kwantifiable"
   },
   {
    "name": "Xbox Gamertag",
@@ -2832,7 +3144,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "Games Played",
-   "category": "gaming"
+   "category": "gaming",
+   "known": "john"
   },
   {
    "name": "Yazawaj",
@@ -2840,7 +3153,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "profile-description",
-   "category": "dating"
+   "category": "dating",
+   "known": "monya14555d"
   },
   {
    "name": "YesWeHack",
@@ -2849,7 +3163,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"username\":",
    "category": "tech",
-   "profileUrl": "https://yeswehack.com/hunters/{u}"
+   "profileUrl": "https://yeswehack.com/hunters/{u}",
+   "known": "xel"
   },
   {
    "name": "YouNow",
@@ -2858,7 +3173,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"userId\":",
    "category": "social",
-   "profileUrl": "https://www.younow.com/{u}"
+   "profileUrl": "https://www.younow.com/{u}",
+   "known": "lydia_tan33"
   },
   {
    "name": "youpic",
@@ -2866,7 +3182,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "<meta name=\"og:title\"",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "photodude"
   },
   {
    "name": "Zepeto",
@@ -2875,7 +3192,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "zepetoId\":",
    "category": "social",
-   "profileUrl": "https://web.zepeto.me/share/user/profile/{u}?language=en"
+   "profileUrl": "https://web.zepeto.me/share/user/profile/{u}?language=en",
+   "known": "joe"
   },
   {
    "name": "zhihu",
@@ -2884,7 +3202,8 @@
    "confidence": "MEDIUM",
    "foundMsg": "\"is_start\": true",
    "category": "social",
-   "profileUrl": "https://www.zhihu.com/people/{u}"
+   "profileUrl": "https://www.zhihu.com/people/{u}",
+   "known": "lushnis"
   },
   {
    "name": "Zillow",
@@ -2892,7 +3211,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "- Real Estate Agent",
-   "category": "shopping"
+   "category": "shopping",
+   "known": "JOHN-L-SULLIVAN"
   },
   {
    "name": "Военное обозрение",
@@ -2900,7 +3220,8 @@
    "method": "message",
    "confidence": "MEDIUM",
    "foundMsg": "class=\"puser-info\"",
-   "category": "hobby"
+   "category": "hobby",
+   "known": "Cympak"
   }
  ]
 }
