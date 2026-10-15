@@ -35,6 +35,18 @@ object Geo {
         return points.filter { distanceMeters(m, it) > maxKm * 1000 }.toSet()
     }
 
+    /** Centre (median position) and three scan-radius rings (⅓, ⅔ and all of the farthest record's distance, at least 600 m) for a set of located records. */
+    fun scanRings(points: List<GeoPoint>): Pair<GeoPoint, List<Double>>? {
+        if (points.isEmpty()) return null
+        fun median(v: List<Double>) = v.sorted().let { if (it.size % 2 == 1) it[it.size / 2] else (it[it.size / 2 - 1] + it[it.size / 2]) / 2 }
+        val c = GeoPoint(median(points.map { it.lat }), median(points.map { it.lng }))
+        val far = maxOf(600.0, points.maxOf { distanceMeters(c, it) })
+        return c to listOf(far / 3, far * 2 / 3, far)
+    }
+
+    /** Ground resolution at [lat] for a (possibly fractional) web-mercator [zoom], in metres per CSS pixel of the 256px tile grid. */
+    fun metersPerPixel(lat: Double, zoom: Double): Double = 156_543.03392 * cos(Math.toRadians(lat)) / 2.0.pow(zoom)
+
     /** US-style: feet under a tenth of a mile, then tenths, then whole miles. */
     fun formatDistance(meters: Double): String {
         val miles = meters / METERS_PER_MILE

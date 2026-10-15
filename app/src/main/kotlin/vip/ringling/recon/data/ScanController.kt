@@ -40,6 +40,10 @@ class ScanController @Inject constructor(
     /** Emits once each time a scan finishes (drives the completion haptic). */
     val completed: SharedFlow<Unit> = _completed
 
+    private val _serial = MutableStateFlow(0)
+    /** Increments each time a scan starts; UI state that must reset per scan (e.g. the registry notice) keys off it. */
+    val serial: StateFlow<Int> = _serial.asStateFlow()
+
     private val _enabled = MutableStateFlow(ModuleId.entries.toSet())
     /** Modules the user has switched on in the Scan tab. */
     val enabled: StateFlow<Set<ModuleId>> = _enabled.asStateFlow()
@@ -68,6 +72,7 @@ class ScanController @Inject constructor(
     fun start(input: ScanInput, enabled: Set<ModuleId>? = _enabled.value) {
         job?.cancel()
         vip.ringling.recon.domain.MapMemory.reset()
+        _serial.update { it + 1 }
         _session.value = ScanSession(input)
         job = scope.launch {
             var last = ScanSession(input)

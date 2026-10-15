@@ -45,6 +45,11 @@ import vip.ringling.recon.ui.HistoryPane
 import vip.ringling.recon.ui.HomePane
 import vip.ringling.recon.ui.ReconActions
 import vip.ringling.recon.ui.signal.Tab
+import vip.ringling.recon.ui.results.AreaScreen
+import vip.ringling.recon.ui.results.ExposureScreen
+import vip.ringling.recon.ui.results.FindingsList
+import vip.ringling.recon.ui.results.ResultsActions
+import vip.ringling.recon.ui.results.ResultsUiState
 import vip.ringling.recon.ui.detail.DetailActions
 import vip.ringling.recon.ui.detail.FindingDetail
 import vip.ringling.recon.ui.history.HistoryScreen
@@ -168,41 +173,34 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
         }
     }
 
-    @Test fun home_streaming() = shot(
-        "03_home_streaming",
-        content = home(HomeUiState(query = email.raw, detected = InputType.EMAIL, session = streaming, selectedId = adobe.id), selected = adobe),
+    private val hibpSamples = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+        .decodeFromString<List<vip.ringling.recon.data.sources.breach.HibpBreach>>(vip.ringling.recon.data.fixture("hibp_samples.json"))
+        .map { vip.ringling.recon.data.sources.breach.HibpMapper.breachFinding(it) }
+        .let { l -> l.mapIndexed { i, f -> if (i == 0) f.copy(facts = f.facts + vip.ringling.recon.domain.Fact("Flags", "Stealer log — malware-harvested credentials")) else f } }
+
+    private val exposureEmail = ResultsUiState(
+        input = email,
+        statuses = mapOf(ModuleId.BREACH to ModuleStatus.DONE, ModuleId.IDENTITY to ModuleStatus.DONE, ModuleId.EMAILINTEL to ModuleStatus.DONE, ModuleId.CODE to ModuleStatus.DONE),
+        findings = hibpSamples + MockData.identity(email).take(1) + vip.ringling.recon.data.sources.emailintel.EmailAnalysis.analyze(email.raw, false, listOf("mx.google.com")),
     )
 
-    @Test fun home_complete() = shot(
-        "04_home_complete",
-        content = home(
-            HomeUiState(query = user.raw, detected = InputType.USERNAME, session = userDone, selectedId = "IDENTITY-github"),
-            selected = userDone.findings.first { it.id == "IDENTITY-github" },
-        ),
-    )
+    private fun results(state: ResultsUiState): @Composable (Boolean, PaddingValues) -> Unit = { _, pad ->
+        if (state.input?.type == InputType.ZIP) AreaScreen(state, ResultsActions(), contentPadding = pad) else ExposureScreen(state, ResultsActions(), contentPadding = pad)
+    }
 
-    @Test fun home_domain() = shot(
-        "05_home_domain",
-        content = home(HomeUiState(query = domain.raw, detected = InputType.DOMAIN, session = domainDone)),
-    )
+    @Test fun results_email() = shot("03_results_email", tab = null, content = results(exposureEmail))
 
-    @Test fun home_registry_gate() = shot(
-        "06_home_registry_legal_notice",
-        content = home(HomeUiState(query = zip.raw, detected = InputType.ZIP, session = zipDone, registryAck = false)),
-    )
+    @Test fun findings_list() = shot("03b_findings_list", tab = null) { _, pad -> FindingsList(exposureEmail, ResultsActions(), contentPadding = pad, onBack = {}) }
 
-    @Test fun home_registry_results() = shot(
-        "06b_home_registry_results_map_distance", me = GeoPoint(43.6125, -116.2105),
-        content = home(
-            HomeUiState(query = zip.raw, detected = InputType.ZIP, session = zipDone, registryAck = true, selectedId = "REGISTRY-ID-0"),
-            selected = zipDone.findings.first { it.id == "REGISTRY-ID-0" },
-        ),
-    )
+    @Test fun results_username() = shot("04_results_username", tab = null, content = results(ResultsUiState(input = user, statuses = userDone.statuses, findings = userDone.findings)))
 
-    @Test fun home_registry_results_no_location() = shot(
-        "06c_home_registry_results_no_location",
-        content = home(HomeUiState(query = zip.raw, detected = InputType.ZIP, session = zipDone, registryAck = true)),
-    )
+    @Test fun results_domain() = shot("05_results_domain", tab = null, content = results(ResultsUiState(input = domain, statuses = domainDone.statuses, findings = domainDone.findings)))
+
+    @Test fun area_gate() = shot("06_area_legal_notice", tab = null, content = results(ResultsUiState(input = zip, statuses = zipDone.statuses, findings = zipDone.findings, registryAck = false)))
+
+    @Test fun area_results() = shot("06b_area_results_distance", tab = null, me = GeoPoint(43.6125, -116.2105), content = results(ResultsUiState(input = zip, statuses = zipDone.statuses, findings = zipDone.findings, registryAck = true)))
+
+    @Test fun area_results_no_location() = shot("06c_area_results_no_location", tab = null, content = results(ResultsUiState(input = zip, statuses = zipDone.statuses, findings = zipDone.findings, registryAck = true)))
 
     @Test fun registry_fullscreen_map_satellite_selected() = shot("06d_registry_fullscreen_map", tab = null, me = GeoPoint(43.6125, -116.2105)) { _, _ ->
         androidx.compose.runtime.CompositionLocalProvider(LocalMapLayer provides MapLayerState(true) {}) {

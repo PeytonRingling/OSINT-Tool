@@ -145,11 +145,8 @@ fun ReconApp() {
                     composable(Tab.HOME.route) {
                         RadarRoute(nav, expanded, pad, onLoadout = { showLoadout = true })
                     }
-                    composable("results") {
-                        CompositionLocalProvider(LocalSharedScopes provides if (expanded) null else SharedScopes(this@SharedTransitionLayout, this)) {
-                            HomeRoute(nav, expanded, actions, pad)
-                        }
-                    }
+                    composable("results") { ResultsEntry(nav, actions, pad) }
+                    composable("results/{id}") { ResultsEntry(nav, actions, pad) }
                     composable(Tab.HISTORY.route) {
                         CompositionLocalProvider(LocalSharedScopes provides if (expanded) null else SharedScopes(this@SharedTransitionLayout, this)) {
                             HistoryRoute(nav, expanded, actions, pad)
@@ -195,20 +192,6 @@ fun ReconApp() {
                         CompositionLocalProvider(LocalSharedScopes provides SharedScopes(this@SharedTransitionLayout, this)) {
                             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
                                 f?.let { FindingDetail(it, actions.detail, onBack = { nav.popBackStack() }, contentPadding = pad) }
-                            }
-                        }
-                    }
-                    composable("record/{id}") {
-                        val vm: RecordViewModel = hiltViewModel()
-                        val r by vm.record.collectAsStateWithLifecycle()
-                        CompositionLocalProvider(LocalSharedScopes provides SharedScopes(this@SharedTransitionLayout, this)) {
-                            r?.let { rec ->
-                                LazyColumn(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background), contentPadding = pad.listInsets(), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
-                                    scanResults(
-                                        rec.input, rec.findings, recordStatuses(rec), emptyMap(), null, true, {},
-                                        { nav.navigate("finding/${it.id}") }, { actions.exportScan(rec.input, rec.findings) },
-                                    )
-                                }
                             }
                         }
                     }
@@ -261,6 +244,14 @@ fun recordStatuses(r: vip.ringling.recon.domain.ScanRecord) =
     r.findings.map { it.module }.distinct().sortedBy { it.ordinal }.associateWith { ModuleStatus.DONE }
 
 @Composable
+private fun ResultsEntry(nav: NavHostController, actions: ReconActions, pad: PaddingValues) {
+    vip.ringling.recon.ui.results.ResultsRoute(
+        pad, onBack = { nav.popBackStack() }, onFinding = { f -> nav.navigate("finding/${f.id}") },
+        onExport = { st -> st.input?.let { actions.exportScan(it, st.findings) } }, onPin = { },
+    )
+}
+
+@Composable
 private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingValues, onLoadout: () -> Unit) {
     val vm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
     val st by vm.state.collectAsStateWithLifecycle()
@@ -268,7 +259,7 @@ private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingVa
         vm.events.collect { e ->
             when (e) {
                 vip.ringling.recon.ui.radar.RadarEvent.OpenLive -> nav.navigate("results") { launchSingleTop = true }
-                is vip.ringling.recon.ui.radar.RadarEvent.OpenRecord -> nav.navigate("record/${e.id}")
+                is vip.ringling.recon.ui.radar.RadarEvent.OpenRecord -> nav.navigate("results/${e.id}")
             }
         }
     }
@@ -333,7 +324,7 @@ private fun HistoryRoute(nav: NavHostController, expanded: Boolean, actions: Rec
     val rec by vm.selectedRecord.collectAsStateWithLifecycle(null)
     var findingId by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf<String?>(null) }
     if (!expanded) {
-        HistoryScreen(st, { nav.navigate("record/${it.id}") }, vm::delete, vm::clearAll, contentPadding = pad)
+        HistoryScreen(st, { nav.navigate("results/${it.id}") }, vm::delete, vm::clearAll, contentPadding = pad)
     } else {
         HistoryPane(
             st, rec, findingId, actions, pad,

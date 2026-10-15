@@ -96,6 +96,9 @@ fun TileMap(
     oneFingerPan: Boolean = false,
     /** When given, the camera is restored from it and written back, so the view survives navigation. */
     camera: vip.ringling.recon.domain.MapCamera? = null,
+    /** Scan-radius rings (metres) drawn around [ringCenter], e.g. the middle of a ZIP's records. */
+    ringCenter: GeoPoint? = null,
+    ringMeters: List<Double> = emptyList(),
     clipShape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.medium,
     /** Keeps the buttons and attribution clear of system bars or a card laid over the map. */
     controlsPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -192,6 +195,18 @@ fun TileMap(
                     val ox = ((-cx + wPx / 2) % step).toFloat(); val oy = ((-cy + hPx / 2) % step).toFloat()
                     var x = ox; while (x < size.width) { drawLine(Color.White.copy(alpha = 0.06f), Offset(x, 0f), Offset(x, size.height)); x += step }
                     var y = oy; while (y < size.height) { drawLine(Color.White.copy(alpha = 0.06f), Offset(0f, y), Offset(size.width, y)); y += step }
+                }
+            }
+            fun screenOf(p: GeoPoint) = Offset((Geo.worldX(p.lng, zoom) - cx + wPx / 2).toFloat(), (Geo.worldY(p.lat, zoom) - cy + hPx / 2).toFloat())
+            if (ringCenter != null && ringMeters.isNotEmpty()) {
+                val ringColor = vip.ringling.recon.ui.theme.ReconTheme.signal.signal
+                Canvas(Modifier.fillMaxSize()) {
+                    val o = screenOf(ringCenter)
+                    val mpp = Geo.metersPerPixel(ringCenter.lat, zoom)
+                    ringMeters.forEachIndexed { i, m ->
+                        drawCircle(ringColor.copy(alpha = if (i == 0) 0.5f else 0.3f), (m / mpp).toFloat(), o, style = androidx.compose.ui.graphics.drawscope.Stroke(1.5f, pathEffect = if (i == 0) null else androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4f, 10f))))
+                    }
+                    drawLine(ringColor, Offset(o.x, o.y - 12f), Offset(o.x, o.y + 12f), 1.5f); drawLine(ringColor, Offset(o.x - 12f, o.y), Offset(o.x + 12f, o.y), 1.5f)
                 }
             }
             fun screen(p: GeoPoint) = Offset((Geo.worldX(p.lng, zoom) - cx + wPx / 2).toFloat(), (Geo.worldY(p.lat, zoom) - cy + hPx / 2).toFloat())
