@@ -175,6 +175,34 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
                     }
                 }
             }
+            val sources = Exposure.breachSources(state.findings)
+            if (sources.isNotEmpty()) item(key = "sources") {
+                HairPanel(Modifier.fillMaxWidth()) {
+                    Column(Modifier.padding(start = 14.dp, end = 6.dp, top = 12.dp, bottom = 4.dp)) {
+                        Row(Modifier.fillMaxWidth().padding(end = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) { SignalLabel("Breach sources checked"); SignalLabel("${sources.size}") }
+                        sources.forEachIndexed { i, sc ->
+                            if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.07f)))
+                            val target = sc.findingId?.let { id -> state.findings.firstOrNull { it.id == id } }
+                            Row(
+                                Modifier.fillMaxWidth().heightIn(min = 52.dp).let { m -> if (target == null) m else m.clickable(onClickLabel = "Open ${sc.name} result") { actions.onFinding(target) } }.padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(sc.name, color = sig.text, style = MaterialTheme.typography.titleSmall)
+                                    Text(sc.summary, color = sig.muted, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                                }
+                                when (sc.state) {
+                                    vip.ringling.recon.domain.SourceState.FOUND -> StatusTag("Found", Tone.ALERT)
+                                    vip.ringling.recon.domain.SourceState.CLEAN -> StatusTag("Clean", Tone.SAFE)
+                                    vip.ringling.recon.domain.SourceState.SKIPPED -> StatusTag("Skipped", Tone.MUTED)
+                                    vip.ringling.recon.domain.SourceState.FAILED -> StatusTag("Failed", Tone.ALERT)
+                                }
+                                if (target != null) Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = sig.muted)
+                            }
+                        }
+                    }
+                }
+            }
             val breaches = scored.filter { it.module == ModuleId.BREACH }.sortedBy { if (it.severity == Severity.EXPOSED) 0 else 1 }
             if (breaches.isNotEmpty()) item(key = "breaches") {
                 FindingGroup("Breaches", "${breaches.size} · tap for details", breaches, state.handled, actions.onFinding)

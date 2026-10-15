@@ -49,3 +49,19 @@ class ExposureTest {
         assertEquals("Critical exposure", Exposure.headline(100)); assertEquals("Moderate exposure", Exposure.headline(20)); assertEquals("Low exposure", Exposure.headline(0))
     }
 }
+
+class BreachSourcesTest {
+    private fun f(id: String, title: String = "t", sev: vip.ringling.recon.domain.Severity = vip.ringling.recon.domain.Severity.INFO, facts: List<vip.ringling.recon.domain.Fact> = emptyList(), detail: String = "d") =
+        vip.ringling.recon.domain.Finding(id, vip.ringling.recon.domain.ModuleId.BREACH, title, detail, sev, facts = facts)
+
+    @Test fun showsEverySourceEvenWhenCleanSkippedOrFailed() {
+        val s = vip.ringling.recon.domain.Exposure
+        val clean = s.breachSources(listOf(f("BREACH-hibp-none"), f("BREACH-leakcheck", sev = vip.ringling.recon.domain.Severity.CLEAN)))
+        assertEquals(listOf("Have I Been Pwned" to vip.ringling.recon.domain.SourceState.CLEAN, "LeakCheck" to vip.ringling.recon.domain.SourceState.CLEAN), clean.map { it.name to it.state })
+        val mixed = s.breachSources(listOf(f("BREACH-hibp-nokey"), f("BREACH-leakcheck-error", detail = "HTTP 401")))
+        assertEquals(listOf(vip.ringling.recon.domain.SourceState.SKIPPED, vip.ringling.recon.domain.SourceState.FAILED), mixed.map { it.state }); assertEquals("HTTP 401", mixed[1].summary)
+        val found = s.breachSources(listOf(f("BREACH-hibp-Adobe"), f("BREACH-hibp-Zynga"), f("BREACH-hibp-pastes"), f("BREACH-leakcheck", "LeakCheck · 3 records", facts = listOf(vip.ringling.recon.domain.Fact("Endpoint", "Keyed API")))))
+        assertEquals("2 breaches", found[0].summary); assertEquals("3 records", found[1].summary); assertEquals("BREACH-leakcheck", found[1].findingId)
+        assertEquals(emptyList(), s.breachSources(emptyList()))
+    }
+}

@@ -12,6 +12,11 @@ data class TimelineEvent(val year: Int, val month: Int, val severity: Severity, 
     val monthIndex: Int get() = year * 12 + (month - 1)
 }
 
+enum class SourceState { FOUND, CLEAN, SKIPPED, FAILED }
+
+/** One breach source's outcome for a scan, so a clean, skipped or failed source is visible instead of silently missing. */
+data class SourceCheck(val name: String, val state: SourceState, val summary: String, val findingId: String?)
+
 data class FixStep(val title: String, val detail: String, val urgent: Boolean, /** Findings this step is about (tapping the step lists them). */ val findingIds: List<String> = emptyList())
 
 /** Everything the exposure screens derive from a scan's findings. Pure functions of the findings, so they are unit-tested. */
@@ -46,6 +51,35 @@ object Exposure {
         val mi = months.indexOf(m.groupValues[1].lowercase()).takeIf { it >= 0 } ?: return@mapNotNull null
         TimelineEvent(m.groupValues[2].toInt(), mi + 1, f.severity, f.title, f.id)
     }.sortedBy { it.monthIndex }
+
+    /** Which breach sources ran and what each said (HIBP / LeakCheck). Empty when no breach source ran. */
+    fun breachSources(findings: List<Finding>): List<SourceCheck> {
+        val b = findings.filter { it.module == ModuleId.BREACH }
+        val out = mutableListOf<SourceCheck>()
+        val hibpRows = b.filter { it.id.startsWith("BREACH-hibp") }
+        if (hibpRows.isNotEmpty()) {
+            val err = hibpRows.firstOrNull { it.id == "BREACH-hibp-error" }
+            val breaches = hibpRows.filter { it.id.startsWith("BREACH-hibp-") && it.id !in setOf("BREACH-hibp-pastes", "BREACH-hibp-none", "BREACH-hibp-error", "BREACH-hibp-nokey") }
+            out += when {
+                hibpRows.any { it.id == "BREACH-hibp-nokey" } -> SourceCheck("Have I Been Pwned", SourceState.SKIPPED, "No API key set", null)
+                err != null -> SourceCheck("Have I Been Pwned", SourceState.FAILED, err.detail.lineSequence().first(), err.id)
+                breaches.isEmpty() -> SourceCheck("Have I Been Pwned", SourceState.CLEAN, "No breaches", null)
+                else -> SourceCheck("Have I Been Pwned", SourceState.FOUND, "${breaches.size} breach${if (breaches.size == 1) "" else "es"}", null)
+            }
+        }
+        val leak = b.filter { it.id.startsWith("BREACH-leakcheck") }
+        if (leak.isNotEmpty()) {
+            val err = leak.firstOrNull { it.id.endsWith("-error") }
+            val main = leak.firstOrNull { it.id == "BREACH-leakcheck" }
+            val keyed = main?.facts?.firstOrNull { it.label == "Endpoint" }?.value?.startsWith("Keyed") == true
+            out += when {
+                err != null -> SourceCheck("LeakCheck", SourceState.FAILED, err.detail.lineSequence().first(), err.id)
+                main == null || main.severity == Severity.CLEAN -> SourceCheck("LeakCheck", SourceState.CLEAN, "No results" + if (keyed) "" else " (free endpoint)", main?.id)
+                else -> SourceCheck("LeakCheck", SourceState.FOUND, main.title.substringAfter("· ") + if (keyed) "" else " (free endpoint)", main.id)
+            }
+        }
+        return out
+    }
 
     fun hasStealerLogs(findings: List<Finding>) = findings.any { f -> f.module == ModuleId.BREACH && f.facts.any { it.label == "Flags" && it.value.contains("stealer", ignoreCase = true) } }
 
