@@ -115,7 +115,7 @@ fun ReconApp() {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val main: MainViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
-    val actions = rememberReconActions(snackbar, onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) }, onAddToCase = main::addToCase)
+    val actions = rememberReconActions(snackbar, onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) }, onAddToCase = main::addToCase, onRunPaid = main::runPaid)
     val updateState by main.update.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { main.checkForUpdateQuietly() }
     LaunchedEffect((updateState as? UpdateState.Available)?.info?.build) {

@@ -39,6 +39,7 @@ class MainViewModel @Inject constructor(
     val update: StateFlow<UpdateState> = updates.state
     fun checkForUpdateQuietly() = updates.checkQuietly()
     fun requestSearch(query: String) = controller.requestSearch(query)
+    fun runPaid(f: Finding) = controller.runPaid(f)
     fun setMapSatellite(on: Boolean) { viewModelScope.launch { settingsRepo.setMapSatellite(on) } }
     /** Synchronous read of the lock setting for the very first frame (DataStore is fast but async). */
     fun appLockNow(): Boolean = kotlinx.coroutines.runBlocking { settingsRepo.settings.first().appLock }

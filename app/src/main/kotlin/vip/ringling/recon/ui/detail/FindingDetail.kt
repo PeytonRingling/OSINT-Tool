@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import vip.ringling.recon.domain.Export
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.ModuleId
+import vip.ringling.recon.domain.neutral
 import vip.ringling.recon.domain.Severity
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -64,6 +65,7 @@ data class DetailActions(
     val onOpenMap: (vip.ringling.recon.domain.GeoPoint) -> Unit = {},
     val onPivot: (String) -> Unit = {},
     val onAddToCase: (Finding) -> Unit = {},
+    val onRunPaid: (Finding) -> Unit = {},
 )
 
 private fun Finding.weight() = when (severity) {
@@ -113,9 +115,9 @@ fun FindingDetail(
                                 RemoteImage(finding.imageUrl, "Logo", Modifier.size(56.dp).clip(MaterialTheme.shapes.small), contentScale = ContentScale.Fit, placeholderIcon = false)
                             }
                             Text(finding.title, style = MaterialTheme.typography.headlineLarge, color = cs.onSurface)
-                            SeverityChip(finding.severity)
+                            if (!finding.neutral) SeverityChip(finding.severity)
                         }
-                        RiskRing(finding.weight(), size = 104.dp, stroke = 11.dp, caption = "WEIGHT")
+                        if (!finding.neutral) RiskRing(finding.weight(), size = 104.dp, stroke = 11.dp, caption = "WEIGHT")
                     }
                     finding.confidence?.takeIf { finding.imageLargeUrl == null && finding.module != ModuleId.REGISTRY }?.let { ConfidenceMeter(it) }
                     if (finding.module == ModuleId.REGISTRY) {
@@ -167,6 +169,11 @@ fun FindingDetail(
                     Icon(Icons.AutoMirrored.Rounded.OpenInNew, null, Modifier.size(18.dp))
                     Text(url.removePrefix("https://").take(42), Modifier.padding(start = 8.dp), maxLines = 1)
                 }
+            }
+        }
+        finding.paid?.let { paid ->
+            item(key = "paid") {
+                PaidActionCard(paid, onConfirmed = { actions.onRunPaid(finding); onBack?.invoke() })
             }
         }
         item {

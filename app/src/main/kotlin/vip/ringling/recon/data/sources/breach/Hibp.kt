@@ -8,6 +8,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.Request
 import vip.ringling.recon.data.net.Http
 import vip.ringling.recon.data.net.HttpException
+import vip.ringling.recon.domain.BreachSeverity
 import vip.ringling.recon.domain.Fact
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.ModuleId
@@ -102,11 +103,9 @@ class HibpClient(
 }
 
 object HibpMapper {
-    private val sensitiveClasses = setOf("Passwords", "Password hints", "Security questions and answers", "Auth tokens", "Private messages")
-
     fun breachFinding(b: HibpBreach): Finding {
         val year = b.breachDate.take(4).ifEmpty { "?" }
-        val severe = b.dataClasses.any { it in sensitiveClasses }
+        val severe = BreachSeverity.of(b.dataClasses) == Severity.EXPOSED
         val count = if (b.pwnCount > 0) "${compact(b.pwnCount)} accounts breached" else "Listed in a known breach"
         val line1 = listOf(count, prettyDate(b.breachDate)).filter { it.isNotBlank() }.joinToString(" · ")
         val line2 = if (b.dataClasses.isEmpty()) "" else "Exposed: ${b.dataClasses.joinToString(", ").lowercase()}."
@@ -143,12 +142,12 @@ object HibpMapper {
             module = ModuleId.BREACH,
             title = "${b.title.ifBlank { b.name }} · $year",
             detail = detail,
-            severity = if (severe) Severity.EXPOSED else Severity.INFO,
+            severity = BreachSeverity.of(b.dataClasses),
             url = "https://haveibeenpwned.com/PwnedWebsites#${b.name}",
             raw = Json.encodeToString(HibpBreach.serializer(), b),
             imageUrl = logoUrl(b),
             tags = b.dataClasses,
-            hotTags = b.dataClasses.filter { it in sensitiveClasses }.toSet(),
+            hotTags = BreachSeverity.hot(b.dataClasses),
             facts = facts,
         )
     }

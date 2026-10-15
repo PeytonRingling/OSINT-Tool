@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.text.withStyle
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -42,6 +43,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.ModuleId
+import vip.ringling.recon.domain.neutral
 import vip.ringling.recon.domain.ModuleStatus
 import vip.ringling.recon.domain.Severity
 
@@ -94,18 +96,19 @@ fun ModuleCard(
                         LoadingIndicator(Modifier.size(40.dp), color = cs.primary)
                     else -> {
                         val worst = findings.maxByOrNull { it.severity.ordinal }?.severity
-                        if (worst != null && gate == null) SeverityChip(worst)
+                        if (worst != null && gate == null && module != ModuleId.REGISTRY) SeverityChip(worst)
                     }
                 }
             }
             if (gate != null) {
                 gate()
             } else {
+                if (module == ModuleId.REGISTRY) LegalNoticeBanner()
                 extra?.invoke()
                 val limit = if (collapseAfter != null && !showAll) collapseAfter else Int.MAX_VALUE
                 findings.take(limit).forEachIndexed { i, f ->
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = cs.outlineVariant.copy(alpha = 0.5f))
-                    FindingRow(f, selected = f.id == selectedId, onClick = { onFindingClick(f) })
+                    if (f.id == "REGISTRY-summary") RegistrySummaryRow(f) else FindingRow(f, selected = f.id == selectedId, onClick = { onFindingClick(f) })
                 }
                 if (collapseAfter != null && findings.size > collapseAfter) {
                     HorizontalDivider(Modifier.padding(horizontal = 16.dp), color = cs.outlineVariant.copy(alpha = 0.5f))
@@ -157,18 +160,75 @@ fun FindingRow(finding: Finding, selected: Boolean, onClick: () -> Unit, modifie
             Box(Modifier.size(10.dp).clip(CircleShape).background(severityColor(finding.severity)))
         }
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(finding.title, style = MaterialTheme.typography.titleMedium, color = cs.onSurface, maxLines = if (hasPortrait) 2 else 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-            Text(finding.detail, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(finding.title, style = MaterialTheme.typography.titleMedium, color = cs.onSurface, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            // Breach rows summarise in their first line (count · date); the rest of the text (story, advice) lives in the detail screen. Two lines, never one.
+            val summary = if (finding.module == ModuleId.BREACH) finding.detail.lineSequence().first() else finding.detail
+            Text(summary, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
             if (finding.tags.isNotEmpty()) {
-                Text(finding.tags.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = if (finding.severity == Severity.EXPOSED) severityColor(Severity.EXPOSED) else cs.onSurfaceVariant)
+                val hot = severityColor(Severity.EXPOSED)
+                Text(
+                    androidx.compose.ui.text.buildAnnotatedString {
+                        finding.tags.forEachIndexed { i, t ->
+                            if (i > 0) append(" · ")
+                            if (t in finding.hotTags) withStyle(androidx.compose.ui.text.SpanStyle(color = hot)) { append(t) } else append(t)
+                        }
+                    },
+                    style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant,
+                )
             }
             finding.confidence?.takeIf { !hasPortrait }?.let { ConfidenceMeter(it, Modifier.padding(top = 4.dp)) }
         }
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            SeverityChip(finding.severity)
+            if (!finding.neutral) SeverityChip(finding.severity)
             if (distance != null) Text(distance, style = MaterialTheme.typography.titleSmall, color = cs.primary)
         }
         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = cs.onSurfaceVariant)
+    }
+}
+
+const val LEGAL_NOTICE_TEXT = "Idaho's registry is an open record, but Idaho Code §74-120 bars using this inquiry for any commercial " +
+    "purpose or for compiling a telephone or mailing list. Using registry information to harass or intimidate " +
+    "anyone, or to commit a crime against a listed person, is prosecutable (Idaho Code §18-8326, §18-8413). " +
+    "Recon looks up only what you search, live, and never stores or compiles registry data. Records may not " +
+    "match the person you have in mind — verify before relying on them."
+
+/** Text that shows two lines and expands in place, so nothing important is ever cut off with an ellipsis. */
+@Composable
+fun ExpandableText(text: String, modifier: Modifier = Modifier, collapsedLines: Int = 2, style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodyMedium, key: String = text.take(24), initiallyExpanded: Boolean = false) {
+    val cs = MaterialTheme.colorScheme
+    var expanded by rememberSaveable(key) { mutableStateOf(initiallyExpanded) }
+    var overflows by remember(text) { mutableStateOf(false) }
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text, style = style, color = cs.onSurfaceVariant, maxLines = if (expanded) Int.MAX_VALUE else collapsedLines,
+            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis, onTextLayout = { if (!expanded) overflows = it.hasVisualOverflow },
+        )
+        if (overflows || expanded) {
+            TextButton(onClick = { expanded = !expanded }, Modifier.heightIn(min = 48.dp)) { Text(if (expanded) "Show less" else "Read more") }
+        }
+    }
+}
+
+/** The legal notice stays on screen above registry results (collapsed to two lines, expandable) once it has been acknowledged. */
+@Composable
+fun LegalNoticeBanner(modifier: Modifier = Modifier, initiallyExpanded: Boolean = false) {
+    val cs = MaterialTheme.colorScheme
+    Column(modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.Gavel, null, tint = ReconThemeInfo())
+            Text("Legal notice", style = MaterialTheme.typography.titleSmall, color = cs.onSurface)
+        }
+        ExpandableText(LEGAL_NOTICE_TEXT, key = "legal-banner", style = MaterialTheme.typography.bodySmall, initiallyExpanded = initiallyExpanded)
+    }
+}
+
+/** Registry summary row: the "matches are by location only" disclaimer, fully readable. */
+@Composable
+fun RegistrySummaryRow(f: Finding, modifier: Modifier = Modifier, initiallyExpanded: Boolean = false) {
+    val cs = MaterialTheme.colorScheme
+    Column(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Text(f.title, style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+        ExpandableText(f.detail, key = "registry-summary", initiallyExpanded = initiallyExpanded)
     }
 }
 
@@ -180,14 +240,7 @@ fun LegalNotice(onAcknowledge: () -> Unit, modifier: Modifier = Modifier) {
             Icon(Icons.Rounded.Gavel, null, tint = ReconThemeInfo())
             Text("Legal notice", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
         }
-        Text(
-            "Idaho's registry is an open record, but Idaho Code §74-120 bars using this inquiry for any commercial " +
-                "purpose or for compiling a telephone or mailing list. Using registry information to harass or intimidate " +
-                "anyone, or to commit a crime against a listed person, is prosecutable (Idaho Code §18-8326, §18-8413). " +
-                "Recon looks up only what you search, live, and never stores or compiles registry data. Records may not " +
-                "match the person you have in mind — verify before relying on them.",
-            style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant,
-        )
+        Text(LEGAL_NOTICE_TEXT, style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
         Button(onClick = onAcknowledge, modifier = Modifier.heightIn(min = 48.dp)) { Text("I understand — show results") }
     }
 }

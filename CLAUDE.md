@@ -146,6 +146,17 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
   `parseGeo` prefers the Marker's LatLng over the map centre.
 - Different street addresses with identical coordinates = geocoder fell back to a town/city centre: tagged "Approximate location" (`APPROXIMATE_TAG`), note added to the detail, pale/small pin, no distance shown. Same address sharing coordinates is NOT flagged.
 
+## Risk score, severity, paid lookups (added 2026-10-15, from v0.1.13 device testing)
+- **Risk score (`RiskScore`, VERSION 2) is a pure function of two counts**: `score = min(100, 14 × exposed + 4 × info)`, bands: ≥50 exposed, ≥14 info (one exposed finding is never "clean"), else clean.
+  Only *scorable* findings count (`Finding.scorable`): not CLEAN, not offender-registry records, not DORKS, and not housekeeping ids (suffixes `-error -summary -manual -links -profile -offer -pending -nostate -none`).
+  Identical counts → identical score regardless of order/modules (tested). Don't add new helper findings without a suffix from that list.
+- **History**: `ScanEntity.scoreVersion` (Room v3, `MIGRATION_2_3`, default 0). Rows saved by an older build are re-scored on load (`Rescore`: breach severity re-derived from stored data classes, registry → INFO) and labelled "Re-scored under current rules". New rows are saved at `RiskScore.VERSION`. Bump VERSION whenever scoring/severity rules change.
+- **Registry is neutral**: ZIP results use `CountTile` ("12 RECORDS"), never the risk ring, never a severity chip or "Exposed" wording (adapter severity is always INFO; status/convictions are tags; `Finding.neutral`). History shows "Registry search · live lookup" with no ring.
+  The legal notice gates results until acknowledged, then stays on screen as `LegalNoticeBanner`; the "matches are by location only" disclaimer is `RegistrySummaryRow` (two lines + Read more).
+- **Breach severity (`BreachSeverity`)** is derived from HIBP DataClasses: EXPOSED if any of passwords/hints/security Q&A/auth tokens, card or bank/financial data, government ID (SSN, passport, driver's licence, issued IDs), physical addresses, or phone numbers; otherwise INFO (email/names/usernames/IP/DOB/locations…).
+  Tests use real HIBP data (`fixtures/hibp_samples.json`, incl. Suno 2025). Rows show two lines of title and of the first detail line; only hot (exposing) tags are red.
+- **Paid lookups never run in a scan.** A source returns an offer `Finding.paid = PaidAction(...)`; the detail screen shows the cost and an explicit confirmation dialog; only then `ScanController.runPaid` calls `PaidLookups.runPaid` (offer → "Looking up…" → result). Twilio: `PhoneSource.TWILIO_COST_LABEL` (≈ $0.018 = caller name $0.010 + line type $0.008, Twilio list prices at time of writing; update the constant if pricing changes). Offers are not saved to history.
+
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.
@@ -163,5 +174,5 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Registry findings are shown live only: `ScanController` strips them before saving history (tested). Never cache.
 - Failure policy: a failing sub-check becomes an INFO "… unavailable" finding (breach/domain); an inconclusive site probe
   is counted, never treated as "not found".
-- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 185 tests at last count.
+- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 200+ tests at last count.
 - Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.

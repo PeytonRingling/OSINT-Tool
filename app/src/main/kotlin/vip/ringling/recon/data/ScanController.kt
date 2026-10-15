@@ -27,6 +27,7 @@ import vip.ringling.recon.domain.ScanSession
 class ScanController @Inject constructor(
     private val runner: ScanRunner,
     private val history: HistoryRepository,
+    private val paidLookups: Set<@JvmSuppressWildcards vip.ringling.recon.domain.PaidLookups>,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var job: Job? = null
@@ -61,7 +62,7 @@ class ScanController @Inject constructor(
             runner.session(input, enabled).collect { s -> last = s; _session.value = s }
             // Registry results are live-lookup only and must never be stored (Idaho Code §74-120): keep the
             // query in history, drop the findings.
-            val storable = last.findings.filter { it.module != ModuleId.REGISTRY }
+            val storable = last.findings.filter { it.module != ModuleId.REGISTRY && it.paid == null }
             if (last.findings.isNotEmpty()) {
                 history.add(ScanRecord(UUID.randomUUID().toString(), input, System.currentTimeMillis(), storable))
             }
@@ -83,6 +84,19 @@ class ScanController @Inject constructor(
     fun clear() {
         job?.cancel()
         _session.value = null
+    }
+
+    /** Runs a paid lookup the user has already confirmed in the UI. The offer row turns into a pending row, then the result. */
+    fun runPaid(offer: Finding) {
+        val action = offer.paid ?: return
+        val input = _session.value?.input ?: return
+        val pending = Finding(offer.id.removeSuffix("-offer") + "-pending", offer.module, "Looking up…", "Waiting for the provider to answer.", vip.ringling.recon.domain.Severity.INFO)
+        _session.update { s -> s?.copy(findings = s.findings.map { if (it.id == offer.id) pending else it }) }
+        scope.launch {
+            val results = paidLookups.firstNotNullOfOrNull { p -> runCatching { p.runPaid(action.id, input) }.getOrNull()?.takeIf { it.isNotEmpty() } }
+                ?: listOf(Finding(offer.id.removeSuffix("-offer") + "-error", offer.module, "Lookup failed", "No result came back.", vip.ringling.recon.domain.Severity.INFO))
+            _session.update { s -> s?.copy(findings = s.findings.flatMap { if (it.id == pending.id) results else listOf(it) }) }
+        }
     }
 
     fun findingById(id: String): Finding? = _session.value?.findings?.firstOrNull { it.id == id }

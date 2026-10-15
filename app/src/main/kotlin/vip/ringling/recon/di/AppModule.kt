@@ -42,6 +42,7 @@ abstract class AppModule {
     @Binds @IntoSet abstract fun identity(s: IdentitySource): OsintSource
     @Binds @Singleton abstract fun siteList(s: AssetSiteList): SiteListProvider
     @Binds @IntoSet abstract fun phone(s: PhoneSource): OsintSource
+    @Binds @IntoSet abstract fun phonePaid(s: PhoneSource): vip.ringling.recon.domain.PaidLookups
     @Binds @IntoSet abstract fun image(s: ImageSource): OsintSource
     @Binds @IntoSet abstract fun ip(s: IpSource): OsintSource
     @Binds @IntoSet abstract fun wallet(s: WalletSource): OsintSource

@@ -169,7 +169,8 @@ class IdahoRegistryAdapter @Inject constructor(
             name = row.name,
             summary = lines.joinToString("\n"),
             sourceUrl = abs(row.href) ?: "${endpoints.idahoSor}/",
-            severity = if (nonCompliant || multiple) Severity.EXPOSED else Severity.INFO,
+            // Registry records are never risk-scored or labelled "Exposed": status/convictions are shown as tags instead.
+            severity = Severity.INFO,
             geo = geo,
             imageUrl = abs(row.photoHref),
             imageLargeUrl = abs(d?.photoHref ?: row.photoHref),

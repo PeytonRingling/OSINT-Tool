@@ -1,6 +1,12 @@
 package vip.ringling.recon.data
 
 import kotlin.test.Test
+import kotlin.test.assertNotNull
+import vip.ringling.recon.domain.ScanRunner
+import vip.ringling.recon.domain.ModuleId
+import vip.ringling.recon.domain.Finding
+import vip.ringling.recon.domain.PaidLookups
+import vip.ringling.recon.domain.PaidAction
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -119,16 +125,28 @@ class PhoneSourceTest {
         }
     }
 
-    @Test fun twilioReturnsTheRegisteredNameWithBasicAuth() = runTest {
-        val (srv, router) = server(
-            "/notes/" to { MockResponse().setResponseCode(404) },
-            "/twilio/PhoneNumbers/" to { json("""{"phone_number":"+16502530000","valid":true,"caller_name":{"caller_name":"ACME CORP","caller_type":"BUSINESS","error_code":null},"line_type_intelligence":{"type":"landline","carrier_name":"Example Telecom"}}""") },
-        )
+    private val twilioOk = """{"phone_number":"+16502530000","valid":true,"caller_name":{"caller_name":"ACME CORP","caller_type":"BUSINESS","error_code":null},"line_type_intelligence":{"type":"landline","carrier_name":"Example Telecom"}}"""
+
+    @Test fun twilioIsOnlyOfferedWithItsCostAndNeverCalledByAScan() = runTest {
+        val (srv, router) = server("/notes/" to { MockResponse().setResponseCode(404) }, "/twilio/PhoneNumbers/" to { json(twilioOk) })
         srv.use {
-            val t = source(srv, mapOf(ApiKeyId.TWILIO_SID to "ACxxxx", ApiKeyId.TWILIO_TOKEN to "tok")).collect(phone).first { it.id == "PHONE-twilio" }
+            val f = source(srv, mapOf(ApiKeyId.TWILIO_SID to "ACxxxx", ApiKeyId.TWILIO_TOKEN to "tok")).collect(phone)
+            val offer = f.single { it.id == "PHONE-twilio-offer" }
+            val paid = assertNotNull(offer.paid)
+            assertTrue("0.018" in paid.cost && "0.010" in paid.cost && "0.008" in paid.cost, paid.cost)
+            assertTrue("Nothing is sent until you confirm" in offer.detail)
+            assertTrue(router.seen.none { it.path!!.startsWith("/twilio") }, "a scan must never contact Twilio on its own")
+            assertTrue(f.none { it.id == "PHONE-twilio" })
+        }
+    }
+
+    @Test fun twilioRunsOnlyAfterConfirmationAndUsesBasicAuth() = runTest {
+        val (srv, router) = server("/notes/" to { MockResponse().setResponseCode(404) }, "/twilio/PhoneNumbers/" to { json(twilioOk) })
+        srv.use {
+            val t = source(srv, mapOf(ApiKeyId.TWILIO_SID to "ACxxxx", ApiKeyId.TWILIO_TOKEN to "tok")).runPaid(PhoneSource.TWILIO_ACTION, phone).single()
             assertEquals("ACME CORP", t.title)
             assertTrue("Caller-ID name registered for this number: ACME CORP (business)" in t.detail && "Current carrier: Example Telecom" in t.detail, t.detail)
-            val req = router.seen.first { it.path!!.startsWith("/twilio/") }
+            val req = router.seen.single { it.path!!.startsWith("/twilio/") }
             assertEquals("Basic " + java.util.Base64.getEncoder().encodeToString("ACxxxx:tok".toByteArray()), req.getHeader("Authorization"))
             assertTrue("Fields=caller_name,line_type_intelligence" in req.path!!)
         }
@@ -137,11 +155,30 @@ class PhoneSourceTest {
     @Test fun twilioNeedsBothCredentialsAndExplainsErrors() = runTest {
         val (srv, router) = server("/notes/" to { MockResponse().setResponseCode(404) }, "/twilio/" to { MockResponse().setResponseCode(401) })
         srv.use {
-            assertTrue(source(srv, mapOf(ApiKeyId.TWILIO_SID to "AC")).collect(phone).none { it.id.startsWith("PHONE-twilio") }, "half a credential does nothing")
+            assertTrue(source(srv, mapOf(ApiKeyId.TWILIO_SID to "AC")).collect(phone).none { it.id.startsWith("PHONE-twilio") }, "half a credential offers nothing")
+            val noKeys = source(srv, mapOf(ApiKeyId.TWILIO_SID to "AC")).runPaid(PhoneSource.TWILIO_ACTION, phone).single()
+            assertEquals("Twilio unavailable", noKeys.title)
             assertTrue(router.seen.none { it.path!!.startsWith("/twilio") })
-            val err = source(srv, mapOf(ApiKeyId.TWILIO_SID to "AC", ApiKeyId.TWILIO_TOKEN to "bad")).collect(phone).first { it.id == "PHONE-twilio-error" }
-            assertTrue("rejected the Account SID" in err.detail, err.detail)
+            val err = source(srv, mapOf(ApiKeyId.TWILIO_SID to "AC", ApiKeyId.TWILIO_TOKEN to "bad")).runPaid(PhoneSource.TWILIO_ACTION, phone).single()
+            assertEquals("PHONE-twilio-error", err.id); assertTrue("rejected the Account SID" in err.detail, err.detail)
+            assertTrue(source(srv).runPaid("something-else", phone).isEmpty(), "unknown actions do nothing")
         }
+    }
+
+    @Test fun controllerReplacesTheOfferWithPendingThenTheResult() = runTest {
+        val offer = Finding("PHONE-twilio-offer", ModuleId.PHONE, "Paid", "d", Severity.INFO, paid = PaidAction("twilio", "Look up", "about \$0.018", "x"))
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val lookups = object : PaidLookups {
+            override suspend fun runPaid(actionId: String, input: ScanInput): List<Finding> { gate.await(); return listOf(Finding("PHONE-twilio", ModuleId.PHONE, "ACME", "d", Severity.INFO)) }
+        }
+        val controller = ScanController(ScanRunner(emptySet()), InMemoryHistoryRepository(), setOf(lookups))
+        val field = ScanController::class.java.getDeclaredField("_session").also { it.isAccessible = true }
+        @Suppress("UNCHECKED_CAST") val state = field.get(controller) as kotlinx.coroutines.flow.MutableStateFlow<vip.ringling.recon.domain.ScanSession?>
+        state.value = vip.ringling.recon.domain.ScanSession(phone, findings = listOf(offer))
+        controller.runPaid(offer)
+        assertEquals(listOf("PHONE-twilio-pending"), state.value!!.findings.map { it.id })
+        gate.complete(Unit)
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { kotlinx.coroutines.withTimeout(5_000) { while (state.value!!.findings.singleOrNull()?.id != "PHONE-twilio") kotlinx.coroutines.delay(10) } }
     }
 
     @Test fun unreadableNumbersAreReportedNotCrashed() = runTest {
@@ -153,7 +190,7 @@ class PhoneSourceTest {
     }
 
     @Test fun pivotRequestsAreHeldUntilConsumed() = runTest {
-        val controller = ScanController(vip.ringling.recon.domain.ScanRunner(emptySet()), InMemoryHistoryRepository())
+        val controller = ScanController(vip.ringling.recon.domain.ScanRunner(emptySet()), InMemoryHistoryRepository(), emptySet())
         assertNull(controller.pendingQuery.value)
         controller.requestSearch("someone@example.com"); assertEquals("someone@example.com", controller.pendingQuery.value)
         controller.consumePending(); assertNull(controller.pendingQuery.value)

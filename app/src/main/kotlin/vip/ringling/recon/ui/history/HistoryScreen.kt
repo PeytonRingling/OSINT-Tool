@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -41,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import java.util.concurrent.TimeUnit
 import vip.ringling.recon.domain.ScanRecord
 import vip.ringling.recon.domain.Severity
+import vip.ringling.recon.domain.scorable
 import vip.ringling.recon.ui.components.RiskRing
 import vip.ringling.recon.ui.components.icon
 
@@ -163,7 +165,8 @@ private fun HistoryRow(r: ScanRecord, selected: Boolean, now: Long, onOpen: () -
                 Modifier.padding(start = 14.dp, top = 12.dp, bottom = 12.dp, end = 4.dp).heightIn(min = 64.dp),
                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                RiskRing(r.risk, size = 64.dp, stroke = 7.dp, caption = "")
+                if (r.neutral) Box(Modifier.size(64.dp).background(cs.surfaceContainerHigh, androidx.compose.foundation.shape.CircleShape), contentAlignment = Alignment.Center) { Icon(vip.ringling.recon.domain.ModuleId.REGISTRY.icon(), null, tint = cs.onSurfaceVariant) }
+                else RiskRing(r.risk, size = 64.dp, stroke = 7.dp, caption = "")
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                     Text(r.input.raw, style = MaterialTheme.typography.titleMedium, color = cs.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -172,9 +175,15 @@ private fun HistoryRow(r: ScanRecord, selected: Boolean, now: Long, onOpen: () -
                         Text("·", color = cs.onSurfaceVariant)
                         Text(relative(r.timestampMillis, now), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
                     }
-                    val ex = r.findings.count { it.severity == Severity.EXPOSED }
-                    val info = r.findings.count { it.severity == Severity.INFO }
-                    Text("$ex exposed · $info info", style = MaterialTheme.typography.labelMedium, color = if (ex > 0) vip.ringling.recon.ui.theme.ReconTheme.severity.exposed else cs.onSurfaceVariant)
+                    if (r.neutral) {
+                        Text("Registry search · live lookup, nothing saved", style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant)
+                    } else {
+                        val scored = r.findings.filter { it.scorable }
+                        val ex = scored.count { it.severity == Severity.EXPOSED }
+                        val info = scored.count { it.severity == Severity.INFO }
+                        Text("$ex exposed · $info info", style = MaterialTheme.typography.labelMedium, color = if (ex > 0) vip.ringling.recon.ui.theme.ReconTheme.severity.exposed else cs.onSurfaceVariant)
+                        if (r.legacyScore) Text("Re-scored under current rules (saved by an older build)", style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
+                    }
                 }
                 IconButton(onClick = onDelete) { Icon(Icons.Rounded.DeleteOutline, "Delete scan of ${r.input.raw}", tint = cs.onSurfaceVariant) }
             }

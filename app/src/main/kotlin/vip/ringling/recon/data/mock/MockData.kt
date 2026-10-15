@@ -6,6 +6,7 @@ import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.ScanInput
+import vip.ringling.recon.domain.RiskScore
 import vip.ringling.recon.domain.ScanRecord
 import vip.ringling.recon.domain.Severity
 
@@ -90,7 +91,7 @@ object MockData {
                     offenses.forEach { add("• $it") }
                     note?.let { add(it) }
                 }.joinToString("\n"),
-                severity = sev, url = "https://apps.isp.idaho.gov/sor_id/", raw = "", confidence = Confidence.HIGH,
+                severity = Severity.INFO, hotTags = setOf("Non-compliant", "Multiple convictions"), url = "https://apps.isp.idaho.gov/sor_id/", raw = "", confidence = Confidence.HIGH,
                 geo = GeoPoint(lat, lng), tags = tags,
             )
         return listOf(
@@ -117,9 +118,9 @@ object MockData {
 
     fun history(now: Long): List<ScanRecord> {
         val h = 3_600_000L
-        fun rec(id: String, raw: String, type: InputType, ago: Long): ScanRecord {
+        fun rec(id: String, raw: String, type: InputType, ago: Long, legacy: Boolean = false): ScanRecord {
             val input = ScanInput(raw, type)
-            return ScanRecord(id, input, now - ago, allFor(input).filter { it.module in modulesFor(type) })
+            return ScanRecord(id, input, now - ago, allFor(input).filter { it.module in modulesFor(type) }, scoreVersion = if (legacy) 0 else RiskScore.VERSION)
         }
         return listOf(
             rec("h1", "alex.moreno@proton.me", InputType.EMAIL, 2 * h),
@@ -127,7 +128,7 @@ object MockData {
             rec("h3", "ghost_in_shell", InputType.USERNAME, 27 * h),
             rec("h4", "83702", InputType.ZIP, 52 * h),
             rec("h5", "+1 208 555 0142", InputType.PHONE, 96 * h),
-            rec("h6", "sam.okafor@northwind-labs.io", InputType.EMAIL, 170 * h),
+            rec("h6", "sam.okafor@northwind-labs.io", InputType.EMAIL, 170 * h, legacy = true),
             rec("h7", "kestrel_9", InputType.USERNAME, 340 * h),
         )
     }

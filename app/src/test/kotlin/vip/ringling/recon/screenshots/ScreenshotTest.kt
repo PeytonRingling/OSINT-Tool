@@ -12,6 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import org.junit.Before
@@ -196,6 +197,49 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
             HomePane(HomeUiState(query = email.raw, detected = InputType.EMAIL, session = streaming, selectedId = adobe.id), HomeActions(), adobe, noActions, true, pad)
         } else {
             FindingDetail(adobe, DetailActions(), onBack = {}, contentPadding = pad)
+        }
+    }
+
+    @Test fun breach_two_line_titles() = shot("05b_breach_two_line_titles") { _, pad ->
+        val samples = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
+            .decodeFromString<List<vip.ringling.recon.data.sources.breach.HibpBreach>>(vip.ringling.recon.data.fixture("hibp_samples.json"))
+        val findings = listOf("Suno", "Estonia", "Cocospy", "Adobe").map { n -> vip.ringling.recon.data.sources.breach.HibpMapper.breachFinding(samples.first { it.name == n }) }
+        androidx.compose.foundation.layout.Column(Modifier.padding(pad).padding(16.dp)) {
+            vip.ringling.recon.ui.components.ModuleCard(ModuleId.BREACH, ModuleStatus.DONE, findings, null, null, {})
+        }
+    }
+
+    @Test fun registry_notice_expanded() = shot("06e_registry_notice_expanded") { _, pad ->
+        androidx.compose.foundation.layout.Column(Modifier.padding(pad).padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            androidx.compose.material3.Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer) {
+                androidx.compose.foundation.layout.Column {
+                    vip.ringling.recon.ui.components.LegalNoticeBanner(initiallyExpanded = true)
+                    vip.ringling.recon.ui.components.RegistrySummaryRow(zipDone.findings.first { it.id == "REGISTRY-summary" }, initiallyExpanded = true)
+                }
+            }
+            androidx.compose.material3.Surface(shape = MaterialTheme.shapes.large, color = MaterialTheme.colorScheme.surfaceContainer) {
+                androidx.compose.foundation.layout.Column {
+                    vip.ringling.recon.ui.components.LegalNoticeBanner()
+                    vip.ringling.recon.ui.components.RegistrySummaryRow(zipDone.findings.first { it.id == "REGISTRY-summary" })
+                }
+            }
+        }
+    }
+
+    @Test fun paid_lookup_confirmation() = shot("07c_paid_lookup_confirmation", tab = null) { _, pad ->
+        val offer = vip.ringling.recon.data.sources.phone.PhoneSource(vip.ringling.recon.data.net.Http(), vip.ringling.recon.data.net.Endpoints(), vip.ringling.recon.data.secret.InMemoryApiKeys()).twilioOffer()
+        androidx.compose.foundation.layout.Column(Modifier.padding(pad).padding(16.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+            vip.ringling.recon.ui.detail.PaidActionCard(offer.paid!!, onConfirmed = {})
+            androidx.compose.material3.Surface(shape = MaterialTheme.shapes.extraLarge, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                androidx.compose.foundation.layout.Column(Modifier.padding(24.dp), verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(16.dp)) {
+                    androidx.compose.material3.Text("Run a paid lookup?", style = MaterialTheme.typography.headlineSmall)
+                    vip.ringling.recon.ui.detail.PaidConfirmBody(offer.paid!!)
+                    androidx.compose.foundation.layout.Row(horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp), modifier = Modifier.align(androidx.compose.ui.Alignment.End)) {
+                        androidx.compose.material3.TextButton(onClick = {}) { androidx.compose.material3.Text("Cancel") }
+                        androidx.compose.material3.TextButton(onClick = {}) { androidx.compose.material3.Text("Confirm and pay") }
+                    }
+                }
+            }
         }
     }
 

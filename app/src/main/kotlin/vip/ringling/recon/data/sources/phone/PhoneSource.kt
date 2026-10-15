@@ -26,6 +26,8 @@ import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.Link
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.OsintSource
+import vip.ringling.recon.domain.PaidAction
+import vip.ringling.recon.domain.PaidLookups
 import vip.ringling.recon.domain.ScanInput
 import vip.ringling.recon.domain.Severity
 
@@ -41,7 +43,7 @@ class PhoneSource @Inject constructor(
     private val http: Http,
     private val endpoints: Endpoints,
     private val keys: ApiKeys,
-) : OsintSource {
+) : OsintSource, PaidLookups {
     override val id = ModuleId.PHONE
     override val supportedInputTypes = setOf(InputType.PHONE)
 
@@ -56,10 +58,38 @@ class PhoneSource @Inject constructor(
                 send(linksFinding(info))
                 launch { catching("notes", "800notes") { notesFinding(info)?.let { send(it) } } }
                 val sid = keys.get(ApiKeyId.TWILIO_SID); val token = keys.get(ApiKeyId.TWILIO_TOKEN)
-                if (sid != null && token != null) launch { catching("twilio", "Twilio") { send(twilio(info, sid, token)) } }
+                // Paid: only OFFERED here. Twilio is contacted solely after the user confirms the cost (see [runPaid]).
+                if (sid != null && token != null) send(twilioOffer())
                 keys.get(ApiKeyId.VERIPHONE)?.let { key -> launch { catching("veriphone", "Veriphone") { send(veriphone(info, key)) } } }
             }
         }
+    }
+
+    internal fun twilioOffer() = Finding(
+        id = "PHONE-twilio-offer", module = ModuleId.PHONE, title = "Caller-name lookup (paid)",
+        detail = "Ask Twilio for the caller-ID name and current carrier of this number.\nCosts $TWILIO_COST_LABEL, billed to your Twilio account. Nothing is sent until you confirm.",
+        severity = Severity.INFO, confidence = null, tags = listOf("Paid"),
+        paid = PaidAction(
+            id = TWILIO_ACTION, label = "Look up caller name", cost = TWILIO_COST_LABEL,
+            explanation = "Sends this phone number to Twilio Lookup using your own Account SID and Auth Token. Twilio bills your account for every lookup, whether or not a name is found.",
+        ),
+    )
+
+    override suspend fun runPaid(actionId: String, input: ScanInput): List<Finding> {
+        if (actionId != TWILIO_ACTION) return emptyList()
+        val sid = keys.get(ApiKeyId.TWILIO_SID); val token = keys.get(ApiKeyId.TWILIO_TOKEN)
+        if (sid == null || token == null) return listOf(Finding("PHONE-twilio-error", ModuleId.PHONE, "Twilio unavailable", "Add your Twilio Account SID and Auth Token in Settings.", Severity.INFO))
+        val info = (PhoneAnalyzer.analyze(input.raw, defaultRegion()) as? PhoneAnalyzer.Result.Ok)?.info
+            ?: return listOf(Finding("PHONE-twilio-error", ModuleId.PHONE, "Twilio unavailable", "This number can't be read, so nothing was sent.", Severity.INFO))
+        return try { listOf(twilio(info, sid, token)) } catch (e: CancellationException) { throw e } catch (e: Exception) {
+            listOf(Finding("PHONE-twilio-error", ModuleId.PHONE, "Twilio unavailable", e.message ?: e.javaClass.simpleName, Severity.INFO))
+        }
+    }
+
+    companion object {
+        const val TWILIO_ACTION = "twilio"
+        /** Twilio Lookup v2 list prices at time of writing: Caller Name ≈ $0.010 + Line Type Intelligence ≈ $0.008. Check your Twilio pricing page. */
+        const val TWILIO_COST_LABEL = "about \$0.018 per lookup (caller name ≈ \$0.010 + line type ≈ \$0.008)"
     }
 
     private suspend fun kotlinx.coroutines.channels.ProducerScope<Finding>.catching(key: String, name: String, block: suspend () -> Unit) {

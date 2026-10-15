@@ -2,6 +2,9 @@ package vip.ringling.recon.ui.components
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.border
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
@@ -77,6 +80,23 @@ fun RiskRing(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(caption, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** Neutral stand-in for the risk ring on offender-registry results: just a count, no colour judgement and no "Exposed" wording. */
+@Composable
+fun CountTile(count: Int, caption: String, modifier: Modifier = Modifier, size: Dp = 132.dp) {
+    val cs = MaterialTheme.colorScheme
+    Box(
+        modifier.size(size).clip(androidx.compose.foundation.shape.CircleShape).background(cs.surfaceContainerHigh)
+            .border(androidx.compose.foundation.BorderStroke(1.dp, cs.outlineVariant), androidx.compose.foundation.shape.CircleShape)
+            .semantics { contentDescription = "$count $caption" },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(count.toString(), style = MaterialTheme.typography.displayMedium.copy(fontSize = (size.value * 0.30f).sp, lineHeight = (size.value * 0.32f).sp), color = cs.onSurface)
+            Text(caption, style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
         }
     }
 }

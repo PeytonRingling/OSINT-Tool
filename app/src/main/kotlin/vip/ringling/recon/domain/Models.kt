@@ -55,6 +55,10 @@ data class Pivot(val label: String, val query: String)
 @Serializable
 data class Fact(val label: String, val value: String)
 
+/** A lookup that costs real money. It is only ever offered, never run, until the user confirms the shown [cost]. */
+@Serializable
+data class PaidAction(val id: String, val label: String, val cost: String, val explanation: String)
+
 /** Normalized result emitted by every source. Optional fields let any module attach a photo, a place or labels. */
 @Serializable
 data class Finding(
@@ -75,6 +79,7 @@ data class Finding(
     val facts: List<Fact> = emptyList(),
     val links: List<Link> = emptyList(),
     val pivots: List<Pivot> = emptyList(),
+    val paid: PaidAction? = null,
 )
 
 data class ScanInput(val raw: String, val type: InputType)
@@ -107,21 +112,51 @@ data class ScanRecord(
     val input: ScanInput,
     val timestampMillis: Long,
     val findings: List<Finding>,
+    /** [RiskScore.VERSION] the row was saved under. Older rows are re-scored on load and labelled in History. */
+    val scoreVersion: Int = RiskScore.VERSION,
 ) {
     val risk: Int get() = RiskScore.compute(findings)
+    val legacyScore: Boolean get() = scoreVersion < RiskScore.VERSION
+    /** ZIP / offender-registry searches are live lookups, not risk assessments: they show a neutral result count instead. */
+    val neutral: Boolean get() = input.type == InputType.ZIP
 }
 
+/**
+ * Risk score, version [VERSION]. Deterministic: it depends ONLY on how many scorable findings are EXPOSED and how many are INFO.
+ *
+ *     score = min(100, 14 × exposed + 4 × info)          bands: ≥ 50 exposed, ≥ 14 info (one exposed finding is never "clean"), else clean
+ *
+ * Scorable = evidence only. Not counted: CLEAN findings, offender-registry records (never risk-scored), search dorks, and
+ * housekeeping findings (summaries, "… unavailable" errors, link lists, manual-check lists, the identity roll-up, paid-lookup offers).
+ * The same counts therefore always give the same score, whatever order results arrive in.
+ */
 object RiskScore {
-    /** 0..100, higher is worse. Exposed findings dominate; info adds a little. */
+    const val VERSION = 2
+    const val EXPOSED_WEIGHT = 14
+    const val INFO_WEIGHT = 4
+
+    fun compute(exposed: Int, info: Int): Int = (exposed * EXPOSED_WEIGHT + info * INFO_WEIGHT).coerceIn(0, 100)
+
     fun compute(findings: List<Finding>): Int {
-        val exposed = findings.count { it.severity == Severity.EXPOSED }
-        val info = findings.count { it.severity == Severity.INFO }
-        return (exposed * 14 + info * 4).coerceAtMost(100)
+        val scorable = findings.filter { it.scorable }
+        return compute(scorable.count { it.severity == Severity.EXPOSED }, scorable.count { it.severity == Severity.INFO })
     }
 
     fun band(score: Int): Severity = when {
         score >= 50 -> Severity.EXPOSED
-        score >= 15 -> Severity.INFO
+        score >= 14 -> Severity.INFO
         else -> Severity.CLEAN
     }
 }
+
+private val NON_EVIDENCE_SUFFIXES = listOf("-error", "-summary", "-manual", "-links", "-profile", "-offer", "-pending", "-nostate", "-none")
+
+/** True when the finding is evidence about the subject (see [RiskScore]). */
+val Finding.scorable: Boolean
+    get() = module != ModuleId.REGISTRY && module != ModuleId.DORKS && paid == null && NON_EVIDENCE_SUFFIXES.none { id.endsWith(it) }
+
+/** True for findings that must be shown neutrally (no severity chip, no "Exposed" wording). */
+val Finding.neutral: Boolean get() = module == ModuleId.REGISTRY
+
+/** An actual registrant record (as opposed to the summary / notes / "none found" rows of the registry module). */
+val Finding.isRegistryRecord: Boolean get() = module == ModuleId.REGISTRY && Regex("^REGISTRY-[A-Z]{2}-.+").matches(id)

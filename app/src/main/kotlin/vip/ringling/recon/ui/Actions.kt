@@ -29,7 +29,7 @@ class ReconActions(
 )
 
 @Composable
-fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit = {}, onAddToCase: (Finding) -> Unit = {}): ReconActions {
+fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit = {}, onAddToCase: (Finding) -> Unit = {}, onRunPaid: (Finding) -> Unit = {}): ReconActions {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val holder = remember { arrayOfNulls<String>(1) }
@@ -56,6 +56,7 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
 
     val pivot by androidx.compose.runtime.rememberUpdatedState(onPivot)
     val addToCase by androidx.compose.runtime.rememberUpdatedState(onAddToCase)
+    val runPaid by androidx.compose.runtime.rememberUpdatedState(onRunPaid)
     return remember(context) {
         ReconActions(
             detail = DetailActions(
@@ -70,6 +71,7 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
                 },
                 onExport = { f -> export("recon-${f.module.name.lowercase()}-${f.id.takeLast(12)}.json", Export.finding(f)) },
                 onPivot = { pivot(it) },
+                onRunPaid = { runPaid(it) },
                 onAddToCase = { f -> addToCase(f); scope.launch { snackbar.showSnackbar("Added to case") } },
                 onOpenMap = { g ->
                     // Coordinates only: nothing about who is at this address is passed to the maps app.

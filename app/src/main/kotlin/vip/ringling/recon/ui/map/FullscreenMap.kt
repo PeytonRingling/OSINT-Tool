@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import vip.ringling.recon.domain.Finding
+import vip.ringling.recon.domain.neutral
 import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.ui.components.RemoteImage
 import vip.ringling.recon.ui.components.SeverityChip
@@ -93,7 +94,7 @@ private fun SelectedCard(f: Finding, onOpen: () -> Unit) {
                 Text(f.detail.lines().firstOrNull().orEmpty(), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 2)
                 if (f.tags.isNotEmpty()) Text(f.tags.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    SeverityChip(f.severity)
+                    if (!f.neutral) SeverityChip(f.severity)
                     distanceLabel(f)?.let { Text(it, style = MaterialTheme.typography.titleSmall, color = cs.primary) }
                 }
             }

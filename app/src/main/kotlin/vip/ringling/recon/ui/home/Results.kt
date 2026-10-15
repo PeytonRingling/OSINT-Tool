@@ -31,7 +31,10 @@ import androidx.compose.ui.unit.dp
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.ModuleStatus
+import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.RiskScore
+import vip.ringling.recon.domain.isRegistryRecord
+import vip.ringling.recon.domain.scorable
 import vip.ringling.recon.domain.ScanInput
 import vip.ringling.recon.domain.Severity
 import vip.ringling.recon.domain.Geo
@@ -70,7 +73,14 @@ fun LazyListScope.scanResults(
             BoxWithConstraints {
                 val narrow = maxWidth < 420.dp
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(if (narrow) 12.dp else 20.dp)) {
-                    RiskRing(RiskScore.compute(findings), size = if (narrow) 96.dp else 132.dp, stroke = if (narrow) 10.dp else 13.dp)
+                    val registryOnly = input.type == InputType.ZIP
+                    val ringSize = if (narrow) 96.dp else 132.dp
+                    if (registryOnly) {
+                        val records = findings.count { it.isRegistryRecord }
+                        vip.ringling.recon.ui.components.CountTile(records, if (records == 1) "RECORD" else "RECORDS", size = ringSize)
+                    } else {
+                        RiskRing(RiskScore.compute(findings), size = ringSize, stroke = if (narrow) 10.dp else 13.dp)
+                    }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             Icon(input.type.icon(), null, Modifier.padding(end = 2.dp), tint = cs.primary)
@@ -83,7 +93,8 @@ fun LazyListScope.scanResults(
                             color = cs.onSurface, maxLines = 2, overflow = TextOverflow.Ellipsis,
                         )
                         Text(
-                            "$done of $total modules · ${findings.size} findings · ${findings.count { it.severity == Severity.EXPOSED }} exposed",
+                            if (input.type == InputType.ZIP) "$done of $total modules · live lookup, not a risk score"
+                            else "$done of $total modules · ${findings.count { it.scorable }} findings · ${findings.count { it.scorable && it.severity == Severity.EXPOSED }} exposed",
                             style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant,
                         )
                     }

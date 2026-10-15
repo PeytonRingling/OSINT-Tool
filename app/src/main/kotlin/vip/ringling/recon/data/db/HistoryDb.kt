@@ -25,6 +25,8 @@ data class ScanEntity(
     val type: String,
     val timestamp: Long,
     val findingsJson: String,
+    /** RiskScore.VERSION the row was saved under; 0 for rows from builds before versioning. */
+    @androidx.room.ColumnInfo(defaultValue = "0") val scoreVersion: Int = 0,
 )
 
 @Dao
@@ -98,13 +100,18 @@ interface WatchDao {
     suspend fun delete(id: String)
 }
 
-@Database(entities = [ScanEntity::class, CaseEntity::class, WatchEntity::class], version = 2, exportSchema = false)
+@Database(entities = [ScanEntity::class, CaseEntity::class, WatchEntity::class], version = 3, exportSchema = false)
 abstract class HistoryDb : RoomDatabase() {
     abstract fun scans(): ScanDao
     abstract fun cases(): CaseDao
     abstract fun watches(): WatchDao
 
     companion object {
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `scans` ADD COLUMN `scoreVersion` INTEGER NOT NULL DEFAULT 0")
+            }
+        }
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `case_items` (`id` TEXT NOT NULL, `findingJson` TEXT NOT NULL, `note` TEXT NOT NULL, `addedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))")
@@ -116,11 +123,16 @@ abstract class HistoryDb : RoomDatabase() {
 
 private val json = Json { ignoreUnknownKeys = true }
 
-fun ScanRecord.toEntity() = ScanEntity(id, input.raw, input.type.name, timestampMillis, json.encodeToString(findings))
+fun ScanRecord.toEntity() = ScanEntity(id, input.raw, input.type.name, timestampMillis, json.encodeToString(findings), scoreVersion)
 
-fun ScanEntity.toRecord() = ScanRecord(
-    id = id,
-    input = ScanInput(query, InputType.valueOf(type)),
-    timestampMillis = timestamp,
-    findings = runCatching { json.decodeFromString<List<Finding>>(findingsJson) }.getOrDefault(emptyList()),
-)
+fun ScanEntity.toRecord(): ScanRecord {
+    val decoded = runCatching { json.decodeFromString<List<Finding>>(findingsJson) }.getOrDefault(emptyList())
+    return ScanRecord(
+        id = id,
+        input = ScanInput(query, InputType.valueOf(type)),
+        timestampMillis = timestamp,
+        // Rows saved before the current scoring rules are re-scored on load (and labelled in History) so old and new scans compare fairly.
+        findings = if (scoreVersion < vip.ringling.recon.domain.RiskScore.VERSION) decoded.map(vip.ringling.recon.domain.Rescore::finding) else decoded,
+        scoreVersion = scoreVersion,
+    )
+}

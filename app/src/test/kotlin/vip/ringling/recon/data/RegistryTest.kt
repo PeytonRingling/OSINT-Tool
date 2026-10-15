@@ -134,7 +134,7 @@ class IdahoAdapterTest {
             assertTrue("Offenses (2):" in lines && "• 18-0000 – FICTIONAL OFFENSE ONE – Jun 01, 2010 – ADA CO" in lines, adult.summary)
             assertTrue(lines.any { it.startsWith("Convictions on 2 separate dates") && "does not state" in it }, "repeat is inferred, and says so")
             assertEquals(listOf("Adult registry", "Multiple convictions"), adult.tags)
-            assertEquals(Severity.EXPOSED, adult.severity)
+            assertEquals(Severity.INFO, adult.severity, "registry records are never labelled Exposed")
             assertEquals(43.615, adult.geo!!.lat, 1e-6)
             assertTrue(adult.imageUrl!!.endsWith("/sorFiles/photos/thumbs/FAKE_90001_01-02-2024.jpg"), adult.imageUrl)
             assertTrue(adult.imageLargeUrl!!.endsWith("/sorFiles/photos/FAKE_90001_01-02-2024.jpg"), adult.imageLargeUrl)
@@ -174,7 +174,7 @@ class IdahoAdapterTest {
             val entries = adapter(srv).search(RegistryQuery(zip = "83702")).toList().filterIsInstance<RegistryEvent.Entry>().map { it.entry }
             val rec = entries.first { it.name == "EXAMPLE, BEN" }
             assertTrue("Status: Non Comp" in rec.summary && "Offense details unavailable" in rec.summary, rec.summary)
-            assertTrue("Non-compliant" in rec.tags && rec.severity == Severity.EXPOSED)
+            assertTrue("Non-compliant" in rec.tags && rec.severity == Severity.INFO)
             assertEquals(null, rec.geo, "map page unreachable → no coordinates, row still shown")
         }
     }
@@ -265,7 +265,7 @@ class RegistrySourceTest {
             }
         }
         val history = InMemoryHistoryRepository()
-        val controller = ScanController(ScanRunner(setOf(registry)), history)
+        val controller = ScanController(ScanRunner(setOf(registry)), history, emptySet())
         val done = async(start = CoroutineStart.UNDISPATCHED) { controller.completed.first() }
         controller.start(zip)
         withTimeout(10_000) { done.await() }

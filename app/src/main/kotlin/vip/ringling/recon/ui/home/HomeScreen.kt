@@ -42,6 +42,7 @@ import vip.ringling.recon.ui.components.SeverityChip
 import vip.ringling.recon.ui.components.TypeChipRow
 import vip.ringling.recon.ui.components.icon
 import vip.ringling.recon.domain.Severity
+import vip.ringling.recon.domain.scorable
 
 data class HomeUiState(
     val query: String = "",
@@ -202,7 +203,7 @@ private fun ModuleTiles() {
 @Composable
 private fun RecentRow(r: ScanRecord, onClick: () -> Unit) {
     val cs = MaterialTheme.colorScheme
-    val worst = r.findings.maxByOrNull { it.severity.ordinal }?.severity ?: Severity.CLEAN
+    val worst = r.findings.filter { it.scorable }.maxByOrNull { it.severity.ordinal }?.severity ?: Severity.CLEAN
     Row(
         Modifier.fillMaxWidth().clickable(role = Role.Button, onClick = onClick).heightIn(min = 56.dp).padding(horizontal = 24.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -210,6 +211,6 @@ private fun RecentRow(r: ScanRecord, onClick: () -> Unit) {
     ) {
         Icon(r.input.type.icon(), null, tint = cs.onSurfaceVariant)
         Text(r.input.raw, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium, color = cs.onSurface, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        SeverityChip(worst)
+        if (!r.neutral) SeverityChip(worst)
     }
 }

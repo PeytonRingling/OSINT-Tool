@@ -58,8 +58,9 @@ class CaseTest {
         raw.execSQL("INSERT INTO scans VALUES('s1','jane','USERNAME',5,'[]')")
         raw.version = 1
         raw.close()
-        val db = Room.databaseBuilder(ctx, HistoryDb::class.java, name).addMigrations(HistoryDb.MIGRATION_1_2).allowMainThreadQueries().build()
+        val db = Room.databaseBuilder(ctx, HistoryDb::class.java, name).addMigrations(HistoryDb.MIGRATION_1_2, HistoryDb.MIGRATION_2_3).allowMainThreadQueries().build()
         assertEquals("jane", db.scans().find("s1")!!.query)
+        assertEquals(0, db.scans().find("s1")!!.scoreVersion, "rows from before versioning are legacy (0)")
         assertEquals(0, db.cases().all().first().size); assertEquals(0, db.watches().all().first().size)
         db.close()
     }
