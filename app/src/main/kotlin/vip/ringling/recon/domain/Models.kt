@@ -32,6 +32,10 @@ enum class ModuleId(val label: String, val tagline: String) {
 @Serializable
 data class GeoPoint(val lat: Double, val lng: Double)
 
+/** One labelled line in a detail screen's fact table (e.g. "Breach date" → "Oct 4, 2013"). */
+@Serializable
+data class Fact(val label: String, val value: String)
+
 /** Normalized result emitted by every source. Optional fields let any module attach a photo, a place or labels. */
 @Serializable
 data class Finding(
@@ -47,6 +51,9 @@ data class Finding(
     val imageUrl: String? = null,
     val imageLargeUrl: String? = null,
     val tags: List<String> = emptyList(),
+    /** Tags to draw in the warning colour. */
+    val hotTags: Set<String> = emptySet(),
+    val facts: List<Fact> = emptyList(),
 )
 
 data class ScanInput(val raw: String, val type: InputType)

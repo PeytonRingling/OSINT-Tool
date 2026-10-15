@@ -1,4 +1,4 @@
 [
-  {"Name":"Adobe","Title":"Adobe","Domain":"adobe.com","BreachDate":"2013-10-04","AddedDate":"2013-12-04T00:00:00Z","PwnCount":152445165,"Description":"x","DataClasses":["Email addresses","Password hints","Passwords","Usernames"],"IsVerified":true,"IsFabricated":false,"IsSensitive":false,"IsRetired":false,"IsSpamList":false,"LogoPath":"x.png"},
+  {"Name":"Adobe","Title":"Adobe","Domain":"adobe.com","BreachDate":"2013-10-04","AddedDate":"2013-12-04T00:00:00Z","PwnCount":152445165,"Description":"In late 2013, a <a href=\"https://example.test/post\" target=\"_blank\" rel=\"noopener\">large account database</a> was stolen. It held <em>encrypted</em> passwords and unencrypted hints.","DataClasses":["Email addresses","Password hints","Passwords","Usernames"],"IsVerified":true,"IsFabricated":false,"IsSensitive":false,"IsRetired":false,"IsSpamList":false,"LogoPath":"https://haveibeenpwned.com/Content/Images/PwnedLogos/Adobe.png"},
   {"Name":"Dropbox","Title":"Dropbox","Domain":"dropbox.com","BreachDate":"2012-07-01","PwnCount":68648009,"DataClasses":["Email addresses"],"IsVerified":true,"SomeFutureField":42}
 ]

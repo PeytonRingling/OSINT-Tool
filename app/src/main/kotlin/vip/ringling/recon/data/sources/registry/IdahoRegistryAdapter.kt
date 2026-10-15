@@ -174,6 +174,7 @@ class IdahoRegistryAdapter @Inject constructor(
             imageUrl = abs(row.photoHref),
             imageLargeUrl = abs(d?.photoHref ?: row.photoHref),
             tags = tags,
+            hotTags = setOf("Non-compliant", "Multiple convictions"),
         )
     }
 

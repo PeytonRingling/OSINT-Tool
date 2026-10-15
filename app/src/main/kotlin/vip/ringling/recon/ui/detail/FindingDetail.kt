@@ -104,6 +104,9 @@ fun FindingDetail(
                     }
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            if (finding.module != ModuleId.REGISTRY && finding.imageUrl != null) {
+                                RemoteImage(finding.imageUrl, "Logo", Modifier.size(56.dp).clip(MaterialTheme.shapes.small), contentScale = ContentScale.Fit, placeholderIcon = false)
+                            }
                             Text(finding.title, style = MaterialTheme.typography.headlineLarge, color = cs.onSurface)
                             SeverityChip(finding.severity)
                         }
@@ -119,7 +122,7 @@ fun FindingDetail(
                     if (finding.tags.isNotEmpty()) {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             finding.tags.forEach { tag ->
-                                val hot = tag == "Non-compliant" || tag == "Multiple convictions"
+                                val hot = tag in finding.hotTags
                                 Text(
                                     tag, style = MaterialTheme.typography.labelMedium,
                                     color = if (hot) ReconTheme.severity.exposed else cs.onSurfaceVariant,
@@ -135,8 +138,9 @@ fun FindingDetail(
             }
         }
         item {
-            Text(finding.detail, style = MaterialTheme.typography.bodyLarge, color = cs.onSurface, modifier = Modifier.padding(horizontal = 8.dp))
+            DetailText(finding.detail, Modifier.padding(horizontal = 8.dp))
         }
+        if (finding.facts.isNotEmpty()) item { FactsCard(finding.facts) }
         finding.geo?.let { g ->
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -197,6 +201,44 @@ fun EmptyDetailPane(modifier: Modifier = Modifier) {
             RiskRing(0, size = 132.dp, stroke = 12.dp, caption = "IDLE")
             Text("Select a result", style = MaterialTheme.typography.headlineSmall, color = cs.onSurface)
             Text("Details, raw data and export options appear here.", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+        }
+    }
+}
+
+@Composable
+private fun FactsCard(facts: List<vip.ringling.recon.domain.Fact>) {
+    val cs = MaterialTheme.colorScheme
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text("DETAILS", style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant, modifier = Modifier.padding(horizontal = 8.dp))
+        Surface(Modifier.fillMaxWidth(), shape = MaterialTheme.shapes.medium, color = cs.surfaceContainer) {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                facts.forEachIndexed { i, f ->
+                    if (i > 0) androidx.compose.material3.HorizontalDivider(color = cs.outlineVariant.copy(alpha = 0.4f))
+                    Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                        Text(f.label, Modifier.weight(0.42f), style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+                        Text(f.value, Modifier.weight(0.58f), style = MaterialTheme.typography.bodyMedium, color = cs.onSurface)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Renders a multi-line detail: short "Heading:" lines, "• " bullets, and ordinary paragraphs. */
+@Composable
+private fun DetailText(detail: String, modifier: Modifier = Modifier) {
+    val cs = MaterialTheme.colorScheme
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        detail.lines().filter { it.isNotBlank() }.forEachIndexed { i, line ->
+            when {
+                line.endsWith(":") && line.length <= 24 -> Text(line.removeSuffix(":").uppercase(), style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+                line.startsWith("• ") -> Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text("•", style = MaterialTheme.typography.bodyLarge, color = cs.primary)
+                    Text(line.removePrefix("• "), style = MaterialTheme.typography.bodyLarge, color = cs.onSurface)
+                }
+                i == 0 -> Text(line, style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+                else -> Text(line, style = MaterialTheme.typography.bodyLarge, color = cs.onSurfaceVariant)
+            }
         }
     }
 }

@@ -81,6 +81,14 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Registry findings can't be exported (`Export.exportable`): no Export JSON button, excluded from export-all; still stripped from history.
   Copy/Share of a single record remains.
 
+## Breach detail + map camera (added 2026-10-15)
+- `Finding` also has `facts: List<Fact>` (label/value table in the detail screen) and `hotTags`. HIBP breach findings carry description (HTML stripped),
+  dates, counts, domain, verified/sensitive/spam/malware flags, logo, data-class tags and derived advice (`BreachAdvice`); paste findings list each paste;
+  LeakCheck findings list every source+date and which FIELDS were exposed. **Leaked credential VALUES are never displayed or stored** (v2 entries
+  contain them; the mapper reads only source names/dates/field names — tested).
+- Map camera: pins stream in while a search runs, so the camera only auto-fits until the user pans/zooms (`userMoved`); pinch zooms around the fingers,
+  double-tap zooms in, and inline maps claim two-finger gestures only (one finger scrolls the page) — `oneFingerPan=true` only in the full-screen map.
+
 ## In-app updates (added 2026-10-15)
 - Settings → Updates (+ a quiet launch-time check and snackbar when a token is set). Source = the rolling `latest` GitHub release.
   While the repo is PRIVATE the user adds a fine-grained GitHub token (this repo, **Contents: read**) under Settings → API keys
@@ -109,5 +117,5 @@ Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pa
 - Registry findings are shown live only: `ScanController` strips them before saving history (tested). Never cache.
 - Failure policy: a failing sub-check becomes an INFO "… unavailable" finding (breach/domain); an inconclusive site probe
   is counted, never treated as "not found".
-- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 129 tests at last count.
+- Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 137 tests at last count.
 - Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.

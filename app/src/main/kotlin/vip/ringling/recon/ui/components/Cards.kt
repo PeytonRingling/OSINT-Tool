@@ -151,6 +151,8 @@ fun FindingRow(finding: Finding, selected: Boolean, onClick: () -> Unit, modifie
     ) {
         if (hasPortrait) {
             RemoteImage(finding.imageUrl, "Photo of ${finding.title}", Modifier.size(56.dp).clip(MaterialTheme.shapes.small))
+        } else if (finding.imageUrl != null) {
+            RemoteImage(finding.imageUrl, "Logo", Modifier.size(40.dp).clip(MaterialTheme.shapes.extraSmall), contentScale = androidx.compose.ui.layout.ContentScale.Fit, placeholderIcon = false)
         } else {
             Box(Modifier.size(10.dp).clip(CircleShape).background(severityColor(finding.severity)))
         }

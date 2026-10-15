@@ -3,7 +3,14 @@ package vip.ringling.recon.ui.map
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculateCentroid
+import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.geometry.isSpecified
+import androidx.compose.ui.input.pointer.positionChanged
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -84,6 +91,8 @@ fun TileMap(
     modifier: Modifier = Modifier,
     onExpand: (() -> Unit)? = null,
     onClose: (() -> Unit)? = null,
+    /** True for a full-screen map; false inside a scrolling page, where one finger should scroll the page. */
+    oneFingerPan: Boolean = false,
     clipShape: androidx.compose.ui.graphics.Shape = MaterialTheme.shapes.medium,
     /** Keeps the buttons and attribution clear of system bars or a card laid over the map. */
     controlsPadding: androidx.compose.foundation.layout.PaddingValues = androidx.compose.foundation.layout.PaddingValues(0.dp),
@@ -101,23 +110,49 @@ fun TileMap(
         // Fit into a viewport inset on every side so pins never sit under the zoom buttons or the attribution.
         val insetX = with(density) { 72.dp.toPx() }.toDouble(); val insetY = with(density) { 44.dp.toPx() }.toDouble()
         val fitW = (wPx - 2 * insetX).coerceAtLeast(80.0); val fitH = (hPx - 2 * insetY).coerceAtLeast(80.0)
-        val initial = remember(key, wPx > 0) { Geo.fit(fitPoints.ifEmpty { listOf(GeoPoint(43.6, -116.2)) }, fitW, fitH) }
-        var zoom by remember(key) { mutableDoubleStateOf(initial.second) }
-        var cx by remember(key) { mutableDoubleStateOf(Geo.worldX(initial.first.lng, zoom)) }
-        var cy by remember(key) { mutableDoubleStateOf(Geo.worldY(initial.first.lat, zoom)) }
+        val fallback = listOf(GeoPoint(43.6, -116.2))
+        val first = remember { Geo.fit(fitPoints.ifEmpty { fallback }, fitW, fitH) }
+        var zoom by remember { mutableDoubleStateOf(first.second) }
+        var cx by remember { mutableDoubleStateOf(Geo.worldX(first.first.lng, first.second)) }
+        var cy by remember { mutableDoubleStateOf(Geo.worldY(first.first.lat, first.second)) }
+        // Once the user pans or zooms, new results streaming in must NOT yank the camera back.
+        var userMoved by remember { mutableStateOf(false) }
 
-        fun zoomTo(newZoom: Double) {
+        fun fitAll() {
+            val (c, z) = Geo.fit(fitPoints.ifEmpty { fallback }, fitW, fitH)
+            zoom = z; cx = Geo.worldX(c.lng, z); cy = Geo.worldY(c.lat, z)
+        }
+        androidx.compose.runtime.LaunchedEffect(key, fitW, fitH) { if (!userMoved) fitAll() }
+
+        /** Zoom keeping the point under ([fx],[fy]) — the fingers or the tapped spot — fixed on screen. */
+        fun zoomAround(newZoom: Double, fx: Double = wPx / 2, fy: Double = hPx / 2) {
             val z = newZoom.coerceIn(3.0, 19.0)
             val f = 2.0.pow(z - zoom)
-            cx *= f; cy *= f; zoom = z
+            cx = (cx + fx - wPx / 2) * f - (fx - wPx / 2)
+            cy = (cy + fy - hPx / 2) * f - (fy - hPx / 2)
+            zoom = z; userMoved = true
         }
 
         Box(
-            Modifier.fillMaxSize().pointerInput(Unit) {
-                detectTransformGestures { _, pan, gestureZoom, _ ->
-                    cx -= pan.x; cy -= pan.y
-                    if (gestureZoom != 1f) zoomTo(zoom + log2(gestureZoom.toDouble()))
+            Modifier.fillMaxSize().pointerInput(oneFingerPan) {
+                // A map inside a scrolling page only claims two-finger gestures, so one finger still scrolls the page.
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    do {
+                        val event = awaitPointerEvent()
+                        if (event.changes.count { it.pressed } >= 2 || oneFingerPan) {
+                            val zc = event.calculateZoom(); val pan = event.calculatePan(); val c = event.calculateCentroid()
+                            if (zc != 1f || pan != Offset.Zero) {
+                                userMoved = true
+                                cx -= pan.x; cy -= pan.y
+                                if (zc != 1f && c.isSpecified) zoomAround(zoom + log2(zc.toDouble()), c.x.toDouble(), c.y.toDouble())
+                                event.changes.forEach { if (it.positionChanged()) it.consume() }
+                            }
+                        }
+                    } while (event.changes.any { it.pressed })
                 }
+            }.pointerInput(Unit) {
+                detectTapGestures(onDoubleTap = { zoomAround(zoom + 1, it.x.toDouble(), it.y.toDouble()) })
             }.semantics { contentDescription = "Map showing ${pins.size} locations" },
         ) {
             val z0 = floor(zoom).toInt().coerceIn(1, 19)
@@ -184,14 +219,11 @@ fun TileMap(
             onClose?.let { IconButton(onClick = it, colors = btn, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.FullscreenExit, "Close full screen map") } }
         }
         Column(Modifier.align(Alignment.CenterEnd).padding(end = controlsPadding.calculateRightPadding(androidx.compose.ui.unit.LayoutDirection.Ltr)).padding(6.dp)) {
-            IconButton(onClick = { zoomTo(zoom + 1) }, colors = btn, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.Add, "Zoom in") }
-            IconButton(onClick = { zoomTo(zoom - 1) }, colors = btn, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.Remove, "Zoom out") }
+            IconButton(onClick = { zoomAround(zoom + 1) }, colors = btn, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.Add, "Zoom in") }
+            IconButton(onClick = { zoomAround(zoom - 1) }, colors = btn, modifier = Modifier.size(48.dp)) { Icon(Icons.Rounded.Remove, "Zoom out") }
         }
         IconButton(
-            onClick = {
-                val (c, z) = Geo.fit(fitPoints.ifEmpty { listOf(GeoPoint(43.6, -116.2)) }, fitW, fitH)
-                zoom = z; cx = Geo.worldX(c.lng, z); cy = Geo.worldY(c.lat, z)
-            },
+            onClick = { userMoved = false; fitAll() },
             colors = btn, modifier = Modifier.align(Alignment.BottomEnd).padding(controlsPadding).padding(6.dp).size(48.dp),
         ) { Icon(Icons.Rounded.CenterFocusStrong, "Fit all") }
         Text(

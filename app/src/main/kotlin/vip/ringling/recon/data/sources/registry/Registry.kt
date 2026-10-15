@@ -26,6 +26,7 @@ data class RegistryEntry(
     val imageUrl: String? = null,
     val imageLargeUrl: String? = null,
     val tags: List<String> = emptyList(),
+    val hotTags: Set<String> = emptySet(),
 )
 
 /**
@@ -89,7 +90,7 @@ class RegistrySource @Inject constructor(private val adapters: Set<@JvmSuppressW
                         Finding(
                             id = "REGISTRY-${adapter.stateCode}-${e.key}", module = ModuleId.REGISTRY, title = e.name, detail = e.summary,
                             severity = e.severity, url = e.sourceUrl, raw = "", confidence = Confidence.HIGH,
-                            geo = e.geo, imageUrl = e.imageUrl, imageLargeUrl = e.imageLargeUrl, tags = e.tags,
+                            geo = e.geo, imageUrl = e.imageUrl, imageLargeUrl = e.imageLargeUrl, tags = e.tags, hotTags = e.hotTags,
                         ),
                     )
                 }

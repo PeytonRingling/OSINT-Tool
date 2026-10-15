@@ -7,6 +7,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.Request
 import vip.ringling.recon.data.net.Http
 import vip.ringling.recon.data.net.HttpException
+import vip.ringling.recon.domain.Fact
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.ModuleId
@@ -85,19 +86,28 @@ class LeakCheckClient(private val http: Http, private val apiUrl: String, privat
 }
 
 object LeakCheckMapper {
+    private val credentialFields = setOf("password", "hash", "pass", "passhash", "salt")
+
     fun finding(r: LeakCheckResult): Finding {
         if (r.found == 0) {
             return Finding("BREACH-leakcheck", ModuleId.BREACH, "LeakCheck: no results", "Not found in LeakCheck's index.", Severity.CLEAN)
         }
-        val names = r.sources.map { it.name }.filter { it.isNotBlank() }
-        val creds = r.fields.any { it.equals("password", true) || it.equals("hash", true) }
-        val shown = names.take(4).joinToString(", ") + if (names.size > 4) " +${names.size - 4} more" else ""
-        val fields = if (r.fields.isEmpty()) "" else " Fields: ${r.fields.take(8).joinToString(", ")}${if (r.fields.size > 8) " +${r.fields.size - 8} more" else ""}."
+        val creds = r.fields.any { it.lowercase() in credentialFields }
+        val sources = r.sources.filter { it.name.isNotBlank() }.sortedWith(compareByDescending<LeakSource> { it.date.orEmpty() }.thenBy { it.name })
+        val fields = r.fields.map { it.replace('_', ' ') }
+        val shown = sources.take(4).joinToString(", ") { it.name } + if (sources.size > 4) " +${sources.size - 4} more" else ""
+        val detail = buildList {
+            add("Found in ${r.found} record${if (r.found == 1) "" else "s"} across ${sources.size.coerceAtLeast(1)} compiled leak${if (sources.size == 1) "" else "s"}.")
+            if (shown.isNotBlank()) add("Sources: $shown.")
+            if (fields.isNotEmpty()) add("Data exposed: ${fields.joinToString(", ")}.")
+            if (creds) add("A password or password hash is in this data. Change it anywhere you used it, and turn on two-factor authentication.")
+            add("LeakCheck aggregates third-party leaks; the same exposure can appear in several compilations. ${if (r.viaPublic) "This lookup used the free public endpoint, which is rate-limited and less detailed than the keyed API." else ""}".trim())
+        }.joinToString("\n")
         return Finding(
             id = "BREACH-leakcheck",
             module = ModuleId.BREACH,
             title = "LeakCheck · ${r.found} record${if (r.found == 1) "" else "s"}",
-            detail = (if (shown.isBlank()) "Found in compiled leak data." else "Found in: $shown.") + fields,
+            detail = detail,
             severity = if (creds) Severity.EXPOSED else Severity.INFO,
             url = "https://leakcheck.io",
             raw = Json.encodeToString(kotlinx.serialization.json.JsonObject.serializer(), kotlinx.serialization.json.buildJsonObject {
@@ -106,6 +116,15 @@ object LeakCheckMapper {
                 put("sources", kotlinx.serialization.json.JsonArray(r.sources.map { kotlinx.serialization.json.JsonPrimitive(it.name + (it.date?.let { d -> " ($d)" } ?: "")) }))
                 put("fields", kotlinx.serialization.json.JsonArray(r.fields.map { kotlinx.serialization.json.JsonPrimitive(it) }))
             }),
+            tags = fields,
+            hotTags = r.fields.filter { it.lowercase() in credentialFields }.map { it.replace('_', ' ') }.toSet(),
+            facts = buildList {
+                add(Fact("Records found", r.found.toString()))
+                add(Fact("Leaks listed", sources.size.toString()))
+                add(Fact("Endpoint", if (r.viaPublic) "Public (limited)" else "Keyed API"))
+                sources.take(60).forEach { add(Fact(it.name, it.date?.takeIf { d -> d.isNotBlank() } ?: "date unknown")) }
+                if (sources.size > 60) add(Fact("…", "${sources.size - 60} more not shown"))
+            },
         )
     }
 }

@@ -18,7 +18,15 @@ object MockData {
 
     fun breach(input: ScanInput): List<Finding> = when (input.type) {
         InputType.EMAIL -> listOf(
-            f("adobe", ModuleId.BREACH, "Adobe · 2013", "153M accounts. Exposed: email, password hint, encrypted password.", Severity.EXPOSED, "https://haveibeenpwned.com/PwnedWebsites#Adobe", """{"Name":"Adobe","BreachDate":"2013-10-04","PwnCount":152445165,"DataClasses":["Email addresses","Password hints","Passwords","Usernames"]}"""),
+            f("adobe", ModuleId.BREACH, "Adobe · 2013", "152M accounts breached · Oct 4, 2013\nExposed: email addresses, password hints, passwords, usernames.\nIn late 2013 a large account database was stolen. It held encrypted passwords and unencrypted hints.\nWhat to do:\n• Change this account's password, and any other account where you reused it. Turn on two-factor authentication and use a password manager so every password is unique.", Severity.EXPOSED, "https://haveibeenpwned.com/PwnedWebsites#Adobe", """{"Name":"Adobe","BreachDate":"2013-10-04","PwnCount":152445165,"DataClasses":["Email addresses","Password hints","Passwords","Usernames"]}""")
+                .copy(
+                    tags = listOf("Email addresses", "Password hints", "Passwords", "Usernames"), hotTags = setOf("Passwords", "Password hints"),
+                    facts = listOf(
+                        vip.ringling.recon.domain.Fact("Breach date", "Oct 4, 2013"), vip.ringling.recon.domain.Fact("Added to HIBP", "Dec 4, 2013"),
+                        vip.ringling.recon.domain.Fact("Accounts affected", "152,445,165"), vip.ringling.recon.domain.Fact("Website", "adobe.com"),
+                        vip.ringling.recon.domain.Fact("Verified", "Yes"),
+                    ),
+                ),
             f("linkedin", ModuleId.BREACH, "LinkedIn · 2012", "164M accounts. Exposed: email, password (unsalted SHA-1).", Severity.EXPOSED, "https://haveibeenpwned.com/PwnedWebsites#LinkedIn", """{"Name":"LinkedIn","BreachDate":"2012-05-05","PwnCount":164611595,"DataClasses":["Email addresses","Passwords"]}"""),
             f("canva", ModuleId.BREACH, "Canva · 2019", "137M accounts. Exposed: email, name, city, bcrypt password.", Severity.EXPOSED, "https://haveibeenpwned.com/PwnedWebsites#Canva", """{"Name":"Canva","BreachDate":"2019-05-24","PwnCount":137272116}"""),
             f("dropbox", ModuleId.BREACH, "Dropbox · 2012", "68M accounts. Exposed: email, bcrypt password.", Severity.INFO, "https://haveibeenpwned.com/PwnedWebsites#Dropbox", """{"Name":"Dropbox","BreachDate":"2012-07-01","PwnCount":68648009}"""),

@@ -70,7 +70,7 @@ fun FullscreenMapContent(
         TileMap(
             pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title) },
             me = me, selectedId = selectedId, onPinClick = { selectedId = it.id },
-            modifier = Modifier.fillMaxSize(), onClose = onDismiss, clipShape = androidx.compose.ui.graphics.RectangleShape, controlsPadding = controlsPadding,
+            modifier = Modifier.fillMaxSize(), onClose = onDismiss, oneFingerPan = true, clipShape = androidx.compose.ui.graphics.RectangleShape, controlsPadding = controlsPadding,
         )
         Column(Modifier.align(Alignment.BottomCenter).safeDrawingPadding().padding(12.dp).widthIn(max = 560.dp)) {
             if (selected != null) SelectedCard(selected, onOpen = { onOpen(selected) })
