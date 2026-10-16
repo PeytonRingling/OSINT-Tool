@@ -81,8 +81,11 @@ private const val TILE_PX = 256.0
 
 /**
  * A small slippy map built on OpenStreetMap raster tiles — no SDK, no API key, no disk cache.
- * Pan, pinch or use the buttons. Pins are tappable; [me] is drawn as a blue dot when known.
+ * Pan, pinch or use the buttons. Pins are tappable; [me] is drawn as a magenta dot with a halo when known.
  */
+/** The user's own position marker; deliberately unlike every pin color (azure / coral / mint). */
+val YOU_COLOR = Color(0xFFFF2BD6)
+
 @Composable
 fun TileMap(
     pins: List<MapPin>,
@@ -210,12 +213,6 @@ fun TileMap(
                 }
             }
             fun screen(p: GeoPoint) = Offset((Geo.worldX(p.lng, zoom) - cx + wPx / 2).toFloat(), (Geo.worldY(p.lat, zoom) - cy + hPx / 2).toFloat())
-            me?.let { m ->
-                val o = screen(m)
-                Box(Modifier.offset(o.x.roundToInt() - with(density) { 11.dp.roundToPx() }, o.y.roundToInt() - with(density) { 11.dp.roundToPx() })
-                    .size(22.dp).clip(CircleShape).background(Color.White).padding(3.dp).clip(CircleShape).background(Color(0xFF2F80ED))
-                    .semantics { contentDescription = "Your location" })
-            }
             pins.forEach { p ->
                 val o = screen(p.geo)
                 val selected = p.id == selectedId
@@ -228,6 +225,18 @@ fun TileMap(
                         .clickable(onClickLabel = "Open ${p.label}") { onPinClick(p) }
                         .semantics { contentDescription = "Pin: ${p.label}" + if (p.approximate) " (approximate location)" else "" },
                 )
+            }
+            me?.let { m ->
+                // Drawn above the pins so it is never hidden by one. Magenta: no registrant pin is magenta (they are azure / coral / mint), so "you" can never be mistaken for a record.
+                val o = screen(m)
+                val half = with(density) { 22.dp.roundToPx() }
+                Box(
+                    Modifier.offset(o.x.roundToInt() - half, o.y.roundToInt() - half).size(44.dp).semantics { contentDescription = "Your location" },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Box(Modifier.size(44.dp).clip(CircleShape).background(YOU_COLOR.copy(alpha = 0.22f)))
+                    Box(Modifier.size(22.dp).clip(CircleShape).background(Color.White).padding(3.dp).clip(CircleShape).background(YOU_COLOR))
+                }
             }
         }
         val btn = IconButtonDefaults.filledTonalIconButtonColors(containerColor = cs.surface.copy(alpha = 0.88f), contentColor = cs.onSurface)

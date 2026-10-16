@@ -40,7 +40,7 @@ fun ResultsRoute(
     LaunchedEffect(hasLocated) { if (hasLocated && main.hasLocationPermission()) main.refreshLocation() }
     val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()) { main.refreshLocation() }
     val actions = ResultsActions(
-        onBack = onBack, onExport = { onExport(st) }, onPin = { onPin(st) }, onFinding = if (wide) { f -> vm.select(f.id) } else onFinding, onOpenFinding = onFinding, onHandled = vm::setHandled, onFilter = vm::setFilter, onSort = vm::setSort,
+        onBack = onBack, onExport = { onExport(st) }, onPin = { onPin(st) }, onFinding = if (wide) { f -> if (st.selectedId == f.id) onFinding(f) else vm.select(f.id) } else onFinding, onOpenFinding = onFinding, onHandled = vm::setHandled, onFilter = vm::setFilter, onSort = vm::setSort,
         onAckRegistry = vm::ackRegistry, onShowFindings = { showFindings = true }, onStop = vm::stop,
         onRequestLocation = {
             if (main.hasLocationPermission()) main.refreshLocation()

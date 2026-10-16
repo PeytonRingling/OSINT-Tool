@@ -405,7 +405,7 @@ fun AreaSheetList(state: ResultsUiState, actions: ResultsActions, records: List<
                 summary?.let { RegistrySummaryRow(it, Modifier.padding(horizontal = 0.dp)) }
             }
             extras.filter { it.id != "REGISTRY-summary" }.forEach { n -> item(key = n.id) { RegistryNoteRow(n) } }
-            items(sorted, key = { it.id }) { r -> RegistryRow(r, me, state.selectedId == r.id) { actions.onFinding(r) } }
+            items(sorted, key = { it.id }) { r -> RegistryRow(r, me, state.selectedId == r.id, onOpen = { actions.onOpenFinding(r) }) { actions.onFinding(r) } }
             if (records.isEmpty() && !state.running) item { Text("No records for this ZIP.", color = sig.safeText, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 16.dp)) }
         }
     }
@@ -421,7 +421,7 @@ private fun RegistryNoteRow(f: Finding) {
 }
 
 @Composable
-fun RegistryRow(f: Finding, me: GeoPoint?, selected: Boolean, onClick: () -> Unit) {
+fun RegistryRow(f: Finding, me: GeoPoint?, selected: Boolean, onOpen: (() -> Unit)? = null, onClick: () -> Unit) {
     val sig = ReconTheme.signal
     val dist = distanceMeters(me, f)
     Column(Modifier.fillMaxWidth().background(if (selected) sig.signal.copy(alpha = 0.07f) else Color.Transparent)) {
@@ -440,7 +440,10 @@ fun RegistryRow(f: Finding, me: GeoPoint?, selected: Boolean, onClick: () -> Uni
             }
             Column(horizontalAlignment = Alignment.End) {
                 dist?.let { Text(vip.ringling.recon.domain.Geo.formatDistance(it), color = sig.signal, style = ReconType.value.copy(fontSize = 12.sp)) }
-                Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = sig.muted)
+                Box(
+                    Modifier.size(40.dp).let { m -> if (onOpen == null) m else m.clickable(onClickLabel = "Open record details", onClick = onOpen) },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = sig.muted) }
             }
         }
     }
