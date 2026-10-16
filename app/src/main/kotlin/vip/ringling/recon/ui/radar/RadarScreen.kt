@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -104,16 +105,15 @@ fun RadarScreen(state: RadarUiState, actions: RadarActions, modifier: Modifier =
                 }
             }
         } else {
-            Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    .padding(top = contentPadding.calculateTopPadding(), bottom = contentPadding.calculateBottomPadding() + 16.dp),
-            ) {
-                RadarHeader(state, actions, Modifier.padding(horizontal = 20.dp))
-                RadarCanvas(state.targets, actions.onTarget, Modifier.fillMaxWidth().aspectRatio(390f / 420f))
-                Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    TargetDock(state, actions)
-                    ActionButtons(actions)
+            // The search dock is pinned below the scrolling radar, so the keyboard (which shrinks this column) always leaves it in view.
+            val imeOpen = androidx.compose.foundation.layout.WindowInsets.ime.getBottom(androidx.compose.ui.platform.LocalDensity.current) > 0
+            Column(Modifier.fillMaxSize().padding(top = contentPadding.calculateTopPadding(), bottom = if (imeOpen) 8.dp else contentPadding.calculateBottomPadding() + 16.dp)) {
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                    RadarHeader(state, actions, Modifier.padding(horizontal = 20.dp))
+                    RadarCanvas(state.targets, actions.onTarget, Modifier.fillMaxWidth().aspectRatio(390f / 420f))
+                    Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) { ActionButtons(actions) }
                 }
+                Column(Modifier.padding(horizontal = 16.dp).padding(top = 6.dp)) { TargetDock(state, actions) }
             }
         }
     }

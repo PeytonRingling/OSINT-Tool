@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BookmarkAdd
+import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -87,6 +88,9 @@ data class ResultsActions(
     val onPin: () -> Unit = {},
     val onFinding: (Finding) -> Unit = {},
     val onOpenFinding: (Finding) -> Unit = {},
+    /** A map pin was tapped: select it (the preview card appears) rather than opening it. */
+    val onSelect: (Finding) -> Unit = {},
+    val onClearSelection: () -> Unit = {},
     val onHandled: (Finding, Boolean) -> Unit = { _, _ -> },
     val onFilter: (FindingFilter) -> Unit = {},
     val onSort: (AreaSort) -> Unit = {},
@@ -300,7 +304,7 @@ fun AreaScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modifie
         Box(mod) {
             TileMap(
                 pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title, vip.ringling.recon.domain.APPROXIMATE_TAG in it.tags) },
-                me = me, selectedId = state.selectedId, onPinClick = { p -> located.firstOrNull { it.id == p.id }?.let(actions.onFinding) },
+                me = me, selectedId = state.selectedId, onPinClick = { p -> located.firstOrNull { it.id == p.id }?.let(actions.onSelect) },
                 modifier = Modifier.fillMaxSize(), clipShape = androidx.compose.ui.graphics.RectangleShape,
                 camera = vip.ringling.recon.domain.MapMemory.camera("area"), ringCenter = rings?.first, ringMeters = rings?.second.orEmpty(),
                 oneFingerPan = true, controlsPadding = PaddingValues(top = 72.dp + contentPadding.calculateTopPadding()),
@@ -313,6 +317,9 @@ fun AreaScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modifie
                 ) { SignalLabel("ZIP"); Text(state.input?.raw.orEmpty(), color = sig.text, style = ReconType.value.copy(fontSize = 14.sp)) }
                 Box(Modifier.weight(1f))
                 GlassButton(Icons.Rounded.BookmarkAdd, "Pin to case", actions.onPin)
+            }
+            if (!split) records.firstOrNull { it.id == state.selectedId }?.let { r ->
+                RecordPreview(r, me, onOpen = { actions.onOpenFinding(r) }, onClose = actions.onClearSelection, modifier = Modifier.align(Alignment.BottomStart).padding(start = 12.dp, end = 72.dp, bottom = 12.dp))
             }
         }
     }
@@ -349,8 +356,13 @@ fun SelectedFindingCard(f: Finding, handled: Boolean, onOpen: (Finding) -> Unit,
     BracketPanel(modifier.fillMaxWidth()) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             SignalLabel("Selected", small = true)
-            Text(f.title, color = sig.text, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            Text(f.detail.lineSequence().first(), color = sig.muted, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                if (f.imageUrl != null) RemoteImage(f.imageUrl, "Photo of ${f.title}", Modifier.size(width = 84.dp, height = 104.dp).clip(RoundedCornerShape(8.dp)), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(f.title, color = sig.text, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(f.detail.lineSequence().first(), color = sig.muted, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                }
+            }
             if (f.tags.isNotEmpty()) androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 f.tags.take(6).forEach { t -> StatusTag(t.removeSuffix(" registry"), if (t in f.hotTags) Tone.ALERT else Tone.INFO) }
             }
@@ -490,4 +502,33 @@ fun FindingGroup(title: String, trailing: String, items: List<Finding>, handled:
 private sealed interface SheetFor {
     data class Module(val module: ModuleId, val label: String) : SheetFor
     data class Step(val step: vip.ringling.recon.domain.FixStep) : SheetFor
+}
+
+/** Preview that floats over the map when a pin is tapped (phones): photo, name, address, tags, distance and a Details button. */
+@Composable
+fun RecordPreview(f: Finding, me: GeoPoint?, onOpen: () -> Unit, onClose: () -> Unit, modifier: Modifier = Modifier) {
+    val sig = ReconTheme.signal
+    val dist = distanceMeters(me, f)
+    Row(
+        modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(sig.ground.copy(alpha = 0.95f)).border(1.dp, sig.signal.copy(alpha = 0.45f), RoundedCornerShape(12.dp)).padding(10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        RemoteImage(f.imageUrl, "Photo of ${f.title}", Modifier.size(width = 64.dp, height = 84.dp).clip(RoundedCornerShape(8.dp)), contentScale = androidx.compose.ui.layout.ContentScale.Crop)
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Text(f.title, Modifier.weight(1f), color = sig.text, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Box(Modifier.size(32.dp).clickable(onClickLabel = "Close preview", onClick = onClose), contentAlignment = Alignment.Center) {
+                    Icon(Icons.Rounded.Close, "Close preview", tint = sig.muted, modifier = Modifier.size(18.dp))
+                }
+            }
+            Text(f.detail.lineSequence().first(), color = sig.muted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                f.tags.take(1).forEach { t -> StatusTag(t.removeSuffix(" registry"), if (t in f.hotTags) Tone.ALERT else Tone.INFO) }
+            }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SignalButton("Details", onOpen, Modifier.heightIn(min = 48.dp), filled = true, mono = true)
+                dist?.let { Text(vip.ringling.recon.domain.Geo.formatDistance(it), color = sig.signal, style = ReconType.value.copy(fontSize = 12.sp), maxLines = 1, softWrap = false) }
+            }
+        }
+    }
 }

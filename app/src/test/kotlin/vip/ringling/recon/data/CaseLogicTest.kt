@@ -23,7 +23,7 @@ class CaseLogicTest {
     private fun state(target: CaseTarget, vararg s: ScanSnapshot) = CaseTargetState(target, s.maxByOrNull { it.ts }, s.toList())
 
     @Test fun sameHandleEdgesAndNoLinkYet() {
-        val targets = listOf(t(InputType.EMAIL, "test.user@example.com"), t(InputType.USERNAME, "testuser"), t(InputType.PHONE, "5555550123"))
+        val targets = listOf(t(InputType.EMAIL, "test.user@example.com"), t(InputType.USERNAME, "test.user"), t(InputType.PHONE, "5555550123"))
         val e = CaseLogic.edges(targets)
         assertEquals(EdgeKind.SAME_HANDLE, e.single { it.a == 0 && it.b == 1 }.kind)
         assertEquals(EdgeKind.NONE, e.single { it.b == 2 }.kind)

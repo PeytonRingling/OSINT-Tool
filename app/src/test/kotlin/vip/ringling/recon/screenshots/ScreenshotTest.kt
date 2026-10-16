@@ -198,6 +198,8 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
 
     @Test fun area_results() = shot("06b_area_results_distance", tab = null, me = GeoPoint(43.6125, -116.2105), content = results(ResultsUiState(input = zip, statuses = zipDone.statuses, findings = zipDone.findings, registryAck = true)))
 
+    @Test fun area_pin_preview() = shot("06f_area_pin_preview", tab = null, me = GeoPoint(43.6125, -116.2105), content = results(ResultsUiState(input = zip, statuses = zipDone.statuses, findings = zipDone.findings, registryAck = true, selectedId = zipDone.findings.first { it.isRegistryRecord }.id)))
+
     @Test fun area_results_no_location() = shot("06c_area_results_no_location", tab = null, content = results(ResultsUiState(input = zip, statuses = zipDone.statuses, findings = zipDone.findings, registryAck = true)))
 
     @Test fun registry_fullscreen_map_satellite_selected() = shot("06d_registry_fullscreen_map", tab = null, me = GeoPoint(43.6125, -116.2105)) { _, _ ->

@@ -3,6 +3,7 @@ package vip.ringling.recon.ui
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.getOrNull
@@ -69,5 +70,22 @@ class AreaWideClickTest {
         })
         chevron[0].performClick()
         assertEquals(true, opened != null && selected == null, "chevron opens, it does not just select")
+    }
+
+    @Test fun phonePinPreviewShowsTheRecordAndOpensItFromDetails() {
+        val zip = ScanInput("83702", InputType.ZIP)
+        val findings = MockData.registry(zip)
+        val sel = findings.first { it.id.startsWith("REGISTRY-ID") }
+        var opened: Finding? = null
+        rule.setContent {
+            ReconTheme(vip.ringling.recon.data.settings.ThemeMode.DARK, dynamicColor = false) {
+                CompositionLocalProvider(LocalImagesEnabled provides false) {
+                    AreaScreen(ResultsUiState(input = zip, findings = findings, registryAck = true, selectedId = sel.id), ResultsActions(onOpenFinding = { opened = it }), split = false)
+                }
+            }
+        }
+        rule.onNodeWithText(sel.title).assertIsDisplayed()
+        rule.onNodeWithText("Details", ignoreCase = true).performClick()
+        assertEquals(sel.id, opened?.id)
     }
 }
