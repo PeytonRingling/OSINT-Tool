@@ -176,6 +176,16 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 - Incoming: share sheet, text-selection menu (PROCESS_TEXT), `mailto:`/`tel:` links, launcher shortcut "Scan clipboard", Paste button on Radar (`IncomingText`).
 - Fold: `androidx.window` tabletop posture (`LocalTabletop`): results stack graph above findings. Unverified on a device.
 
+## Hardening & extras batch (added 2026-10-17)
+- **Encrypted DB** (`data/db/DbEncryption.kt`): SQLCipher via `SupportOpenHelperFactory`; random passphrase held only as AES-GCM ciphertext under a Keystore key (`DbKey`). A plaintext `recon.db` is converted in place on first launch (export, verify version + table count, swap, overwrite+delete old file). Fail-safe: any failure (native lib, Keystore, conversion) leaves the DB as it was and the app runs unencrypted rather than losing data; under Robolectric it always falls back. UNVERIFIED on a device. Room is v5 (`MIGRATION_4_5` adds `cases.tags`). `allowBackup=false`.
+- **Retention / wipe / welcome**: `DataGuard` (`purgeOlderThan` at launch + on setting change; `wipeEverything` = clearAllTables + handled + keys + settings + updates + cancels work). Settings: `retentionDays`, `autoRescan`, `onboarded`, `loaded` (first-run UI waits for `loaded`). `WelcomeDialog` explains keys once.
+- **Daily case re-scan** (`data/watch/AutoRescan.kt`): WorkManager, scans every non-ZIP/non-photo case target, records scans, notifies only if worse or a new finding (`AutoRescanLogic`); runs with a failed source are skipped (no false "improved").
+- **Tor test**: System -> Privacy -> "Test connection" (`RouteTester`, check.torproject.org/api/ip through the same client/proxy selector as every lookup).
+- **Look-alike domains**: opt-in free action on domain scans (`LookalikeGenerator` + `LookalikeLookup`, DoH only, reuses the `PaidAction` confirm flow with "Free" wording). Handle variants (`Variants`, in the DORKS module) give "Search next" pivots.
+- **Cases**: tags (`CaseFileRepository.normalizeTags`), search (`CaseSearch`), "Expand leads (up to 8)" adds pivot targets and scans them; Log has a search box.
+- **Site health** (`SiteHealth`): username sites inconclusive 5 sweeps in a row are skipped for a week; a sweep where nothing was conclusive records nothing.
+- **Lint** runs in CI (`lintDebug`). Fixed: `InputStream.readNBytes` (API 33) crash on API 29-32, missing `USE_BIOMETRIC`, `LocalActivity`, location SecurityException.
+
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.
