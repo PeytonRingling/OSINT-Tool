@@ -127,7 +127,7 @@ interface SnapshotDao {
 }
 
 @Entity(tableName = "cases")
-data class CaseFileEntity(@PrimaryKey val id: String, val name: String, val createdAt: Long)
+data class CaseFileEntity(@PrimaryKey val id: String, val name: String, val createdAt: Long, @androidx.room.ColumnInfo(defaultValue = "") val tags: String = "")
 
 @Entity(tableName = "case_targets", primaryKeys = ["caseId", "type", "value"])
 data class CaseTargetEntity(val caseId: String, val type: String, val value: String, val addedAt: Long)
@@ -161,6 +161,9 @@ interface CaseFileDao {
     @Query("DELETE FROM case_notes WHERE id = :id")
     suspend fun deleteNote(id: Long)
 
+    @Query("UPDATE cases SET tags = :tags WHERE id = :id")
+    suspend fun setTags(id: String, tags: String)
+
     @Query("UPDATE cases SET name = :name WHERE id = :id")
     suspend fun rename(id: String, name: String)
 
@@ -189,7 +192,7 @@ interface WatchDao {
     suspend fun delete(id: String)
 }
 
-@Database(entities = [ScanEntity::class, CaseEntity::class, WatchEntity::class, SnapshotEntity::class, CaseFileEntity::class, CaseTargetEntity::class, CaseNoteEntity::class], version = 4, exportSchema = false)
+@Database(entities = [ScanEntity::class, CaseEntity::class, WatchEntity::class, SnapshotEntity::class, CaseFileEntity::class, CaseTargetEntity::class, CaseNoteEntity::class], version = 5, exportSchema = false)
 abstract class HistoryDb : RoomDatabase() {
     abstract fun scans(): ScanDao
     abstract fun cases(): CaseDao
@@ -198,6 +201,9 @@ abstract class HistoryDb : RoomDatabase() {
     abstract fun caseFiles(): CaseFileDao
 
     companion object {
+        val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) { db.execSQL("ALTER TABLE `cases` ADD COLUMN `tags` TEXT NOT NULL DEFAULT ''") }
+        }
         val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS `scan_snapshot` (`id` TEXT NOT NULL, `targetType` TEXT NOT NULL, `targetValue` TEXT NOT NULL, `ts` INTEGER NOT NULL, `risk` INTEGER NOT NULL, `exposedCount` INTEGER NOT NULL, `infoCount` INTEGER NOT NULL, `findingIds` TEXT NOT NULL, PRIMARY KEY(`id`))")

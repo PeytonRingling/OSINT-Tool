@@ -78,4 +78,13 @@ class CaseLogicTest {
         assertEquals(listOf(10L to 34, 20L to 34, 30L to 100), series, "areas never enter the series; the worst target at each moment wins")
         assertEquals(66, CaseChanges.sinceFirst(series)); assertEquals(null, CaseChanges.sinceFirst(series.take(1)))
     }
+
+    @Test fun caseSearchMatchesNameTagsTargetsAndNotes() {
+        val c = vip.ringling.recon.domain.CaseFile("c", "Footprint", 1, 1, listOf(vip.ringling.recon.domain.CaseTarget(InputType.EMAIL, "ann@b.com", 1)), listOf(vip.ringling.recon.domain.CaseNote(1, "met at the Expo", 1)), listOf("client", "urgent"))
+        val m = { q: String -> vip.ringling.recon.domain.CaseSearch.matches(c, q) }
+        assertTrue(m("") && m("foot") && m("ANN@b") && m("expo") && m("client urgent") && m("urgent foot"))
+        assertTrue(!m("zzz") && !m("client zzz"))
+        assertEquals(listOf("client", "urgent"), vip.ringling.recon.data.CaseFileRepository.normalizeTags(listOf(" Client ", "urgent,CLIENT", "")))
+        assertEquals(8, vip.ringling.recon.data.CaseFileRepository.normalizeTags((1..20).map { "t$it" }).size)
+    }
 }

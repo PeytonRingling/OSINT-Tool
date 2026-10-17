@@ -23,6 +23,7 @@ class CaseFileRepository @Inject constructor(private val dao: CaseFileDao) {
                 c.id, c.name, c.createdAt, i + 1,
                 ts.filter { it.caseId == c.id }.mapNotNull { t -> runCatching { CaseTarget(InputType.valueOf(t.type), t.value, t.addedAt) }.getOrNull() },
                 ns.filter { it.caseId == c.id }.map { CaseNote(it.id, it.text, it.ts) },
+                c.tags.split(',').map { it.trim() }.filter { it.isNotEmpty() },
             )
         }
     }
@@ -42,6 +43,13 @@ class CaseFileRepository @Inject constructor(private val dao: CaseFileDao) {
     suspend fun removeTarget(caseId: String, type: InputType, value: String) = dao.removeTarget(caseId, type.name, value)
     suspend fun addNote(caseId: String, text: String, now: Long = System.currentTimeMillis()) { if (text.isNotBlank()) dao.addNote(CaseNoteEntity(caseId = caseId, text = text.trim(), ts = now)) }
     suspend fun deleteNote(id: Long) = dao.deleteNote(id)
+    /** Tags are lower-case, trimmed, de-duplicated, at most 8 of up to 24 characters each, and never contain commas. */
+    suspend fun setTags(id: String, tags: List<String>) = dao.setTags(id, normalizeTags(tags).joinToString(","))
+
     suspend fun rename(id: String, name: String) { if (name.isNotBlank()) dao.rename(id, name.trim()) }
     suspend fun delete(id: String) { dao.deleteTargets(id); dao.deleteNotes(id); dao.deleteCase(id) }
+
+    companion object {
+        fun normalizeTags(raw: List<String>): List<String> = raw.flatMap { it.split(',') }.map { it.trim().lowercase().take(24) }.filter { it.isNotEmpty() }.distinct().take(8)
+    }
 }

@@ -50,3 +50,18 @@ class LookalikeTest {
         } finally { srv.shutdown() }
     }
 }
+
+class VariantsTest {
+    @Test fun handleVariantsSwapSeparatorsAndDigitsAndNeverRepeatTheOriginal() {
+        val v = vip.ringling.recon.data.sources.dorks.Variants.handle("jane.doe")
+        assertTrue("janedoe" in v && "jane_doe" in v && "jane-doe" in v && "jane.doe" !in v && v.size <= 10)
+        assertTrue("jdoe99" !in v && vip.ringling.recon.data.sources.dorks.Variants.handle("sam99").contains("sam"))
+        assertTrue(vip.ringling.recon.data.sources.dorks.Variants.handle("ab").isEmpty())
+    }
+
+    @Test fun emailVariantsKeepTheDomainAndOtherTypesGetNone() {
+        val f = vip.ringling.recon.data.sources.dorks.Variants.finding(ScanInput("jane.doe@x.com", InputType.EMAIL))!!
+        assertTrue(f.pivots.all { it.query.endsWith("@x.com") } && f.pivots.any { it.query == "janedoe@x.com" })
+        assertEquals(null, vip.ringling.recon.data.sources.dorks.Variants.finding(ScanInput("example.com", InputType.DOMAIN)))
+    }
+}

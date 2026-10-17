@@ -73,6 +73,16 @@ fun RenameCaseDialog(current: String, onDismiss: () -> Unit, onRename: (String) 
 }
 
 @Composable
+fun EditTagsDialog(current: List<String>, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) {
+    var text by remember { mutableStateOf(current.joinToString(", ")) }
+    AlertDialog(
+        onDismissRequest = onDismiss, title = { Text("Case tags") },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Comma-separated, up to 8 (for example: client, urgent, 2026)."); SignalTextField(text, { text = it }, "tag, tag", description = "Case tags", onGo = { onSave(text.split(',')) }) } },
+        confirmButton = { TextButton(onClick = { onSave(text.split(',')) }) { Text("Save") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+@Composable
 fun AddWatchDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
     var email by remember { mutableStateOf("") }
     val valid = vip.ringling.recon.domain.InputDetector.detect(email).let { it == InputType.EMAIL || it == InputType.USERNAME || it == InputType.DOMAIN }

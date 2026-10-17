@@ -19,7 +19,7 @@ import vip.ringling.recon.data.watch.WatchRepository
 @Serializable data class BSnap(val id: String, val type: String, val value: String, val ts: Long, val risk: Int, val exposed: Int, val info: Int, val findingIds: String)
 @Serializable data class BTarget(val type: String, val value: String, val addedAt: Long)
 @Serializable data class BNote(val text: String, val ts: Long)
-@Serializable data class BCase(val id: String, val name: String, val createdAt: Long, val targets: List<BTarget>, val notes: List<BNote>)
+@Serializable data class BCase(val id: String, val name: String, val createdAt: Long, val targets: List<BTarget>, val notes: List<BNote>, val tags: List<String> = emptyList())
 @Serializable data class BackupFile(
     val format: String = FORMAT, val version: Int = 1, val createdAt: Long, val scans: List<BScan>, val snapshots: List<BSnap>, val cases: List<BCase>, val watch: List<String>,
 ) { companion object { const val FORMAT = "recon-backup" } }
@@ -43,7 +43,7 @@ class BackupManager @Inject constructor(
             createdAt = now,
             scans = scans.all().first().map { BScan(it.id, it.query, it.type, it.timestamp, it.findingsJson, it.scoreVersion) },
             snapshots = snapshots.snapshot().map { BSnap(it.id, it.targetType, it.targetValue, it.ts, it.risk, it.exposedCount, it.infoCount, it.findingIds) },
-            cases = cases.map { c -> BCase(c.id, c.name, c.createdAt, c.targets.map { BTarget(it.type.name, it.value, it.addedAt) }, c.notes.map { BNote(it.text, it.ts) }) },
+            cases = cases.map { c -> BCase(c.id, c.name, c.createdAt, c.targets.map { BTarget(it.type.name, it.value, it.addedAt) }, c.notes.map { BNote(it.text, it.ts) }, c.tags) },
             watch = watch.all().map { it.raw },
         )
         return json.encodeToString(BackupFile.serializer(), b)
@@ -56,7 +56,7 @@ class BackupManager @Inject constructor(
         b.scans.forEach { scans.insert(ScanEntity(it.id, it.query, it.type, it.ts, it.findingsJson, it.scoreVersion)) }
         snapshots.insertAll(b.snapshots.map { SnapshotEntity(it.id, it.type, it.value, it.ts, it.risk, it.exposed, it.info, it.findingIds) })
         b.cases.forEach { c ->
-            caseDao.upsertCase(CaseFileEntity(c.id, c.name, c.createdAt))
+            caseDao.upsertCase(CaseFileEntity(c.id, c.name, c.createdAt, CaseFileRepository.normalizeTags(c.tags).joinToString(",")))
             c.targets.forEach { caseDao.addTarget(CaseTargetEntity(c.id, it.type, it.value, it.addedAt)) }
             // Notes have no stable id: skip ones already present so importing twice doesn't duplicate them.
             val have = caseRepo.cases.first().firstOrNull { it.id == c.id }?.notes.orEmpty().map { it.text to it.ts }.toSet()

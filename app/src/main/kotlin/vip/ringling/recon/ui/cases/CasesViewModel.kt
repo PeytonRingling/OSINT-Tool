@@ -117,6 +117,8 @@ class CaseDetailViewModel @Inject constructor(
     fun addNote(text: String) = viewModelScope.launch { repo.addNote(caseId, text) }
     fun deleteNote(id: Long) = viewModelScope.launch { repo.deleteNote(id) }
     fun rename(name: String) = viewModelScope.launch { repo.rename(caseId, name) }
+    fun setTags(tags: List<String>) = viewModelScope.launch { repo.setTags(caseId, tags) }
+    fun addTargets(inputs: List<vip.ringling.recon.domain.ScanInput>) = viewModelScope.launch { inputs.forEach { repo.addTarget(caseId, it.type, it.raw) } }
     fun delete(onDone: () -> Unit) = viewModelScope.launch { repo.delete(caseId); onDone() }
 }
 

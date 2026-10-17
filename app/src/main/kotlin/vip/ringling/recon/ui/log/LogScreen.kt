@@ -79,6 +79,10 @@ private fun toneOf(risk: Int) = when (LogMath.riskTone(risk)) { 2 -> Tone.ALERT;
 fun LogScreen(state: LogUiState, actions: LogActions, modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues()) {
     val sig = ReconTheme.signal
     var confirmClear by remember { mutableStateOf(false) }
+    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
+    val q = query.trim().lowercase()
+    val targets = if (q.isEmpty()) state.targets else state.targets.filter { q in it.value.lowercase() }
+    val scans = if (q.isEmpty()) state.scans else state.scans.filter { q in it.value.lowercase() }
     var pendingDelete by remember { mutableStateOf<LogTarget?>(null) }
     if (confirmClear) AlertDialog(
         onDismissRequest = { confirmClear = false }, title = { Text("Clear all scans?") },
@@ -105,6 +109,7 @@ fun LogScreen(state: LogUiState, actions: LogActions, modifier: Modifier = Modif
                     Text("${state.scanCount} SCANS\n${state.targets.size} TARGETS", color = sig.muted, textAlign = TextAlign.End, style = ReconType.labelSmall.copy(fontSize = 10.5.sp, letterSpacing = 0.08.sp))
                 }
             }
+            if (state.scanCount > 4) item { vip.ringling.recon.ui.signal.SignalTextField(query, { query = it }, "Search the log", description = "Search the log") }
             item { SegmentedControl(LogMode.entries.map { it.label }, state.mode.ordinal, { actions.onMode(LogMode.entries[it]) }, Modifier.padding(top = 4.dp, bottom = 4.dp)) }
             if (state.undoCount > 0) item {
                 HairPanel(Modifier.fillMaxWidth()) {
@@ -121,10 +126,10 @@ fun LogScreen(state: LogUiState, actions: LogActions, modifier: Modifier = Modif
                 Text("Nothing logged yet. Scans are saved on this device only.", color = sig.muted, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 24.dp, horizontal = 4.dp))
             }
             when (state.mode) {
-                LogMode.BY_TARGET -> items(state.targets, key = { it.key }) { t -> TargetRow(t, state.now, { actions.onOpenTarget(t) }, { pendingDelete = t }) }
+                LogMode.BY_TARGET -> items(targets, key = { it.key }) { t -> TargetRow(t, state.now, { actions.onOpenTarget(t) }, { pendingDelete = t }) }
                 LogMode.TIMELINE -> {
                     var lastDay = ""
-                    state.scans.forEach { s ->
+                    scans.forEach { s ->
                         val day = dayBucket(s.ts, state.now)
                         if (day != lastDay) { lastDay = day; item(key = "d-$day") { SignalLabel(day, Modifier.padding(top = 10.dp, start = 2.dp)) } }
                         item(key = "s-${s.id}") { ScanRow(s, state.now) { actions.onOpenScan(s) } }

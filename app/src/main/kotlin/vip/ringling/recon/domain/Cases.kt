@@ -6,7 +6,7 @@ data class CaseTarget(val type: InputType, val value: String, val addedAt: Long)
 
 data class CaseNote(val id: Long, val text: String, val ts: Long)
 
-data class CaseFile(val id: String, val name: String, val createdAt: Long, val number: Int, val targets: List<CaseTarget>, val notes: List<CaseNote>)
+data class CaseFile(val id: String, val name: String, val createdAt: Long, val number: Int, val targets: List<CaseTarget>, val notes: List<CaseNote>, val tags: List<String> = emptyList())
 
 /** A case target together with its newest scan (null until it has been scanned). */
 data class CaseTargetState(val target: CaseTarget, val latest: ScanSnapshot?, val scans: List<ScanSnapshot>) {
@@ -88,5 +88,18 @@ object CaseLogic {
             }
         }
         return out.values.take(limit)
+    }
+}
+
+/** Free-text search over a case: name, tags, target values and note text (case-insensitive, every word must match somewhere). */
+object CaseSearch {
+    fun matches(c: CaseFile, query: String): Boolean {
+        val words = query.lowercase().split(' ').filter { it.isNotBlank() }
+        if (words.isEmpty()) return true
+        val hay = buildString {
+            append(c.name.lowercase()).append(' '); c.tags.forEach { append(it).append(' ') }
+            c.targets.forEach { append(it.value.lowercase()).append(' ') }; c.notes.forEach { append(it.text.lowercase()).append(' ') }
+        }
+        return words.all { it in hay }
     }
 }

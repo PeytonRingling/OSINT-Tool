@@ -19,7 +19,7 @@ object NetModule {
     @Provides @Singleton fun http(): Http = Http()
     @Provides @Singleton fun endpoints(): Endpoints = Endpoints()
     @Provides @Singleton fun db(@ApplicationContext c: Context): HistoryDb {
-        val builder = Room.databaseBuilder(c, HistoryDb::class.java, "recon.db").addMigrations(HistoryDb.MIGRATION_1_2, HistoryDb.MIGRATION_2_3, HistoryDb.MIGRATION_3_4)
+        val builder = Room.databaseBuilder(c, HistoryDb::class.java, "recon.db").addMigrations(HistoryDb.MIGRATION_1_2, HistoryDb.MIGRATION_2_3, HistoryDb.MIGRATION_3_4, HistoryDb.MIGRATION_4_5)
         // Encrypted at rest (SQLCipher) when available; null keeps it plain so the app can never lose data over this (see DbEncryption).
         vip.ringling.recon.data.db.DbEncryption.prepare(c)?.let { builder.openHelperFactory(net.zetetic.database.sqlcipher.SupportOpenHelperFactory(it)) }
         return builder.build()

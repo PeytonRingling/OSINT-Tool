@@ -3,11 +3,14 @@ package vip.ringling.recon.data.sources.dorks
 import java.net.URLEncoder
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flatMapConcat
 import kotlinx.coroutines.flow.flowOf
 import vip.ringling.recon.domain.Confidence
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.InputType
 import vip.ringling.recon.domain.Link
+import vip.ringling.recon.domain.Pivot
 import vip.ringling.recon.domain.ModuleId
 import vip.ringling.recon.domain.OsintSource
 import vip.ringling.recon.domain.ScanInput
@@ -18,7 +21,7 @@ class DorkSource @Inject constructor() : OsintSource {
     override val id = ModuleId.DORKS
     override val supportedInputTypes = setOf(InputType.EMAIL, InputType.USERNAME, InputType.PHONE, InputType.DOMAIN, InputType.IP, InputType.WALLET)
 
-    override suspend fun run(input: ScanInput): Flow<Finding> = flowOf(Dorks.finding(input))
+    override suspend fun run(input: ScanInput): Flow<Finding> = flowOf(listOfNotNull(Dorks.finding(input), Variants.finding(input))).flatMapConcat { it.asFlow() }
 }
 
 object Dorks {
@@ -58,6 +61,39 @@ object Dorks {
             "DORKS-all", ModuleId.DORKS, "${qs.size} search dorks", "Operator searches tuned to this ${input.type.label.lowercase()}. Tap to open in your browser; nothing is sent until you do.",
             Severity.INFO, confidence = Confidence.HIGH,
             links = qs.map { Link(it, google(it)) } + listOfNotNull(qs.firstOrNull()?.let { Link("Same search in Bing", bing(it)) }, qs.firstOrNull()?.let { Link("Same search in DuckDuckGo", ddg(it)) }),
+        )
+    }
+}
+
+/** Common ways one person varies a handle across sites. Guesses to search next, never matches. Pure and offline. */
+object Variants {
+    private val seps = listOf('.', '_', '-')
+
+    fun handle(raw: String, max: Int = 10): List<String> {
+        val h = raw.lowercase().trim()
+        if (h.length < 3) return emptyList()
+        val out = LinkedHashSet<String>()
+        val present = seps.filter { it in h }
+        out += h.filter { it !in seps }                                         // jane.doe -> janedoe
+        present.forEach { p -> seps.filter { it != p }.forEach { q -> out += h.replace(p, q) } } // jane.doe -> jane_doe, jane-doe
+        val digits = h.takeLastWhile { it.isDigit() }
+        if (digits.isNotEmpty() && digits.length < h.length) out += h.dropLast(digits.length) else { out += h + "1"; out += h + "123" }
+        out += "the$h".takeIf { h.length <= 12 }.orEmpty()
+        out += "real$h".takeIf { h.length <= 12 }.orEmpty()
+        return out.filter { it.length >= 3 && it != h }.take(max)
+    }
+
+    fun finding(input: ScanInput): Finding? {
+        val variants = when (input.type) {
+            InputType.USERNAME -> handle(input.raw)
+            InputType.EMAIL -> handle(input.raw.substringBefore('@')).map { it + "@" + input.raw.substringAfter('@') }
+            else -> return null
+        }
+        if (variants.isEmpty()) return null
+        return Finding(
+            "DORKS-variants", ModuleId.DORKS, "${variants.size} handle variants",
+            "Ways the same person might spell this ${if (input.type == InputType.EMAIL) "address" else "handle"} elsewhere. These are guesses, not matches: tap one to search it.",
+            Severity.INFO, confidence = Confidence.LOW, pivots = variants.map { Pivot(it, it) },
         )
     }
 }

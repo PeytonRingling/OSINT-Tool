@@ -59,6 +59,7 @@ fun CaseDetailRoute(
     fun report() = CaseReport.markdown(c.file, c.states, c.events, c.pivots, stamp)
     when (dialog) {
         "add" -> AddTargetDialog({ dialog = "" }, vm::addTarget)
+        "tags" -> EditTagsDialog(c.file.tags, { dialog = "" }) { vm.setTags(it); dialog = "" }
         "rename" -> RenameCaseDialog(c.file.name, { dialog = "" }) { vm.rename(it); dialog = "" }
         "delete" -> ConfirmDialog("Delete ${c.file.name}?", "Removes the case, its targets and notes. The scans themselves stay in the Log.", "Delete", { dialog = "" }) { dialog = ""; vm.delete(onBack) }
     }
@@ -75,7 +76,15 @@ fun CaseDetailRoute(
             onSaveMarkdown = { actions.saveFile("recon-case-${c.file.name.lowercase().replace(Regex("[^a-z0-9]+"), "-")}-$stamp.md", report().toByteArray()) },
             onSavePdf = { actions.saveFile("recon-case-${c.file.name.lowercase().replace(Regex("[^a-z0-9]+"), "-")}-$stamp.pdf", PdfWriter.fromMarkdown(report())) },
             onShare = { actions.shareText("Recon case report", report()) },
-            onRescan = { onRescan(c.file.targets.map { ScanInput(it.value, it.type) }) }, onRename = { dialog = "rename" }, onDelete = { dialog = "delete" }, onChanges = { onChanges(vm.caseId) },
+            onRescan = { onRescan(c.file.targets.map { ScanInput(it.value, it.type) }) },
+            onTags = { dialog = "tags" },
+            onExpand = {
+                // Follow the leads this case has found, one level deep: add each as a target (max 8 new) and scan them.
+                val have = c.file.targets.map { it.key }.toSet()
+                val leads = c.pivots.asSequence().mapNotNull { p -> InputDetector.detect(p.query)?.let { t -> ScanInput(InputDetector.normalize(p.query, t), t) } }
+                    .filter { it.type != vip.ringling.recon.domain.InputType.ZIP && it.type != vip.ringling.recon.domain.InputType.IMAGE && "${it.type.name}:${it.raw}" !in have }.distinctBy { it.type to it.raw }.take(8).toList()
+                vm.addTargets(leads); onRescan(leads)
+            }, onRename = { dialog = "rename" }, onDelete = { dialog = "delete" }, onChanges = { onChanges(vm.caseId) },
         ),
         contentPadding = pad,
         graphHeight = if (wide) 380.dp else 300.dp,

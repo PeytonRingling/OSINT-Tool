@@ -45,6 +45,7 @@ import vip.ringling.recon.ui.signal.HairPanel
 import vip.ringling.recon.ui.signal.PageHeader
 import vip.ringling.recon.ui.signal.SignalButton
 import vip.ringling.recon.ui.signal.SignalLabel
+import vip.ringling.recon.ui.signal.SignalTextField
 import vip.ringling.recon.ui.signal.StatusTag
 import vip.ringling.recon.ui.signal.Tone
 import vip.ringling.recon.ui.signal.textColor
@@ -65,6 +66,7 @@ fun caseLabel(n: Int) = "Case " + n.toString().padStart(2, '0')
 @Composable
 fun CasesScreen(state: CasesUiState, actions: CasesActions, modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues(), selectedId: String? = null, compact: Boolean = false) {
     val sig = ReconTheme.signal
+    var query by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("") }
     Box(modifier.fillMaxSize().background(Brush.radialGradient(listOf(sig.signal.copy(alpha = 0.07f), Color.Transparent), radius = 700f))) {
         LazyColumn(
             Modifier.fillMaxSize(),
@@ -75,7 +77,10 @@ fun CasesScreen(state: CasesUiState, actions: CasesActions, modifier: Modifier =
                 PageHeader("Dossiers", "Cases") { Text("${state.cases.size.toString().padStart(2, '0')} OPEN", color = sig.muted, style = ReconType.value.copy(fontSize = 12.sp)) }
             }
             item { WatchlistStrip(state.watches, actions) }
-            items(state.cases, key = { it.file.id }) { c -> CaseCard(c, actions.onOpen, selected = c.file.id == selectedId, compact = compact) }
+            if (state.cases.size > 1) item { SignalTextField(query, { query = it }, "Search cases, targets, notes, tags", description = "Search cases") }
+            val shown = state.cases.filter { vip.ringling.recon.domain.CaseSearch.matches(it.file, query) }
+            if (shown.isEmpty() && query.isNotBlank()) item { Text("No case matches \"$query\".", color = sig.muted, style = androidx.compose.material3.MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)) }
+            items(shown, key = { it.file.id }) { c -> CaseCard(c, actions.onOpen, selected = c.file.id == selectedId, compact = compact) }
             item {
                 SignalButton("New case", actions.onNewCase, Modifier.fillMaxWidth().height(56.dp), icon = Icons.Outlined.AddCircleOutline, mono = true, dashed = true)
             }
@@ -135,6 +140,9 @@ fun CaseCard(c: CaseView, onOpen: (CaseView) -> Unit, modifier: Modifier = Modif
                     (if (c.file.targets.isEmpty()) "NO TARGETS" else "${c.file.targets.size} TARGET${if (c.file.targets.size == 1) "" else "S"}") + if (c.status == CaseStatus.AREA) " · NO SCORE FOR AREAS" else "",
                     color = sig.muted, style = ReconType.value.copy(fontSize = 11.sp), modifier = Modifier.padding(start = 6.dp),
                 )
+            }
+            if (c.file.tags.isNotEmpty()) androidx.compose.foundation.layout.FlowRow(Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                c.file.tags.take(5).forEach { StatusTag(it, Tone.MUTED) }
             }
             if (c.status != CaseStatus.AREA && c.status != CaseStatus.UNSCANNED) {
                 Row(Modifier.padding(top = 12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
