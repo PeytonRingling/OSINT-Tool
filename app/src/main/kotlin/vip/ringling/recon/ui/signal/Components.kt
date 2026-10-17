@@ -189,8 +189,12 @@ fun ModuleTile(icon: ImageVector, name: String, detail: String, armed: Boolean, 
 /** Large serif risk numeral with optional "/100" suffix, coloured by the risk band. */
 @Composable
 fun RiskNumeral(score: Int, modifier: Modifier = Modifier, size: Int = 104, showSuffix: Boolean = true, tone: Tone = riskTone(score)) {
+    // Counts up from 0 on first show and glides to every later change; stays still when the system's animations are off.
+    val animate = rememberAnimationsEnabled()
+    val shown = androidx.compose.runtime.remember { androidx.compose.animation.core.Animatable(if (animate) 0f else score.toFloat()) }
+    androidx.compose.runtime.LaunchedEffect(score) { if (animate) shown.animateTo(score.toFloat(), androidx.compose.animation.core.tween(900, easing = androidx.compose.animation.core.FastOutSlowInEasing)) else shown.snapTo(score.toFloat()) }
     Row(modifier.semantics { contentDescription = "Risk $score of 100" }, verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(score.toString(), color = tone.textColor().let { if (tone == Tone.ALERT) ReconTheme.signal.alert else it }, style = ReconType.numeral.copy(fontSize = size.sp, lineHeight = (size * 0.84f).sp))
+        Text(shown.value.toInt().toString(), color = tone.textColor().let { if (tone == Tone.ALERT) ReconTheme.signal.alert else it }, style = ReconType.numeral.copy(fontSize = size.sp, lineHeight = (size * 0.84f).sp))
         if (showSuffix) Text("/100", color = ReconTheme.signal.muted, style = ReconType.value.copy(fontSize = 12.sp), modifier = Modifier.padding(bottom = 6.dp))
     }
 }

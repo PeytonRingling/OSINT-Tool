@@ -81,6 +81,7 @@ import vip.ringling.recon.ui.signal.textColor
 import vip.ringling.recon.ui.theme.ReconTheme
 import vip.ringling.recon.ui.theme.ReconType
 import kotlin.math.ceil
+import vip.ringling.recon.domain.EntityGraph
 
 data class ResultsActions(
     val onBack: () -> Unit = {},
@@ -98,6 +99,8 @@ data class ResultsActions(
     val onRequestLocation: () -> Unit = {},
     val onShowFindings: () -> Unit = {},
     val onStop: () -> Unit = {},
+    /** Search a lead from the lead graph. */
+    val onPivot: (String) -> Unit = {},
 )
 
 /** Header shared by the result screens: back, "TYPE · done/total modules" label, value, export (and pin). */
@@ -130,6 +133,9 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
     val events = Exposure.timeline(state.findings)
     val steps = Exposure.fixFirst(state.findings)
     val tone = riskTone(score)
+    val leadGraph = androidx.compose.runtime.remember(state.findings, input?.raw) { EntityGraph.build(input?.raw.orEmpty(), state.findings) }
+    var showLeads by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    if (showLeads) EntityGraphDialog(leadGraph, onPivot = { showLeads = false; actions.onPivot(it) }, onDismiss = { showLeads = false })
     var sheet by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<SheetFor?>(null) }
     sheet?.let { sh ->
         val (title, list, empty) = when (sh) {
@@ -167,9 +173,12 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
             item { TickBar(ceil(score / 5.0).toInt().coerceIn(0, 20), tone = tone, modifier = Modifier.padding(top = 2.dp)) }
             item {
                 BracketPanel(Modifier.fillMaxWidth().height(262.dp)) {
-                    OrbitGraph(input?.type?.icon() ?: ModuleId.BREACH.icon(), input?.raw.orEmpty(), nodes, Modifier.fillMaxSize(), onNode = { sheet = SheetFor.Module(it.module, it.label) })
+                    OrbitGraph(input?.type?.icon() ?: ModuleId.BREACH.icon(), input?.raw.orEmpty(), nodes, Modifier.fillMaxSize(), onNode = { sheet = SheetFor.Module(it.module, it.label) }, scanning = state.running)
                     if (showFindingsButton) SignalButton("${state.findings.count { it.module != ModuleId.DORKS && it.scorable }} findings ›", actions.onShowFindings, Modifier.align(Alignment.BottomEnd).padding(10.dp), mono = true)
                 }
+            }
+            if (leadGraph.entityCount > 0) item(key = "leads") {
+                SignalButton("Lead graph · ${leadGraph.entityCount} lead${if (leadGraph.entityCount == 1) "" else "s"} to follow ›", { showLeads = true }, Modifier.fillMaxWidth(), mono = true)
             }
             if (events.isNotEmpty()) item {
                 HairPanel(Modifier.fillMaxWidth()) {

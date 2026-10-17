@@ -22,6 +22,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.animateFloat
+import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
 import vip.ringling.recon.domain.Exposure
@@ -40,8 +42,22 @@ fun orbitDescription(value: String, nodes: List<OrbitNode>) =
 
 /** The target sits in the centre; each module is a node on an orbit sized by its finding count. The breach node wears a ring of dots, one per breach. */
 @Composable
-fun OrbitGraph(centerIcon: ImageVector, value: String, nodes: List<OrbitNode>, modifier: Modifier = Modifier, onNode: ((OrbitNode) -> Unit)? = null) {
+fun OrbitGraph(centerIcon: ImageVector, value: String, nodes: List<OrbitNode>, modifier: Modifier = Modifier, onNode: ((OrbitNode) -> Unit)? = null, scanning: Boolean = false) {
     val sig = ReconTheme.signal
+    val animate = vip.ringling.recon.ui.signal.rememberAnimationsEnabled()
+    // Each module's node grows in (staggered) the first time it appears, so results visibly arrive as sources finish.
+    val grow = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateMapOf<vip.ringling.recon.domain.ModuleId, Float>() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    androidx.compose.runtime.LaunchedEffect(nodes.map { it.module }.toSet()) {
+        nodes.forEachIndexed { i, nd ->
+            if (nd.module in grow) return@forEachIndexed
+            if (!animate) { grow[nd.module] = 1f; return@forEachIndexed }
+            grow[nd.module] = 0f
+            scope.launch { androidx.compose.animation.core.Animatable(0f).animateTo(1f, androidx.compose.animation.core.tween(700, delayMillis = i * 90, easing = androidx.compose.animation.core.FastOutSlowInEasing), block = { grow[nd.module] = this.value }) }
+        }
+    }
+    // While a scan runs, a radar sweep circles the target.
+    val sweep = if (scanning && animate) androidx.compose.animation.core.rememberInfiniteTransition(label = "sweep").animateFloat(0f, 360f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(2400, easing = androidx.compose.animation.core.LinearEasing)), label = "sweepAngle") else null
     val measurer = rememberTextMeasurer()
     val iconPainter = rememberVectorPainter(centerIcon)
     androidx.compose.foundation.layout.BoxWithConstraints(modifier) {
@@ -73,8 +89,15 @@ fun OrbitGraph(centerIcon: ImageVector, value: String, nodes: List<OrbitNode>, m
         fun colorOf(sev: Severity?) = when (sev) { Severity.EXPOSED -> sig.alert; Severity.INFO -> sig.info; Severity.CLEAN -> sig.safe; null -> sig.muted }
         fun textOf(sev: Severity?) = when (sev) { Severity.EXPOSED -> sig.alertText; Severity.INFO -> sig.infoText; Severity.CLEAN -> sig.safeText; null -> sig.muted }
         // edges first, so nodes paint over them
+        sweep?.value?.let { ang ->
+            val rx = px(orbit + 22.0); val ry = px((orbit + 22.0) * 0.9)
+            drawArc(sig.signal.copy(alpha = 0.16f), ang - 50f, 50f, true, Offset(c.x - rx, c.y - ry), androidx.compose.ui.geometry.Size(rx * 2, ry * 2))
+            val rad = Math.toRadians(ang.toDouble())
+            drawLine(sig.signal.copy(alpha = 0.7f), c, Offset(c.x + rx * cos(rad).toFloat(), c.y + ry * sin(rad).toFloat()), strokeWidth = 1.5f * s)
+        }
         nodes.forEachIndexed { i, nd ->
-            val a = nodeAngle(i, n); val p = Offset(c.x + px(orbit * cos(a) * 1.0), c.y + px(orbit * sin(a) * 0.9))
+            val g = grow[nd.module] ?: 1f
+            val a = nodeAngle(i, n); val p = Offset(c.x + px(orbit * cos(a) * 1.0) * g, c.y + px(orbit * sin(a) * 0.9) * g)
             drawLine(if (nd.worst == Severity.EXPOSED) sig.alert.copy(alpha = 0.6f) else sig.signal.copy(alpha = 0.22f), c, p, strokeWidth = if (nd.worst == Severity.EXPOSED) 1.4f * s else 1f)
         }
         drawCircle(sig.signal.copy(alpha = 0.3f), px(36.0), c, style = Stroke(1f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(2f * s, 4f * s))))
@@ -82,8 +105,10 @@ fun OrbitGraph(centerIcon: ImageVector, value: String, nodes: List<OrbitNode>, m
         translate(c.x - 12f * s, c.y - 12f * s) { with(iconPainter) { draw(androidx.compose.ui.geometry.Size(24f * s, 24f * s), colorFilter = androidx.compose.ui.graphics.ColorFilter.tint(sig.signal)) } }
 
         nodes.forEachIndexed { i, nd ->
+            val g = grow[nd.module] ?: 1f
             val a = nodeAngle(i, n); val p = Offset(c.x + px(orbit * cos(a) * 1.0), c.y + px(orbit * sin(a) * 0.9))
-            val r = px(nd.radius)
+            val r = px(nd.radius) * (0.3f + 0.7f * g)
+            if (g < 1f) drawCircle(sig.signal.copy(alpha = 0.5f * (1f - g)), r + px(18.0) * g, p, style = Stroke(1.5f * s))
             val col = colorOf(nd.worst); val txt = textOf(nd.worst)
             if (nd.dots.isNotEmpty()) {
                 val ringR = r + px(12.0)

@@ -30,6 +30,7 @@ fun ResultsRoute(
     onFinding: (Finding) -> Unit,
     onExport: (state: ResultsUiState) -> Unit,
     onPin: (state: ResultsUiState) -> Unit,
+    onPivot: (String) -> Unit = {},
     wide: Boolean = false,
 ) {
     val vm: ResultsViewModel = hiltViewModel()
@@ -41,7 +42,7 @@ fun ResultsRoute(
     val permission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions()) { main.refreshLocation() }
     val actions = ResultsActions(
         onBack = onBack, onExport = { onExport(st) }, onPin = { onPin(st) }, onFinding = if (wide) { f -> if (st.selectedId == f.id) onFinding(f) else vm.select(f.id) } else onFinding, onOpenFinding = onFinding, onSelect = { f -> if (st.selectedId == f.id) onFinding(f) else vm.select(f.id) }, onClearSelection = { vm.select(null) }, onHandled = vm::setHandled, onFilter = vm::setFilter, onSort = vm::setSort,
-        onAckRegistry = vm::ackRegistry, onShowFindings = { showFindings = true }, onStop = vm::stop,
+        onAckRegistry = vm::ackRegistry, onShowFindings = { showFindings = true }, onStop = vm::stop, onPivot = onPivot,
         onRequestLocation = {
             if (main.hasLocationPermission()) main.refreshLocation()
             else permission.launch(arrayOf(android.Manifest.permission.ACCESS_FINE_LOCATION, android.Manifest.permission.ACCESS_COARSE_LOCATION))

@@ -193,6 +193,11 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 - People-finder sites (Spokeo, Whitepages, TruePeopleSearch, ...) are included by the USER'S EXPLICIT REQUEST as plain browser LINKS only (`PeopleParsers.finders`, separate "PEOPLE-finders" finding with a data-quality warning). Recon never requests, scrapes or sends them anything. The user later asked for their DATA to be pulled into the app; that was declined (it would compile home addresses, phones and relatives of private people by name, and the sites forbid scraping). Instead, open sources are read in-app as deeply as possible (ORCID employment/works), and all links open in an in-app Custom Tab (`androidx.browser`; it uses the browser's network, not Recon's Tor/proxy). Do not add scraping of them. Home addresses/phones are never read from any API source. OpenCorporates' API needs a token and GDELT limits to 1 req / 5 s, so they are links only.
 - UI: `PersonSearchDialog` (states the lawful-use notice), `PersonScreen` (match count, source groups, "sources with no result", portals).
 
+## Wow pass (added 2026-10-17)
+- Motion: `RiskNumeral` counts up (and glides on change); `OrbitGraph` nodes grow in staggered as each module first reports, and a radar sweep circles the target while `scanning` (scan running). All of it stays still when the system's animations are off (`rememberAnimationsEnabled`).
+- **Lead graph** (`domain/EntityGraph.kt`, `ui/results/EntityGraphScreen.kt`): full-screen pan/zoom dialog, target -> modules -> leads, built ONLY from findings' `pivots` (a lead shows under every module that listed it; target, DORKS excluded; max 40). Tap a lead -> "Search this" pivots via `ResultsActions.onPivot`. Button on the exposure screen when there are leads. Tests: `EntityGraphTest`.
+- Decided against more: backend/off-device features. Still ideas: dossier PDF cover, correlation timeline, on-device "what to fix first" summary.
+
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.
