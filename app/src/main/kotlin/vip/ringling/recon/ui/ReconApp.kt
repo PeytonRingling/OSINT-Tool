@@ -102,7 +102,7 @@ fun ReconRoot(vm: MainViewModel = hiltViewModel()) {
 fun ReconApp() {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
-    val main: MainViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
+    val main: MainViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
     val actions = rememberReconActions(snackbar, onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) }, onRunPaid = main::runPaid)
     val updateState by main.update.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { main.checkForUpdateQuietly() }
@@ -117,9 +117,9 @@ fun ReconApp() {
     var showLoadout by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     var pinInput by remember { androidx.compose.runtime.mutableStateOf<vip.ringling.recon.domain.ScanInput?>(null) }
     var newCaseFor by remember { androidx.compose.runtime.mutableStateOf<vip.ringling.recon.domain.ScanInput?>(null) }
-    val pinCases: vip.ringling.recon.ui.cases.CasesViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
+    val pinCases: vip.ringling.recon.ui.cases.CasesViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
     val pinState by pinCases.state.collectAsStateWithLifecycle()
-    val radarVm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
+    val radarVm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
     val radarState by radarVm.state.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
         radarVm.events.collect { e ->
@@ -296,8 +296,8 @@ private fun ResultsEntry(nav: NavHostController, actions: ReconActions, pad: Pad
 
 @Composable
 private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingValues, onLoadout: () -> Unit) {
-    val main: MainViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
-    val vm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.compose.ui.platform.LocalContext.current as androidx.activity.ComponentActivity)
+    val main: MainViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
+    val vm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
     val st by vm.state.collectAsStateWithLifecycle()
     var showPassword by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     if (showPassword) vip.ringling.recon.ui.radar.PasswordCheckDialog(vm::passwordCount) { showPassword = false }

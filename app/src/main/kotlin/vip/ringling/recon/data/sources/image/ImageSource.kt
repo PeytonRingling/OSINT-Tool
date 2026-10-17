@@ -29,11 +29,22 @@ class ImageSource @Inject constructor(@ApplicationContext private val context: C
 
     override suspend fun run(input: ScanInput): Flow<Finding> = flow {
         val uri = Uri.parse(input.raw)
-        val bytes = context.contentResolver.openInputStream(uri)?.use { it.readNBytes(MAX_BYTES) } ?: throw IllegalStateException("Could not open the photo")
+        val bytes = context.contentResolver.openInputStream(uri)?.use { readCapped(it, MAX_BYTES) } ?: throw IllegalStateException("Could not open the photo")
         emit(ImageAnalyzer.analyze(uri.lastPathSegment ?: "photo", bytes.inputStream(), bytes))
     }.flowOn(Dispatchers.IO)
 
-    companion object { const val MAX_BYTES = 40 * 1024 * 1024 }
+    companion object {
+        const val MAX_BYTES = 40 * 1024 * 1024
+
+        /** Reads at most [max] bytes. (InputStream.readNBytes needs API 33; this app supports API 29.) */
+        fun readCapped(input: java.io.InputStream, max: Int): ByteArray {
+            val out = java.io.ByteArrayOutputStream()
+            val buf = ByteArray(64 * 1024)
+            var left = max
+            while (left > 0) { val n = input.read(buf, 0, minOf(buf.size, left)); if (n < 0) break; out.write(buf, 0, n); left -= n }
+            return out.toByteArray()
+        }
+    }
 }
 
 object ImageAnalyzer {

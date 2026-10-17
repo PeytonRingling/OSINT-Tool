@@ -33,7 +33,7 @@ fun ResultsRoute(
     wide: Boolean = false,
 ) {
     val vm: ResultsViewModel = hiltViewModel()
-    val main: MainViewModel = hiltViewModel(LocalContext.current as androidx.activity.ComponentActivity)
+    val main: MainViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
     val st by vm.state.collectAsStateWithLifecycle()
     var showFindings by rememberSaveable { mutableStateOf(false) }
     val hasLocated = st.findings.any { it.geo != null }

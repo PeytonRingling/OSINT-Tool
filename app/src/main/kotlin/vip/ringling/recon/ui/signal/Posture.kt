@@ -16,7 +16,7 @@ val LocalTabletop = compositionLocalOf { false }
 
 @Composable
 fun rememberTabletop(): Boolean {
-    val activity = LocalContext.current as? ComponentActivity ?: return false
+    val activity = androidx.activity.compose.LocalActivity.current as? ComponentActivity ?: return false
     val state by produceState(false, activity) {
         runCatching {
             WindowInfoTracker.getOrCreate(activity).windowLayoutInfo(activity)

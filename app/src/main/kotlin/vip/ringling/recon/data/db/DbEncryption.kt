@@ -92,6 +92,7 @@ object DbEncryption {
 }
 
 /** The database passphrase, stored as AES-GCM ciphertext under a Keystore key. */
+@android.annotation.SuppressLint("ApplySharedPref") // the key must be on disk before the database is created with it
 internal object DbKey {
     private const val ALIAS = "recon_db_key_v1"
     private const val PREFS = "recon_db"

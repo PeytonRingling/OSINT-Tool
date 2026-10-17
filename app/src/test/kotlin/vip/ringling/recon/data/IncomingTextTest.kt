@@ -27,4 +27,11 @@ class IncomingTextTest {
         assertEquals(true, "Content SHA-256: ${Evidence.hash(f)}" in md && "2023-11-14" in md && "does not verify" in md, md)
         assertEquals(Evidence.hash(f), Evidence.hash(f.copy())); assertEquals(false, Evidence.hash(f) == Evidence.hash(f.copy(detail = "changed")))
     }
+
+    @Test fun cappedReadStopsAtTheLimitWithoutReadNBytes() {
+        val data = ByteArray(300_000) { (it % 251).toByte() }
+        assertEquals(1000, vip.ringling.recon.data.sources.image.ImageSource.readCapped(data.inputStream(), 1000).size)
+        assertEquals(300_000, vip.ringling.recon.data.sources.image.ImageSource.readCapped(data.inputStream(), 1_000_000).size)
+        assertEquals(0, vip.ringling.recon.data.sources.image.ImageSource.readCapped(ByteArray(0).inputStream(), 10).size)
+    }
 }

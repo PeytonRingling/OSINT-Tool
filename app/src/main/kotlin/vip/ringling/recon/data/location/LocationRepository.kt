@@ -53,7 +53,11 @@ class AndroidUserLocation @Inject constructor(@ApplicationContext private val co
         fix?.let { state.value = GeoPoint(it.latitude, it.longitude) }
     }
 
-    private suspend fun current(lm: LocationManager, provider: String): Location? = withTimeoutOrNull(10_000) {
+    @android.annotation.SuppressLint("MissingPermission") // only called after hasPermission(); a revoked grant is caught below
+    private suspend fun current(lm: LocationManager, provider: String): Location? = try { currentOrThrow(lm, provider) } catch (e: SecurityException) { null }
+
+    @android.annotation.SuppressLint("MissingPermission")
+    private suspend fun currentOrThrow(lm: LocationManager, provider: String): Location? = withTimeoutOrNull(10_000) {
         suspendCancellableCoroutine { cont ->
             val signal = CancellationSignal()
             cont.invokeOnCancellation { signal.cancel() }
