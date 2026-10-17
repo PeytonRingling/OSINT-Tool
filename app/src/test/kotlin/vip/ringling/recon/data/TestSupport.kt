@@ -37,7 +37,7 @@ fun server(vararg routes: Pair<String, (RecordedRequest) -> MockResponse>): Pair
 fun MockWebServer.endpoints(): Endpoints {
     val base = url("/").toString().trimEnd('/')
     return Endpoints(
-        updateRepo = "testuser/OSINT-Tool", wikidata = "$base/wd", orcid = "$base/orcid", courtListener = "$base/cl", fec = "$base/fec", npi = "$base/npi", openAlex = "$base/oa", hibp = "$base/hibp", leakCheckApi = "$base/lc/v2", leakCheckPublic = "$base/lc/public",
+        updateRepo = "testuser/OSINT-Tool", wikidata = "$base/wd", orcid = "$base/orcid", courtListener = "$base/cl", fec = "$base/fec", npi = "$base/npi", wikipedia = "$base/wp", bluesky = "$base/bs", googleNews = "$base/news", finra = "$base/finra", sec = "$base/sec", openAlex = "$base/oa", hibp = "$base/hibp", leakCheckApi = "$base/lc/v2", leakCheckPublic = "$base/lc/public",
         doh = "$base/doh", crtSh = "$base/crt", rdap = "$base/rdap", spotify = "$base/spotify", gravatar = "$base/gravatar", idahoSor = "$base/idaho", github = "$base/gh", notes800 = "$base/notes", veriphone = "$base/veriphone", twilio = "$base/twilio", archive = "$base/archive", internetDb = "$base/idb", duolingo = "$base/duo", wordpress = "$base/wp", ipinfo = "$base/ipinfo", torList = "$base/tor", urlscan = "$base/urlscan", blockstream = "$base/bs", blockscout = "$base/scout",
     )
 }

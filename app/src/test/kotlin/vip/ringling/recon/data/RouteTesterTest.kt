@@ -43,4 +43,16 @@ class RouteTesterTest {
             assertTrue(!RouteTester.describe(ProxyMode.OFF, r).first.contains("fail-closed"))
         } finally { s.shutdown() }
     }
+
+    @Test fun fallsBackToAPlainIpEchoWhenTheTorCheckIsUnreachable() = runTest {
+        val (srv, _) = server("/api/ip" to { MockResponse().setResponseCode(503) }, "/echo/" to { json("""{"ip":"198.51.100.7"}""") })
+        try {
+            val base = srv.url("").toString().trimEnd('/')
+            val r = RouteTester(Http(), base, "$base/echo").test()
+            assertEquals(true, r is RouteResult.Unconfirmed && r.ip == "198.51.100.7" && "503" in r.reason, r.toString())
+            assertTrue(RouteTester.describe(ProxyMode.TOR, r).first.contains("can't be confirmed") && RouteTester.describe(ProxyMode.OFF, r).first.contains("198.51.100.7"))
+            val both = RouteTester(Http(), "http://127.0.0.1:1", "http://127.0.0.1:1").test()
+            assertTrue(both is RouteResult.Failed && both.message.isNotBlank())
+        } finally { srv.shutdown() }
+    }
 }

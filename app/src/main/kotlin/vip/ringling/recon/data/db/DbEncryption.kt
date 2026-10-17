@@ -42,12 +42,13 @@ object DbEncryption {
             if (file.exists() && !isPlaintext(file)) deleteDbFiles(file)
             pass = DbKey.create(context)
         }
-        if (file.exists() && isPlaintext(file) && !migrate(file, pass)) {
-            status = DbStatus(false, "Converting the existing database failed, so it was left unchanged.")
+        val failure = if (file.exists() && isPlaintext(file)) migrate(file, pass) else null
+        if (failure != null) {
+            status = DbStatus(false, "Converting the existing database failed ($failure), so it was left unchanged.")
             null
         } else { status = DbStatus(true); pass.toByteArray(Charsets.US_ASCII) }
     } catch (t: Throwable) {
-        status = DbStatus(false, "Encryption isn't available on this device (${t.javaClass.simpleName}).")
+        status = DbStatus(false, "Encryption isn't available on this device (${t.javaClass.simpleName}${t.message?.let { ": " + it.take(120) } ?: ""}).")
         null
     }
 
@@ -61,35 +62,48 @@ object DbEncryption {
 
     private val noHook: SQLiteDatabaseHook? = null
 
-    /** Copies [file] (plaintext) into an encrypted twin, verifies it, then swaps it in. Returns false (leaving the original untouched) on any problem. */
-    private fun migrate(file: File, pass: String): Boolean {
+    /**
+     * Copies [file] (plaintext) into an encrypted twin, verifies it, then swaps it in. Returns null on success, otherwise a short description of
+     * what failed (the original is left untouched).
+     */
+    private fun migrate(file: File, pass: String): String? {
         val tmp = File(file.parentFile, "recon-enc.tmp")
         val bak = File(file.parentFile, "recon-plain.bak")
         deleteDbFiles(tmp); bak.delete()
+        var stage = "opening the existing database"
         try {
             val src = SQLiteDatabase.openDatabase(file.path, "", null, SQLiteDatabase.OPEN_READWRITE, noHook)
             val version: Int; val tables: Long
             try {
+                stage = "reading the existing database"
                 version = src.version
                 tables = count(src)
+                stage = "attaching the encrypted copy"
                 src.rawExecSQL("ATTACH DATABASE '${tmp.path.replace("'", "''")}' AS encrypted KEY '$pass'")
+                stage = "copying the data"
                 src.rawExecSQL("SELECT sqlcipher_export('encrypted')")
+                stage = "copying the schema version"
                 src.rawExecSQL("PRAGMA encrypted.user_version = $version")
                 src.rawExecSQL("DETACH DATABASE encrypted")
             } finally { src.close() }
+            stage = "verifying the encrypted copy"
             val check = SQLiteDatabase.openDatabase(tmp.path, pass.toByteArray(Charsets.US_ASCII), null, SQLiteDatabase.OPEN_READWRITE, noHook)
-            val ok = try { check.version == version && count(check) == tables } finally { check.close() }
-            if (!ok) { deleteDbFiles(tmp); return false }
+            val problem = try {
+                val v = check.version; val t = count(check)
+                if (v != version) "schema version $v != $version" else if (t != tables) "$t objects != $tables" else null
+            } finally { check.close() }
+            if (problem != null) { deleteDbFiles(tmp); return "verifying the copy failed ($problem)" }
+            stage = "swapping the files"
             // The plaintext WAL/SHM belong to the old file; remove them before the swap so the new file is read on its own.
-            if (!file.renameTo(bak)) { deleteDbFiles(tmp); return false }
-            if (!tmp.renameTo(file)) { bak.renameTo(file); deleteDbFiles(tmp); return false }
+            if (!file.renameTo(bak)) { deleteDbFiles(tmp); return "couldn't move the old file aside" }
+            if (!tmp.renameTo(file)) { bak.renameTo(file); deleteDbFiles(tmp); return "couldn't move the new file into place" }
             listOf(File(file.path + "-wal"), File(file.path + "-shm"), File(file.path + "-journal")).forEach { it.delete() }
             overwriteAndDelete(bak)
-            return true
+            return null
         } catch (t: Throwable) {
             deleteDbFiles(tmp)
             if (!file.exists() && bak.exists()) bak.renameTo(file)
-            return false
+            return "$stage: ${t.javaClass.simpleName}${t.message?.let { ": " + it.take(120) } ?: ""}"
         }
     }
 

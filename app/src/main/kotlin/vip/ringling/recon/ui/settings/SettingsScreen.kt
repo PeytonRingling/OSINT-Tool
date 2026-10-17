@@ -412,11 +412,14 @@ private fun RouteTestRow(mode: ProxyMode, test: suspend () -> vip.ringling.recon
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var busy by remember { mutableStateOf(false) }
     var verdict by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SignalButton(if (busy) "Testing…" else "Test connection", {
             busy = true; verdict = null
-            scope.launch { verdict = vip.ringling.recon.data.net.RouteTester.describe(mode, test()); busy = false }
+            scope.launch {
+                verdict = try { vip.ringling.recon.data.net.RouteTester.describe(mode, test()) } catch (e: Exception) { "The test itself failed: ${e.javaClass.simpleName}${e.message?.let { ": " + it.take(100) } ?: ""}" to false }
+                busy = false
+            }
         }, enabled = !busy, mono = true)
-        verdict?.let { (text, ok) -> Text(text, Modifier.weight(1f), color = if (ok) sig.safeText else sig.alertText, style = MaterialTheme.typography.bodySmall) }
+        verdict?.let { (text, ok) -> Text(text, Modifier.fillMaxWidth(), color = if (ok) sig.safeText else sig.alertText, style = MaterialTheme.typography.bodySmall) }
     }
 }

@@ -34,4 +34,11 @@ class IncomingTextTest {
         assertEquals(300_000, vip.ringling.recon.data.sources.image.ImageSource.readCapped(data.inputStream(), 1_000_000).size)
         assertEquals(0, vip.ringling.recon.data.sources.image.ImageSource.readCapped(ByteArray(0).inputStream(), 10).size)
     }
+
+    @Test fun linksAreNormalisedAndOnlyWebLinksPass() {
+        val n = vip.ringling.recon.ui.LinkOpener::normalize
+        assertEquals("https://example.com/a?b=1", n(" https://example.com/a?b=1 ")); assertEquals("https://www.wikidata.org/wiki/Q1", n("//www.wikidata.org/wiki/Q1"))
+        assertEquals("https://example.com/x", n("example.com/x")); assertEquals("HTTP://a.org", n("HTTP://a.org"))
+        listOf("", "  ", "javascript:alert(1)", "intent://x#Intent;end", "tel:123", "file:///etc/passwd", "two words.com", "localhost").forEach { assertEquals(null, n(it), it) }
+    }
 }

@@ -4,6 +4,7 @@ import java.net.URLEncoder
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
@@ -40,11 +41,11 @@ const val BY_NAME_ONLY = "Matched by name only: common names return other people
 
 /** Parsers for each public source. Pure (text in, findings out), so they are tested against saved responses. */
 object PeopleParsers {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
-    private fun JsonElement?.str(): String? = (this as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() && it != "null" }
-    private fun JsonObject.s(k: String) = this[k].str()
-    private fun hit(id: String, title: String, detail: String, url: String?, tag: String, facts: List<Fact> = emptyList()) =
-        Finding("PEOPLE-hit-$id", ModuleId.PEOPLE, title, detail + "\n" + BY_NAME_ONLY, Severity.INFO, url = url, confidence = Confidence.LOW, tags = listOf(tag), facts = facts)
+    internal val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    internal fun JsonElement?.str(): String? = (this as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() && it != "null" }
+    internal fun JsonObject.s(k: String) = this[k].str()
+    internal fun hit(id: String, title: String, detail: String, url: String?, tag: String, facts: List<Fact> = emptyList(), image: String? = null, pivots: List<vip.ringling.recon.domain.Pivot> = emptyList()) =
+        Finding("PEOPLE-hit-$id", ModuleId.PEOPLE, title, detail + "\n" + BY_NAME_ONLY, Severity.INFO, url = url, confidence = Confidence.LOW, tags = listOf(tag), facts = facts, imageUrl = image, imageLargeUrl = image, pivots = pivots)
 
     /** Wikidata search restricted to humans (`haswbstatement:P31=Q5`); the snippet is the entity's one-line description. */
     fun wikidata(body: String, name: String): List<Finding> =
@@ -68,7 +69,12 @@ object PeopleParsers {
             val o = e.jsonObject; val caption = o.s("caseName") ?: o.s("case_name") ?: return@mapNotNull null
             val docketId = o.s("docket_id") ?: o.s("docketNumber") ?: caption.hashCode().toString()
             val bits = listOfNotNull(o.s("court"), o.s("dateFiled")?.let { "filed ${it.take(10)}" }, o.s("docketNumber")?.let { "docket $it" })
-            hit("court-$docketId", caption, bits.joinToString(" · ").ifBlank { "Federal court docket" }, o.s("docket_absolute_url")?.let { base.trimEnd('/') + it }, "Court dockets")
+            val parties = (o["party"] as? JsonArray).orEmpty().mapNotNull { it.str() }.distinct()
+            val facts = listOfNotNull(
+                (o.s("assignedTo") ?: o.s("judge"))?.let { Fact("Judge", it) }, o.s("cause")?.let { Fact("Cause", it) }, o.s("suitNature")?.let { Fact("Nature of suit", it) },
+                o.s("dateTerminated")?.let { Fact("Closed", it.take(10)) }, if (parties.isNotEmpty()) Fact("Parties", parties.take(8).joinToString("; ")) else null,
+            )
+            hit("court-$docketId", caption, bits.joinToString(" · ").ifBlank { "Federal court docket" }, o.s("docket_absolute_url")?.let { base.trimEnd('/') + it }, "Court dockets", facts)
         }.take(6)
 
     /** FEC individual contributions. Street addresses are deliberately never read: only city/state, employer and the gift itself. */
@@ -86,6 +92,84 @@ object PeopleParsers {
                 facts = listOfNotNull(o.s("contributor_name")?.let { Fact("Name on filing", it) }, if (where.isNotBlank()) Fact("Location", where) else null, if (work.isNotBlank()) Fact("Employer / occupation", work) else null),
             )
         }.take(10)
+
+    /** Totals across the donations returned (up to 50): count, sum and the top committees, so the picture is visible at a glance. */
+    fun fecSummary(body: String): Finding? {
+        val rows = json.parseToJsonElement(body).jsonObject["results"]?.jsonArray.orEmpty().mapNotNull { e ->
+            val o = e.jsonObject; val amount = (o["contribution_receipt_amount"] as? JsonPrimitive)?.doubleOrNull ?: return@mapNotNull null
+            (o["committee"]?.jsonObject?.s("name") ?: o.s("committee_name") ?: "a committee") to amount
+        }
+        if (rows.size < 2) return null
+        val total = rows.sumOf { it.second }
+        val top = rows.groupBy({ it.first }, { it.second }).map { (c, a) -> c to a.sum() }.sortedByDescending { it.second }.take(5)
+        return hit("fec-summary", "${rows.size} donations totalling $${"%,.0f".format(total)}", "Across the most recent ${rows.size} FEC-reported gifts under this name (a common name can mix several people).", "https://www.fec.gov/data/receipts/individual-contributions/", "FEC donations",
+            facts = top.map { Fact("Top committee", "${it.first}: $${"%,.0f".format(it.second)}") })
+    }
+
+    /** English-Wikipedia page title from a Wikidata `wbgetentities&props=sitelinks` response. */
+    fun wikipediaTitle(body: String, qid: String): String? =
+        json.parseToJsonElement(body).jsonObject["entities"]?.jsonObject?.get(qid)?.jsonObject?.get("sitelinks")?.jsonObject?.get("enwiki")?.jsonObject?.s("title")
+
+    /** Wikipedia REST summary: the lead paragraph, one-line description, photo and page URL. */
+    data class WikiSummary(val extract: String, val description: String?, val image: String?, val page: String?)
+    fun wikipediaSummary(body: String): WikiSummary? {
+        val o = json.parseToJsonElement(body).jsonObject
+        val extract = o.s("extract") ?: return null
+        return WikiSummary(extract, o.s("description"), (o["thumbnail"] as? JsonObject)?.s("source"), (o["content_urls"] as? JsonObject)?.get("desktop")?.let { it as? JsonObject }?.s("page"))
+    }
+
+    /** Google News RSS: headline, outlet and date for each article mentioning the quoted name. */
+    fun news(xml: String): List<Finding> =
+        org.jsoup.Jsoup.parse(xml, "", org.jsoup.parser.Parser.xmlParser()).select("item").take(8).mapNotNull { it ->
+            val full = it.selectFirst("title")?.text()?.takeIf { t -> t.isNotBlank() } ?: return@mapNotNull null
+            val link = it.selectFirst("link")?.text(); val outlet = it.selectFirst("source")?.text()
+            val headline = if (outlet != null && full.endsWith(" - $outlet")) full.removeSuffix(" - $outlet") else full
+            val date = it.selectFirst("pubDate")?.text()?.let { d -> d.substringAfter(", ", d).take(11).trim() }
+            hit("news-" + (it.selectFirst("guid")?.text() ?: link ?: headline).hashCode(), headline, listOfNotNull(outlet, date).joinToString(" · ").ifBlank { "News article" }, link, "News mentions")
+        }
+
+    /** Public Bluesky profiles whose display name matches. */
+    fun bluesky(body: String): List<Finding> =
+        json.parseToJsonElement(body).jsonObject["actors"]?.jsonArray.orEmpty().mapNotNull { e ->
+            val o = e.jsonObject; val handle = o.s("handle") ?: return@mapNotNull null
+            hit("bsky-${o.s("did") ?: handle}", o.s("displayName") ?: handle, listOfNotNull("@$handle", o.s("description")?.lineSequence()?.firstOrNull()?.take(160)).joinToString(" · "), "https://bsky.app/profile/$handle", "Bluesky profiles", image = o.s("avatar"))
+        }.take(5)
+
+    /** GitHub user search by name (logins only); [githubUser] then reads each profile. */
+    fun githubLogins(body: String): List<String> = json.parseToJsonElement(body).jsonObject["items"]?.jsonArray.orEmpty().mapNotNull { (it as? JsonObject)?.s("login") }.take(3)
+
+    fun githubUser(body: String): Finding? {
+        val o = json.parseToJsonElement(body).jsonObject; val login = o.s("login") ?: return null
+        val facts = listOfNotNull(o.s("company")?.let { Fact("Company", it) }, o.s("location")?.let { Fact("Location", it) }, o.s("blog")?.let { Fact("Website", it) }, o.s("bio")?.let { Fact("Bio", it.take(200)) },
+            (o["public_repos"] as? JsonPrimitive)?.contentOrNull?.let { Fact("Public repositories", it) }, (o["followers"] as? JsonPrimitive)?.contentOrNull?.let { Fact("Followers", it) })
+        return hit("github-$login", o.s("name") ?: login, listOfNotNull("@$login on GitHub", o.s("company"), o.s("location")).joinToString(" · "), o.s("html_url") ?: "https://github.com/$login", "GitHub profiles",
+            facts, image = o.s("avatar_url"), pivots = listOf(vip.ringling.recon.domain.Pivot("Search @$login", login)))
+    }
+
+    /** FINRA BrokerCheck individuals: current firm and branch city/state and whether regulatory disclosures exist. Never ZIP codes or street addresses. */
+    fun brokerCheck(body: String): List<Finding> =
+        json.parseToJsonElement(body).jsonObject["hits"]?.jsonObject?.get("hits")?.jsonArray.orEmpty().mapNotNull { e ->
+            val o = e.jsonObject["_source"]?.jsonObject ?: return@mapNotNull null; val id = o.s("ind_source_id") ?: return@mapNotNull null
+            val name = listOfNotNull(o.s("ind_firstname"), o.s("ind_middlename"), o.s("ind_lastname")).joinToString(" ").ifBlank { return@mapNotNull null }
+            val jobs = (o["ind_current_employments"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
+            val firms = jobs.mapNotNull { it.s("firm_name") }.distinct().take(3)
+            val where = jobs.firstOrNull()?.let { listOfNotNull(it.s("branch_city"), it.s("branch_state")).joinToString(", ") }.orEmpty()
+            val disclosures = o.s("ind_bc_disclosure_fl") == "Y"
+            hit("finra-$id", name, listOfNotNull("Registered financial professional (FINRA BrokerCheck)", firms.joinToString(", ").ifBlank { null }, where.ifBlank { null }).joinToString(" · "), "https://brokercheck.finra.org/individual/summary/$id", "FINRA BrokerCheck",
+                facts = listOfNotNull(Fact("Regulatory disclosures", if (disclosures) "Yes: see BrokerCheck for details" else "None reported"), o.s("ind_bc_scope")?.let { Fact("Broker status", it) }, o.s("ind_industry_cal_date")?.let { Fact("In the industry since", it) }))
+        }.take(5)
+
+    /** SEC EDGAR full-text hits (filings that name this person): form type, filer entities, date and place. */
+    fun sec(body: String): List<Finding> =
+        json.parseToJsonElement(body).jsonObject["hits"]?.jsonObject?.get("hits")?.jsonArray.orEmpty().mapNotNull { e ->
+            val src = e.jsonObject["_source"]?.jsonObject ?: return@mapNotNull null; val id = e.jsonObject.s("_id") ?: return@mapNotNull null
+            val adsh = src.s("adsh") ?: id.substringBefore(':'); val file = id.substringAfter(':', "")
+            val cik = (src["ciks"] as? JsonArray)?.firstOrNull()?.str()?.trimStart('0')
+            val names = (src["display_names"] as? JsonArray).orEmpty().mapNotNull { it.str() }.map { it.replace(Regex("\\s*\\(CIK \\d+\\)"), "").trim() }
+            val where = (src["biz_locations"] as? JsonArray).orEmpty().mapNotNull { it.str() }.lastOrNull()
+            val url = if (cik != null && file.isNotBlank()) "https://www.sec.gov/Archives/edgar/data/$cik/${adsh.replace("-", "")}/$file" else "https://www.sec.gov/edgar/search/"
+            hit("sec-$adsh", "Form ${src.s("form") ?: "filing"}: " + names.drop(1).ifEmpty { names }.joinToString(", "), listOfNotNull(src.s("file_date")?.let { "filed $it" }, names.firstOrNull(), where).joinToString(" · "), url, "SEC filings")
+        }.distinctBy { it.id }.take(6)
 
     /** Employment history and publications from an ORCID record, as facts (read in the app, no extra step). */
     fun orcidDetail(employments: String?, works: String?): Pair<List<Fact>, String?> {
@@ -218,6 +302,11 @@ class PeopleSource @Inject constructor(
         launch { source("orcid", "ORCID") { orcid(parts.first(), parts.last()) } }
         launch { source("court", "Court dockets") { courts(name) } }
         launch { source("npi", "NPI healthcare providers") { npi(parts.first(), parts.last()) } }
+        launch { source("news", "News mentions") { news(name) } }
+        launch { source("bsky", "Bluesky profiles") { bluesky(name) } }
+        launch { source("github", "GitHub profiles") { github(name) } }
+        launch { source("finra", "FINRA BrokerCheck") { brokerCheck(name) } }
+        launch { source("sec", "SEC filings") { sec(name) } }
         launch { source("openalex", "OpenAlex publications") { openAlex(name) } }
         // Your own free api.data.gov key lifts the FEC limit from 40/hour (the shared demo key) to 1,000/hour.
         val fecKey = keys.get(ApiKeyId.FEC) ?: "DEMO_KEY"
@@ -235,17 +324,45 @@ class PeopleSource @Inject constructor(
         }
     }
 
-    private suspend fun get(url: okhttp3.HttpUrl, vararg headers: Pair<String, String>): String =
-        http.execute(Request.Builder().url(url).apply { headers.forEach { (k, v) -> header(k, v) } }.build()) { r ->
-            if (r.code == 429) throw HttpException(429, "Rate-limited; try again later (for FEC, add your own free key in System)")
-            if (!r.isSuccessful) throw HttpException(r.code, "HTTP ${r.code}")
-            r.body.string()
+    private suspend fun get(url: okhttp3.HttpUrl, vararg headers: Pair<String, String>): String {
+        var retried = false
+        while (true) {
+            val retryAfter = http.execute(Request.Builder().url(url).apply { headers.forEach { (k, v) -> header(k, v) } }.build()) { r ->
+                if (r.code == 429) return@execute (r.header("Retry-After")?.toLongOrNull() ?: 2L).coerceIn(1L, 4L)
+                if (!r.isSuccessful) throw HttpException(r.code, "HTTP ${r.code}")
+                @Suppress("UNCHECKED_CAST") (r.body.string() as Any)
+            }
+            if (retryAfter is String) return retryAfter
+            if (retried) throw HttpException(429, "Rate-limited; try again later (for FEC, add your own free key in System)")
+            retried = true; kotlinx.coroutines.delay((retryAfter as Long) * retryDelayUnitMs)
         }
+    }
+
+    /** Delay unit for the single 429 retry (shortened in tests). */
+    internal var retryDelayUnitMs = 1000L
 
     private suspend fun wikidata(name: String): List<Finding> {
         val url = "${endpoints.wikidata}/w/api.php".toHttpUrl().newBuilder().addQueryParameter("action", "query").addQueryParameter("list", "search")
             .addQueryParameter("srsearch", "$name haswbstatement:P31=Q5").addQueryParameter("srlimit", "5").addQueryParameter("srnamespace", "0").addQueryParameter("format", "json").build()
-        return PeopleParsers.wikidata(get(url), name)
+        val hits = PeopleParsers.wikidata(get(url), name)
+        // Read the lead paragraph, description and photo from Wikipedia for the first two matches, so no page has to be opened.
+        return coroutineScope {
+            hits.mapIndexed { i, h ->
+                async {
+                    if (i >= 2) return@async h
+                    runCatching {
+                        val qid = h.id.substringAfterLast('-')
+                        val links = "${endpoints.wikidata}/w/api.php".toHttpUrl().newBuilder().addQueryParameter("action", "wbgetentities").addQueryParameter("ids", qid).addQueryParameter("props", "sitelinks").addQueryParameter("sitefilter", "enwiki").addQueryParameter("format", "json").build()
+                        val title = PeopleParsers.wikipediaTitle(get(links), qid) ?: return@runCatching h
+                        val sum = PeopleParsers.wikipediaSummary(get("${endpoints.wikipedia}/api/rest_v1/page/summary/${java.net.URLEncoder.encode(title.replace(' ', '_'), "UTF-8").replace("+", "%20")}".toHttpUrl())) ?: return@runCatching h
+                        h.copy(
+                            detail = (sum.description?.let { "$it\n" } ?: "") + sum.extract.take(700) + "\n" + BY_NAME_ONLY, url = sum.page ?: h.url, imageUrl = sum.image, imageLargeUrl = sum.image,
+                            facts = listOfNotNull(sum.description?.let { Fact("Description", it) }, Fact("Wikipedia", title)),
+                        )
+                    }.getOrDefault(h)
+                }
+            }.map { it.await() }
+        }
     }
 
     private suspend fun orcid(given: String, family: String): List<Finding> {
@@ -274,8 +391,9 @@ class PeopleSource @Inject constructor(
 
     private suspend fun fec(name: String, key: String): List<Finding> {
         val url = "${endpoints.fec}/v1/schedules/schedule_a/".toHttpUrl().newBuilder().addQueryParameter("api_key", key).addQueryParameter("contributor_name", name)
-            .addQueryParameter("per_page", "10").addQueryParameter("sort", "-contribution_receipt_date").build()
-        return PeopleParsers.fec(get(url))
+            .addQueryParameter("per_page", "50").addQueryParameter("sort", "-contribution_receipt_date").build()
+        val body = get(url)
+        return listOfNotNull(PeopleParsers.fecSummary(body)) + PeopleParsers.fec(body)
     }
 
     private suspend fun npi(first: String, last: String): List<Finding> {
@@ -287,5 +405,36 @@ class PeopleSource @Inject constructor(
     private suspend fun openAlex(name: String): List<Finding> {
         val url = "${endpoints.openAlex}/authors".toHttpUrl().newBuilder().addQueryParameter("search", name).addQueryParameter("per-page", "5").build()
         return PeopleParsers.openAlex(get(url, "Accept" to "application/json"))
+    }
+
+    private suspend fun news(name: String): List<Finding> {
+        val url = "${endpoints.googleNews}/rss/search".toHttpUrl().newBuilder().addQueryParameter("q", "\"$name\"").addQueryParameter("hl", "en-US").addQueryParameter("gl", "US").addQueryParameter("ceid", "US:en").build()
+        return PeopleParsers.news(get(url))
+    }
+
+    private suspend fun bluesky(name: String): List<Finding> {
+        val url = "${endpoints.bluesky}/xrpc/app.bsky.actor.searchActors".toHttpUrl().newBuilder().addQueryParameter("q", name).addQueryParameter("limit", "5").build()
+        return PeopleParsers.bluesky(get(url))
+    }
+
+    private suspend fun github(name: String): List<Finding> {
+        val token = keys.get(ApiKeyId.GITHUB)
+        val auth = if (token != null) arrayOf("Authorization" to "Bearer $token") else emptyArray()
+        val search = "${endpoints.github}/search/users".toHttpUrl().newBuilder().addQueryParameter("q", "$name in:fullname type:user").addQueryParameter("per_page", "3").build()
+        val logins = PeopleParsers.githubLogins(get(search, "Accept" to "application/vnd.github+json", *auth))
+        return coroutineScope {
+            logins.map { l -> async { runCatching { PeopleParsers.githubUser(get("${endpoints.github}/users/$l".toHttpUrl(), "Accept" to "application/vnd.github+json", *auth)) }.getOrNull() } }.awaitAll().filterNotNull()
+        }
+    }
+
+    private suspend fun brokerCheck(name: String): List<Finding> {
+        val url = "${endpoints.finra}/search/individual".toHttpUrl().newBuilder().addQueryParameter("query", name).addQueryParameter("filter", "active=true,prev=true,bar=true")
+            .addQueryParameter("includePrevious", "true").addQueryParameter("nrows", "5").addQueryParameter("start", "0").addQueryParameter("sort", "score desc").addQueryParameter("wt", "json").build()
+        return PeopleParsers.brokerCheck(get(url))
+    }
+
+    private suspend fun sec(name: String): List<Finding> {
+        val url = "${endpoints.sec}/LATEST/search-index".toHttpUrl().newBuilder().addQueryParameter("q", "\"$name\"").build()
+        return PeopleParsers.sec(get(url, "User-Agent" to "Recon personal research tool"))
     }
 }

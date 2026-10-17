@@ -56,6 +56,29 @@ class PeopleTest {
         assertEquals(emptyList(), PeopleParsers.orcidDetail(null, "not json").first)
     }
 
+    @Test fun deeperSourcesBecomeInAppFindings() {
+        val sum = PeopleParsers.wikipediaSummary(fixture("wikipedia_summary.json"))!!
+        assertEquals("Grace Hopper", PeopleParsers.wikipediaTitle(fixture("wikidata_sitelinks.json"), "Q11641"))
+        assertTrue(sum.extract.startsWith("Grace Brewster Hopper") && sum.image == "https://upload.example.org/Grace_Hopper.jpg" && sum.page!!.endsWith("/Grace_Hopper"))
+        val news = PeopleParsers.news(fixture("news_people.xml"))
+        assertEquals("Grace Hopper Celebration canceled", news[0].title); assertTrue("Tom's Hardware · 06 Oct 2026" in news[0].detail && news[0].url == "https://news.example.org/a1"); assertEquals("Remembering a pioneer", news[1].title)
+        val bsky = PeopleParsers.bluesky(fixture("bluesky_people.json"))
+        assertEquals("Grace Hopper", bsky[0].title); assertEquals("https://cdn.example.org/avatar.jpg", bsky[0].imageUrl); assertEquals("hopper2.example.social", bsky[1].title); assertTrue(bsky[0].url == "https://bsky.app/profile/grace.example.social")
+        assertEquals(listOf("ghopper", "grace-h"), PeopleParsers.githubLogins(fixture("github_search_people.json")))
+        val gh = PeopleParsers.githubUser(fixture("github_user_people.json"))!!
+        assertTrue(gh.facts.any { it.label == "Company" && it.value == "Example Co" } && gh.pivots.single().query == "ghopper" && gh.imageUrl != null)
+        val fin = PeopleParsers.brokerCheck(fixture("finra_people.json"))
+        assertEquals("Grace M Hopper", fin[0].title); assertTrue("EXAMPLE SECURITIES CORP" in fin[0].detail && "CHARLOTTE, NC" in fin[0].detail)
+        assertTrue(fin[0].facts.any { it.label == "Regulatory disclosures" && it.value.startsWith("Yes") } && fin[1].facts.first().value == "None reported")
+        assertTrue(fin.joinToString { it.detail + it.facts + it.raw }.let { "28262" !in it })
+        val sec = PeopleParsers.sec(fixture("sec_people.json"))
+        assertEquals(1, sec.size, "duplicate filings collapse"); assertTrue("Form 4" in sec[0].title && "filed 2025-09-12" in sec[0].detail && sec[0].url == "https://www.sec.gov/Archives/edgar/data/2007990/000149315225013302/ownership.xml")
+        val fecSum = PeopleParsers.fecSummary(fixture("fec_people.json"))!!
+        assertTrue("2 donations totalling" in fecSum.title && fecSum.facts.first().value.startsWith("EXAMPLE PAC: $250"))
+        val courts = PeopleParsers.courts("""{"results":[{"caseName":"A v. B","docket_id":1,"assignedTo":"Judge Example","cause":"28:1332","suitNature":"Contract","dateTerminated":"2020-01-02","party":["A","B"]}]}""", "https://x")
+        assertTrue(courts[0].facts.map { it.label } == listOf("Judge", "Cause", "Nature of suit", "Closed", "Parties"))
+    }
+
     @Test fun npiAndOpenAlexParsersKeepOnlyPublicProfessionalFacts() {
         val npi = PeopleParsers.npi(fixture("npi_people.json"))
         assertEquals("Grace Hopper, MD", npi[0].title); assertEquals("Grace Hopper-Smith", npi[1].title)
@@ -89,16 +112,22 @@ class PeopleTest {
 
     @Test fun sourceRunsEverySourceAndOneFailureDoesNotHideTheOthers() = runTest {
         val (srv, router) = server(
-            "/wd/" to { json(fixture("wikidata_people.json")) },
+            "/wd/" to { req -> if ("wbgetentities" in req.path!!) json(fixture("wikidata_sitelinks.json")) else json(fixture("wikidata_people.json")) },
             "/orcid/v3.0/0000-0001-2345-6789/employments" to { json(fixture("orcid_employments.json")) }, "/orcid/v3.0/0000-0001-2345-6789/works" to { json(fixture("orcid_works.json")) },
             "/orcid/" to { json(fixture("orcid_people.json")) },
             "/cl/" to { MockResponse().setResponseCode(429).setBody("throttled") }, "/fec/" to { json(fixture("fec_people.json")) },
+            "/wp/" to { json(fixture("wikipedia_summary.json")) }, "/news/" to { MockResponse().setBody(fixture("news_people.xml")) }, "/bs/" to { json(fixture("bluesky_people.json")) },
+            "/finra/" to { json(fixture("finra_people.json")) }, "/sec/" to { json(fixture("sec_people.json")) },
+            "/gh/search/users" to { json(fixture("github_search_people.json")) }, "/gh/users/" to { json(fixture("github_user_people.json")) },
             "/npi/" to { json(fixture("npi_people.json")) }, "/oa/" to { json(fixture("openalex_people.json")) },
         )
         try {
             val keys = InMemoryApiKeys(mapOf(ApiKeyId.FEC to "k123"))
-            val out = PeopleSource(Http(), srv.endpoints(), keys).collect(person)
-            assertEquals(2 + 2 + 2 + 2 + 2, out.count { it.isPersonMatch }, out.map { it.id }.toString())
+            val out = PeopleSource(Http(), srv.endpoints(), keys).also { it.retryDelayUnitMs = 0 }.collect(person)
+            assertTrue(out.count { it.isPersonMatch } >= 16, out.map { it.id }.toString())
+            assertTrue(listOf("news-", "bsky-", "github-ghopper", "finra-6808119", "sec-0001493152", "fec-summary").all { p -> out.any { it.id.startsWith("PEOPLE-hit-$p") } }, out.map { it.id }.toString())
+            val wiki = out.first { it.id == "PEOPLE-hit-wikidata-Q11641" }
+            assertTrue(wiki.imageUrl != null && wiki.detail.contains("Grace Brewster Hopper") && wiki.url == "https://en.wikipedia.org/wiki/Grace_Hopper", wiki.detail)
             assertTrue(out.any { it.id == "PEOPLE-court-error" && "Rate-limited" in it.detail } && out.any { it.id == "PEOPLE-links" } && out.any { it.id == "PEOPLE-finders" })
             assertTrue(router.seen.any { it.path!!.startsWith("/fec/v1/schedules/schedule_a/") && "api_key=k123" in it.path!! && "contributor_name=Grace%20Hopper" in it.path!! }, router.seen.map { it.path }.toString())
             val wd = router.seen.first { it.path!!.startsWith("/wd/") }.path!!
@@ -112,7 +141,7 @@ class PeopleTest {
     @Test fun withoutAnFecKeyTheSharedDemoKeyIsUsed() = runTest {
         val (srv, router) = server("/wd/" to { json("""{"query":{"search":[]}}""") }, "/orcid/" to { json("""{"expanded-result":null,"num-found":0}""") }, "/cl/" to { json("""{"results":[]}""") }, "/npi/" to { json("""{"result_count":0}""") }, "/oa/" to { json("""{"results":[]}""") }, "/fec/" to { json("""{"results":[]}""") })
         try {
-            val out = PeopleSource(Http(), srv.endpoints(), InMemoryApiKeys()).collect(person)
+            val out = PeopleSource(Http(), srv.endpoints(), InMemoryApiKeys()).also { it.retryDelayUnitMs = 0 }.collect(person)
             assertTrue(router.seen.any { it.path!!.startsWith("/fec/") && "api_key=DEMO_KEY" in it.path!! })
             assertEquals(0, out.count { it.isPersonMatch }); assertTrue(out.any { it.id == "PEOPLE-wikidata-none" } && out.any { it.id == "PEOPLE-fec-none" })
         } finally { srv.shutdown() }
