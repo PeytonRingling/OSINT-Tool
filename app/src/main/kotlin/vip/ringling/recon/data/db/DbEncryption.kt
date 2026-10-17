@@ -44,7 +44,7 @@ object DbEncryption {
         }
         val failure = if (file.exists() && isPlaintext(file)) migrate(file, pass) else null
         if (failure != null) {
-            status = DbStatus(false, "Converting the existing database failed ($failure), so it was left unchanged.")
+            status = DbStatus(false, "Converting the existing database failed (${failure.ifBlank { "unknown error" }}), so it was left unchanged.")
             null
         } else { status = DbStatus(true); pass.toByteArray(Charsets.US_ASCII) }
     } catch (t: Throwable) {

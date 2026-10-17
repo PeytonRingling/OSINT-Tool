@@ -350,7 +350,7 @@ private fun DataSection(state: SettingsUiState, a: SettingsActions) {
                 Text(
                     when (val d = state.dbStatus) {
                         null -> "Checking…"
-                        else -> if (d.encrypted) "Scans, cases and notes are encrypted on this phone; the key stays in the Android Keystore." else d.reason
+                        else -> if (d.encrypted) "Scans, cases and notes are encrypted on this phone; the key stays in the Android Keystore." else d.reason.ifBlank { "No reason was recorded. Fully close Recon, reopen it, then check this row again." }
                     },
                     color = sig.muted, style = MaterialTheme.typography.bodySmall,
                 )
