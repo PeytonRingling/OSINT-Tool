@@ -27,6 +27,8 @@ data class Endpoints(
     val orcid: String = "https://pub.orcid.org",
     val courtListener: String = "https://www.courtlistener.com",
     val fec: String = "https://api.open.fec.gov",
+    val npi: String = "https://npiregistry.cms.hhs.gov",
+    val openAlex: String = "https://api.openalex.org",
     val updateRepo: String = vip.ringling.recon.BuildConfig.UPDATE_REPO,
     val idahoSor: String = "https://apps.isp.idaho.gov/sor_id",
 )

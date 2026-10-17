@@ -26,7 +26,7 @@ fun PersonSearchDialog(onSearch: (String) -> Unit, onDismiss: () -> Unit) {
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SignalTextField(name, { name = it }, "First Last", description = "Person's name", onGo = { if (valid) onSearch(name) })
-                Text("Searches official and open sources (Wikidata, ORCID, court dockets, and FEC donations with your own free key) and lists official portals to continue on.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                Text("Searches open public sources (Wikidata, ORCID, OpenAlex, court dockets, the NPI provider registry and FEC donations) and lists official portals and people-finder sites to continue on. Those sites open in your browser; Recon sends them nothing.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
                 Text("Results are matched by name only, so they can be other people. Use this lawfully: not to harass, stalk or intimidate anyone. Results are shown live and not saved.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
             }
         },

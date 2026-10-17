@@ -48,6 +48,16 @@ class PeopleTest {
         (wd + orcid + courts).forEach { assertTrue(BY_NAME_ONLY in it.detail && it.isPersonMatch && it.neutral && !it.scorable, it.id) }
     }
 
+    @Test fun npiAndOpenAlexParsersKeepOnlyPublicProfessionalFacts() {
+        val npi = PeopleParsers.npi(fixture("npi_people.json"))
+        assertEquals("Grace Hopper, MD", npi[0].title); assertEquals("Grace Hopper-Smith", npi[1].title)
+        assertTrue("Internal Medicine" in npi[0].detail && "Boise, ID" in npi[0].detail && "NPI 1999999991" in npi[0].detail)
+        assertTrue(npi.joinToString { it.detail + it.raw + it.facts }.let { "SECRET WAY" !in it && "208-555" !in it && "83702" !in it })
+        assertEquals("https://npiregistry.cms.hhs.gov/provider-view/1999999991", npi[0].url)
+        val oa = PeopleParsers.openAlex(fixture("openalex_people.json"))
+        assertTrue("42 publications" in oa[0].detail && "Example University" in oa[0].detail && oa[0].url == "https://openalex.org/A5000000001")
+    }
+
     @Test fun fecDonationsNeverCarryAStreetAddress() {
         val fec = PeopleParsers.fec(fixture("fec_people.json"))
         assertEquals("\$250 to EXAMPLE PAC", fec[0].title); assertTrue(fec[1].title.endsWith("to SAMPLE COMMITTEE"), fec[1].title)
@@ -56,24 +66,30 @@ class PeopleTest {
         assertTrue("BOISE, ID" in fec[0].detail && "PLACEHOLDER CO" in fec[0].detail)
     }
 
-    @Test fun linksPointToOfficialPortalsAndNeverToPeopleFinders() {
+    @Test fun officialPortalsAndPeopleFindersAreSeparateGroupsOfPlainLinks() {
         val f = PeopleParsers.links("Grace Hopper")
         val urls = f.links.joinToString("\n") { it.url }
         assertTrue("courtlistener.com" in urls && "nsopw.gov" in urls && "sec.gov" in urls && "brokercheck.finra.org" in urls && "Grace+Hopper" in urls)
-        listOf("spokeo", "whitepages", "truthfinder", "beenverified", "intelius", "peoplefinder", "radaris", "mylife").forEach { assertTrue(it !in urls.lowercase(), it) }
+        assertTrue(listOf("spokeo", "whitepages", "truepeoplesearch").none { it in urls.lowercase() }, "brokers are not mixed into the official list")
         assertTrue(f.id == "PEOPLE-links" && !f.scorable)
+        val finders = PeopleParsers.finders("Grace Q Hopper")
+        val fu = finders.links.joinToString("\n") { it.url }
+        assertTrue(finders.id == "PEOPLE-finders" && finders.links.size >= 12 && !finders.scorable && finders.module == ModuleId.PEOPLE)
+        assertTrue("spokeo.com/Grace-Hopper" in fu && "truepeoplesearch.com/results?name=Grace%20Q%20Hopper" in fu && "familytreenow.com" in fu && "first=Grace&last=Hopper" in fu, fu)
+        assertTrue("opens them in your browser" in finders.detail.replace("Recon only opens them in your browser", "opens them in your browser") && "outdated" in finders.detail)
     }
 
     @Test fun sourceRunsEverySourceAndOneFailureDoesNotHideTheOthers() = runTest {
         val (srv, router) = server(
             "/wd/" to { json(fixture("wikidata_people.json")) }, "/orcid/" to { json(fixture("orcid_people.json")) },
             "/cl/" to { MockResponse().setResponseCode(429).setBody("throttled") }, "/fec/" to { json(fixture("fec_people.json")) },
+            "/npi/" to { json(fixture("npi_people.json")) }, "/oa/" to { json(fixture("openalex_people.json")) },
         )
         try {
             val keys = InMemoryApiKeys(mapOf(ApiKeyId.FEC to "k123"))
             val out = PeopleSource(Http(), srv.endpoints(), keys).collect(person)
-            assertEquals(2 + 2 + 2, out.count { it.isPersonMatch }, out.map { it.id }.toString())
-            assertTrue(out.any { it.id == "PEOPLE-court-error" && "Rate-limited" in it.detail } && out.any { it.id == "PEOPLE-links" })
+            assertEquals(2 + 2 + 2 + 2 + 2, out.count { it.isPersonMatch }, out.map { it.id }.toString())
+            assertTrue(out.any { it.id == "PEOPLE-court-error" && "Rate-limited" in it.detail } && out.any { it.id == "PEOPLE-links" } && out.any { it.id == "PEOPLE-finders" })
             assertTrue(router.seen.any { it.path!!.startsWith("/fec/v1/schedules/schedule_a/") && "api_key=k123" in it.path!! && "contributor_name=Grace%20Hopper" in it.path!! }, router.seen.map { it.path }.toString())
             val wd = router.seen.first { it.path!!.startsWith("/wd/") }.path!!
             assertTrue("haswbstatement%3AP31%3DQ5" in wd || "haswbstatement:P31=Q5" in wd, wd)
@@ -81,12 +97,12 @@ class PeopleTest {
         } finally { srv.shutdown() }
     }
 
-    @Test fun withoutAnFecKeyDonationsAreSkippedNotQueried() = runTest {
-        val (srv, router) = server("/wd/" to { json("""{"query":{"search":[]}}""") }, "/orcid/" to { json("""{"expanded-result":null,"num-found":0}""") }, "/cl/" to { json("""{"results":[]}""") })
+    @Test fun withoutAnFecKeyTheSharedDemoKeyIsUsed() = runTest {
+        val (srv, router) = server("/wd/" to { json("""{"query":{"search":[]}}""") }, "/orcid/" to { json("""{"expanded-result":null,"num-found":0}""") }, "/cl/" to { json("""{"results":[]}""") }, "/npi/" to { json("""{"result_count":0}""") }, "/oa/" to { json("""{"results":[]}""") }, "/fec/" to { json("""{"results":[]}""") })
         try {
             val out = PeopleSource(Http(), srv.endpoints(), InMemoryApiKeys()).collect(person)
-            assertTrue(out.any { it.id == "PEOPLE-fec-nokey" } && router.seen.none { it.path!!.startsWith("/fec/") })
-            assertEquals(0, out.count { it.isPersonMatch }); assertTrue(out.any { it.id == "PEOPLE-wikidata-none" })
+            assertTrue(router.seen.any { it.path!!.startsWith("/fec/") && "api_key=DEMO_KEY" in it.path!! })
+            assertEquals(0, out.count { it.isPersonMatch }); assertTrue(out.any { it.id == "PEOPLE-wikidata-none" } && out.any { it.id == "PEOPLE-fec-none" })
         } finally { srv.shutdown() }
     }
 

@@ -85,7 +85,63 @@ object PeopleParsers {
             )
         }.take(10)
 
-    /** Official and public portals with the name filled in where the portal supports it. No people-finder or data-broker sites. */
+    private fun titleCase(s: String) = s.lowercase().split(' ').joinToString(" ") { w -> w.split('-').joinToString("-") { p -> p.replaceFirstChar { it.uppercase() } } }
+
+    /** CMS NPI registry (US healthcare providers). Only name, credential, specialty and practice city/state are read: never street addresses or phone numbers. */
+    fun npi(body: String): List<Finding> =
+        json.parseToJsonElement(body).jsonObject["results"]?.jsonArray.orEmpty().mapNotNull { e ->
+            val o = e.jsonObject; val number = o.s("number") ?: return@mapNotNull null
+            val basic = o["basic"]?.jsonObject ?: return@mapNotNull null
+            val name = listOfNotNull(basic.s("first_name"), basic.s("last_name")).joinToString(" ").let(::titleCase).ifBlank { return@mapNotNull null }
+            val credential = basic.s("credential")
+            val specialty = (o["taxonomies"] as? JsonArray).orEmpty().map { it.jsonObject }.let { t -> (t.firstOrNull { it["primary"].str() == "true" } ?: t.firstOrNull())?.s("desc") }
+            val addr = (o["addresses"] as? JsonArray).orEmpty().map { it.jsonObject }.let { a -> a.firstOrNull { it.s("address_purpose") == "LOCATION" } ?: a.firstOrNull() }
+            val where = listOfNotNull(addr?.s("city")?.let(::titleCase), addr?.s("state")).joinToString(", ")
+            hit("npi-$number", name + (credential?.let { ", $it" } ?: ""), listOfNotNull("Licensed healthcare provider (NPI $number)", specialty, where.ifBlank { null }).joinToString(" · "), "https://npiregistry.cms.hhs.gov/provider-view/$number", "NPI (healthcare providers)")
+        }.take(5)
+
+    /** OpenAlex author records (publications). */
+    fun openAlex(body: String): List<Finding> =
+        json.parseToJsonElement(body).jsonObject["results"]?.jsonArray.orEmpty().mapNotNull { e ->
+            val o = e.jsonObject; val id = o.s("id") ?: return@mapNotNull null; val name = o.s("display_name") ?: return@mapNotNull null
+            val inst = (o["last_known_institutions"] as? JsonArray).orEmpty().mapNotNull { it.jsonObject.s("display_name") }.firstOrNull()
+            val works = (o["works_count"] as? JsonPrimitive)?.contentOrNull; val cites = (o["cited_by_count"] as? JsonPrimitive)?.contentOrNull
+            hit("openalex-" + id.substringAfterLast('/'), name, listOfNotNull(works?.let { "$it publications" }, cites?.let { "$it citations" }, inst).joinToString(" · ").ifBlank { "Author record" }, id, "OpenAlex (publications)")
+        }.take(5)
+
+    /**
+     * Commercial people-finder sites, as plain links the user opens in their own browser. Recon never requests them, scrapes them or sends them anything.
+     * They aggregate public records, but their data is often old or wrong and may include home addresses and phone numbers.
+     */
+    fun finders(name: String): Finding {
+        val parts = name.trim().split(Regex("\\s+")).filter { it.isNotBlank() }
+        val first = parts.firstOrNull().orEmpty(); val last = parts.lastOrNull().orEmpty()
+        fun e(s: String) = URLEncoder.encode(s, "UTF-8").replace("+", "%20")
+        val dash = "$first-$last"
+        val links = listOf(
+            Link("TruePeopleSearch", "https://www.truepeoplesearch.com/results?name=${e(name)}"),
+            Link("FastPeopleSearch", "https://www.fastpeoplesearch.com/name/${e(dash.lowercase())}"),
+            Link("Whitepages", "https://www.whitepages.com/name/${e(dash)}"),
+            Link("Spokeo", "https://www.spokeo.com/${e(dash)}"),
+            Link("That's Them", "https://thatsthem.com/name/${e(dash)}"),
+            Link("Radaris", "https://radaris.com/p/${e(first)}/${e(last)}/"),
+            Link("PeekYou", "https://www.peekyou.com/${e("${first}_$last".lowercase())}"),
+            Link("ZabaSearch", "https://www.zabasearch.com/people/${e("$first $last".lowercase()).replace("%20", "+")}/"),
+            Link("FamilyTreeNow", "https://www.familytreenow.com/search/genealogy/results?first=${e(first)}&last=${e(last)}"),
+            Link("Intelius", "https://www.intelius.com/people-search/${e(dash)}"),
+            Link("BeenVerified", "https://www.beenverified.com/people/${e(dash.lowercase())}/"),
+            Link("Nuwber", "https://nuwber.com/search?name=${e(name)}"),
+            Link("Facebook people search", "https://www.facebook.com/public/${e(dash)}"),
+            Link("LinkedIn people search", "https://www.linkedin.com/pub/dir?firstName=${e(first)}&lastName=${e(last)}"),
+        )
+        return Finding(
+            "PEOPLE-finders", ModuleId.PEOPLE, "People-finder sites",
+            "Commercial sites that aggregate public records. Recon only opens them in your browser. Their data is often outdated or about someone else with the same name, can include home addresses and phone numbers, and some charge for the full report.",
+            Severity.INFO, confidence = Confidence.LOW, links = links,
+        )
+    }
+
+    /** Official and public portals with the name filled in where the portal supports it. (Commercial people-finder sites are in [finders].) */
     fun links(name: String): Finding {
         fun q(s: String) = URLEncoder.encode(s, "UTF-8")
         val quoted = "\"$name\""
@@ -105,7 +161,7 @@ object PeopleParsers {
         )
         return Finding(
             "PEOPLE-links", ModuleId.PEOPLE, "Official and public portals",
-            "Open these to search by name yourself. They are official or public sources; Recon doesn't query them or scrape people-finder sites. State court, property and voter records are searched on each state's or county's own site.",
+            "Open these to search by name yourself. They are official or public sources; Recon doesn't query them. State court, property and voter records are searched on each state's or county's own site.",
             Severity.INFO, confidence = Confidence.HIGH, links = links,
         )
     }
@@ -129,10 +185,13 @@ class PeopleSource @Inject constructor(
         launch { source("wikidata", "Wikidata") { wikidata(name) } }
         launch { source("orcid", "ORCID") { orcid(parts.first(), parts.last()) } }
         launch { source("court", "Court dockets") { courts(name) } }
-        val fecKey = keys.get(ApiKeyId.FEC)
-        if (fecKey == null) send(Finding("PEOPLE-fec-nokey", ModuleId.PEOPLE, "Campaign donations skipped", "Add a free api.data.gov key in System to include public political donations (FEC).", Severity.INFO))
-        else launch { source("fec", "FEC donations") { fec(name, fecKey) } }
+        launch { source("npi", "NPI healthcare providers") { npi(parts.first(), parts.last()) } }
+        launch { source("openalex", "OpenAlex publications") { openAlex(name) } }
+        // Your own free api.data.gov key lifts the FEC limit from 40/hour (the shared demo key) to 1,000/hour.
+        val fecKey = keys.get(ApiKeyId.FEC) ?: "DEMO_KEY"
+        launch { source("fec", "FEC donations") { fec(name, fecKey) } }
         send(PeopleParsers.links(name))
+        send(PeopleParsers.finders(name))
     }
 
     private suspend fun ProducerScope<Finding>.source(key: String, label: String, block: suspend () -> List<Finding>) {
@@ -146,7 +205,7 @@ class PeopleSource @Inject constructor(
 
     private suspend fun get(url: okhttp3.HttpUrl, vararg headers: Pair<String, String>): String =
         http.execute(Request.Builder().url(url).apply { headers.forEach { (k, v) -> header(k, v) } }.build()) { r ->
-            if (r.code == 429) throw HttpException(429, "Rate-limited; try again in a minute")
+            if (r.code == 429) throw HttpException(429, "Rate-limited; try again later (for FEC, add your own free key in System)")
             if (!r.isSuccessful) throw HttpException(r.code, "HTTP ${r.code}")
             r.body.string()
         }
@@ -172,5 +231,16 @@ class PeopleSource @Inject constructor(
         val url = "${endpoints.fec}/v1/schedules/schedule_a/".toHttpUrl().newBuilder().addQueryParameter("api_key", key).addQueryParameter("contributor_name", name)
             .addQueryParameter("per_page", "10").addQueryParameter("sort", "-contribution_receipt_date").build()
         return PeopleParsers.fec(get(url))
+    }
+
+    private suspend fun npi(first: String, last: String): List<Finding> {
+        if (first == last) return emptyList()
+        val url = "${endpoints.npi}/api/".toHttpUrl().newBuilder().addQueryParameter("version", "2.1").addQueryParameter("first_name", first).addQueryParameter("last_name", last).addQueryParameter("limit", "5").build()
+        return PeopleParsers.npi(get(url))
+    }
+
+    private suspend fun openAlex(name: String): List<Finding> {
+        val url = "${endpoints.openAlex}/authors".toHttpUrl().newBuilder().addQueryParameter("search", name).addQueryParameter("per-page", "5").build()
+        return PeopleParsers.openAlex(get(url, "Accept" to "application/json"))
     }
 }

@@ -117,7 +117,9 @@ object MockData {
             hit("court-1", "Example v. ${input.raw.substringAfterLast(' ')}", "U.S. District Court, D. Idaho · filed 2019-04-02 · docket 1:19-cv-00123", "Court dockets"),
             hit("court-2", "${input.raw.substringAfterLast(' ')} v. Placeholder Corp.", "U.S. District Court, D. Idaho · filed 2021-09-14 · docket 1:21-cv-00456", "Court dockets"),
             hit("fec-1", "\$250 to EXAMPLE PAC", "2022-10-03 · Boise, ID · Placeholder Co. · Engineer", "FEC donations"),
+            hit("npi-1", "${input.raw}, MD", "Licensed healthcare provider (NPI 1999999991) · Internal Medicine · Boise, ID", "NPI (healthcare providers)"),
             Finding("PEOPLE-links", ModuleId.PEOPLE, "Official and public portals", "Open these to search by name yourself.", Severity.INFO, links = listOf(Link("Federal court cases (PACER Case Locator)", "https://pcl.uscourts.gov/"))),
+            vip.ringling.recon.data.sources.people.PeopleParsers.finders(input.raw),
         )
     }
 

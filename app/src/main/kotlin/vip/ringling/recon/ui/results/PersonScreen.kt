@@ -36,7 +36,7 @@ fun PersonScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modif
     val sig = ReconTheme.signal
     val matches = state.findings.filter { it.isPersonMatch }
     val groups = matches.groupBy { it.tags.firstOrNull().orEmpty() }
-    val status = state.findings.filter { it.module == vip.ringling.recon.domain.ModuleId.PEOPLE && !it.isPersonMatch && it.id != "PEOPLE-links" }
+    val status = state.findings.filter { it.module == vip.ringling.recon.domain.ModuleId.PEOPLE && !it.isPersonMatch && it.id != "PEOPLE-links" && it.id != "PEOPLE-finders" }
     val portals = state.findings.firstOrNull { it.id == "PEOPLE-links" }
     Box(modifier.fillMaxSize().background(Brush.radialGradient(listOf(sig.signal.copy(alpha = 0.07f), Color.Transparent), radius = 800f))) {
         LazyColumn(
@@ -73,6 +73,7 @@ fun PersonScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modif
                 }
             }
             portals?.let { p -> item(key = "portals") { FindingGroup("Official and public portals", "${p.links.size} links", listOf(p), state.handled, showSeverity = false, onOpen = actions.onFinding) } }
+            state.findings.firstOrNull { it.id == "PEOPLE-finders" }?.let { p -> item(key = "finders") { FindingGroup("People-finder sites", "${p.links.size} links", listOf(p), state.handled, showSeverity = false, showTags = false, onOpen = actions.onFinding) } }
             if (!state.running && state.findings.isEmpty()) item { Text("No sources answered. Check your connection.", color = sig.muted, style = MaterialTheme.typography.bodyMedium) }
         }
     }
