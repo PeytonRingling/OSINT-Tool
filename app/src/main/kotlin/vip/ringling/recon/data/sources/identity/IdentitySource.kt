@@ -63,6 +63,7 @@ class IdentitySource @Inject constructor(
     private val http: Http,
     private val endpoints: Endpoints,
     private val sites: SiteListProvider,
+    private val health: SiteHealth = NoSiteHealth,
 ) : OsintSource {
     override val id = ModuleId.IDENTITY
     override val supportedInputTypes = setOf(InputType.USERNAME, InputType.EMAIL)
@@ -77,7 +78,10 @@ class IdentitySource @Inject constructor(
 
     private fun usernameSweep(username: String): Flow<Finding> = channelFlow {
         val all = sites.load()
-        val applicable = all.filter { it.usernameRegex == null || Regex(it.usernameRegex).matches(username) }
+        val formatOk = all.filter { it.usernameRegex == null || Regex(it.usernameRegex).matches(username) }
+        val unreliable = formatOk.filter { health.shouldSkip(it.name) }
+        val applicable = formatOk - unreliable.toSet()
+        val outcomes = mutableMapOf<String, Boolean>()
         var found = 0
         var absent = 0
         val inconclusive = mutableListOf<String>()
@@ -93,6 +97,7 @@ class IdentitySource @Inject constructor(
                 } catch (e: Exception) {
                     Probe.Inconclusive(e.javaClass.simpleName)
                 }
+                tally.withLock { outcomes[site.name] = result !is Probe.Inconclusive }
                 when (result) {
                     Probe.Found, is Probe.Hit -> {
                         tally.withLock { found++ }
@@ -123,7 +128,9 @@ class IdentitySource @Inject constructor(
                 }
             }
         } }
-        send(summary(found, absent, inconclusive, applicable.size, all.size - applicable.size))
+        // Remember reliability only when the sweep reached at least one site (otherwise the network or proxy is down, not the sites).
+        if (found + absent > 0) outcomes.forEach { (name, ok) -> health.record(name, ok) }
+        send(summary(found, absent, inconclusive, applicable.size, all.size - formatOk.size, unreliable.size))
         aggregate(username, profiles, avatars)?.let { send(it) }
         send(manualChecks(username))
     }
@@ -181,11 +188,12 @@ class IdentitySource @Inject constructor(
         )
     }
 
-    internal fun summary(found: Int, absent: Int, inconclusive: List<String>, checked: Int, skipped: Int): Finding {
+    internal fun summary(found: Int, absent: Int, inconclusive: List<String>, checked: Int, skipped: Int, unreliable: Int = 0): Finding {
         val parts = buildList {
             add("Checked $checked site${if (checked == 1) "" else "s"}: $found found, $absent not found")
             if (inconclusive.isNotEmpty()) add("${inconclusive.size} inconclusive (blocked, rate-limited or unreachable)")
             if (skipped > 0) add("$skipped skipped (username format invalid there)")
+            if (unreliable > 0) add("$unreliable skipped (kept coming back blocked or unreachable; retried weekly)")
         }
         return Finding(
             id = "IDENTITY-summary", module = ModuleId.IDENTITY,

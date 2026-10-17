@@ -125,6 +125,33 @@ class IdentityTest {
         }
     }
 
+    @Test fun sitesThatKeepFailingAreSkippedThenRetriedAfterAWeek() = runTest {
+        val (srv, router) = server("/s/good/" to { MockResponse().setResponseCode(404) }, "/s/dead/" to { MockResponse().setResponseCode(503) })
+        srv.use {
+            val base = srv.url("/").toString().trimEnd('/')
+            val health = vip.ringling.recon.data.sources.identity.InMemorySiteHealth()
+            val src = IdentitySource(Http(), srv.endpoints(), { listOf(Site("Good", "$base/s/good/{u}"), Site("Dead", "$base/s/dead/{u}")) }, health).also { it.limiter = RateLimiter(2, 0) }
+            repeat(5) { src.collect(user) }
+            val deadHits = { router.seen.count { it.path!!.startsWith("/s/dead/") } }
+            assertEquals(5, deadHits())
+            val s = src.collect(user).single { it.id == "IDENTITY-summary" }
+            assertEquals(5, deadHits(), "skipped: not probed again")
+            assertTrue("1 skipped (kept coming back" in s.detail, s.detail)
+            assertTrue(health.shouldSkip("Dead", System.currentTimeMillis()) && !health.shouldSkip("Dead", System.currentTimeMillis() + vip.ringling.recon.data.sources.identity.SiteHealth.RETRY_AFTER_MS + 1))
+        }
+    }
+
+    @Test fun anOfflineSweepDoesNotBlacklistEverySite() = runTest {
+        val (srv, _) = server("/s/" to { MockResponse().setResponseCode(503) })
+        srv.use {
+            val base = srv.url("/").toString().trimEnd('/')
+            val health = vip.ringling.recon.data.sources.identity.InMemorySiteHealth()
+            val src = IdentitySource(Http(), srv.endpoints(), { listOf(Site("A", "$base/s/a/{u}"), Site("B", "$base/s/b/{u}")) }, health).also { it.limiter = RateLimiter(2, 0) }
+            repeat(7) { src.collect(user) }
+            assertTrue(!health.shouldSkip("A") && !health.shouldSkip("B"), "nothing conclusive means the network is the problem, not the sites")
+        }
+    }
+
     @Test fun usernameIsUrlEncoded() = runTest {
         val (srv, router) = server("/s/ok/" to { MockResponse().setResponseCode(404) })
         srv.use {
