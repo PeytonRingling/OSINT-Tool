@@ -48,6 +48,14 @@ class PeopleTest {
         (wd + orcid + courts).forEach { assertTrue(BY_NAME_ONLY in it.detail && it.isPersonMatch && it.neutral && !it.scorable, it.id) }
     }
 
+    @Test fun orcidDetailTurnsEmploymentAndWorksIntoFacts() {
+        val (facts, current) = PeopleParsers.orcidDetail(fixture("orcid_employments.json"), fixture("orcid_works.json"))
+        assertEquals("Professor at Wesleyan University", current)
+        assertEquals(listOf("Current position", "Past position", "Publications", "Work", "Work"), facts.map { it.label })
+        assertTrue("Professor, Psychoceramics · Wesleyan University (1930–present)" == facts[0].value && "(1929–1930)" in facts[1].value && facts[3].value.startsWith("Toward a Unified"))
+        assertEquals(emptyList(), PeopleParsers.orcidDetail(null, "not json").first)
+    }
+
     @Test fun npiAndOpenAlexParsersKeepOnlyPublicProfessionalFacts() {
         val npi = PeopleParsers.npi(fixture("npi_people.json"))
         assertEquals("Grace Hopper, MD", npi[0].title); assertEquals("Grace Hopper-Smith", npi[1].title)
@@ -81,7 +89,9 @@ class PeopleTest {
 
     @Test fun sourceRunsEverySourceAndOneFailureDoesNotHideTheOthers() = runTest {
         val (srv, router) = server(
-            "/wd/" to { json(fixture("wikidata_people.json")) }, "/orcid/" to { json(fixture("orcid_people.json")) },
+            "/wd/" to { json(fixture("wikidata_people.json")) },
+            "/orcid/v3.0/0000-0001-2345-6789/employments" to { json(fixture("orcid_employments.json")) }, "/orcid/v3.0/0000-0001-2345-6789/works" to { json(fixture("orcid_works.json")) },
+            "/orcid/" to { json(fixture("orcid_people.json")) },
             "/cl/" to { MockResponse().setResponseCode(429).setBody("throttled") }, "/fec/" to { json(fixture("fec_people.json")) },
             "/npi/" to { json(fixture("npi_people.json")) }, "/oa/" to { json(fixture("openalex_people.json")) },
         )
@@ -94,6 +104,8 @@ class PeopleTest {
             val wd = router.seen.first { it.path!!.startsWith("/wd/") }.path!!
             assertTrue("haswbstatement%3AP31%3DQ5" in wd || "haswbstatement:P31=Q5" in wd, wd)
             assertTrue(router.seen.first { it.path!!.startsWith("/orcid/") }.path!!.contains("given-names%3AGrace"), "ORCID query uses first and last name")
+            val detailed = out.first { it.id == "PEOPLE-hit-orcid-0000-0001-2345-6789" }
+            assertTrue(detailed.facts.any { it.label == "Current position" && "Wesleyan" in it.value } && detailed.detail.startsWith("Professor at Wesleyan University"), detailed.detail)
         } finally { srv.shutdown() }
     }
 

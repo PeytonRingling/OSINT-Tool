@@ -3,6 +3,8 @@ package vip.ringling.recon.data.sources.people
 import java.net.URLEncoder
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.channels.ProducerScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -84,6 +86,36 @@ object PeopleParsers {
                 facts = listOfNotNull(o.s("contributor_name")?.let { Fact("Name on filing", it) }, if (where.isNotBlank()) Fact("Location", where) else null, if (work.isNotBlank()) Fact("Employer / occupation", work) else null),
             )
         }.take(10)
+
+    /** Employment history and publications from an ORCID record, as facts (read in the app, no extra step). */
+    fun orcidDetail(employments: String?, works: String?): Pair<List<Fact>, String?> {
+        val facts = mutableListOf<Fact>()
+        var current: String? = null
+        employments?.let { body ->
+            runCatching {
+                json.parseToJsonElement(body).jsonObject["affiliation-group"]?.jsonArray.orEmpty().mapNotNull { g ->
+                    g.jsonObject["summaries"]?.jsonArray?.firstOrNull()?.jsonObject?.get("employment-summary")?.jsonObject
+                }.take(5).forEach { s ->
+                    val org = (s["organization"] as? JsonObject)?.s("name") ?: return@forEach
+                    val role = listOfNotNull(s.s("role-title"), s.s("department-name")).joinToString(", ")
+                    val from = (s["start-date"] as? JsonObject)?.get("year").let { it as? JsonObject }?.s("value"); val to = (s["end-date"] as? JsonObject)?.get("year").let { it as? JsonObject }?.s("value")
+                    val years = if (from == null) "" else " ($from–${to ?: "present"})"
+                    if (to == null && current == null) current = listOfNotNull(s.s("role-title"), org).joinToString(" at ")
+                    facts += Fact(if (to == null) "Current position" else "Past position", listOfNotNull(role.ifBlank { null }, org).joinToString(" · ") + years)
+                }
+            }
+        }
+        works?.let { body ->
+            runCatching {
+                val titles = json.parseToJsonElement(body).jsonObject["group"]?.jsonArray.orEmpty().mapNotNull { g ->
+                    g.jsonObject["work-summary"]?.jsonArray?.firstOrNull()?.jsonObject?.get("title")?.jsonObject?.get("title")?.jsonObject?.s("value")
+                }
+                if (titles.isNotEmpty()) facts += Fact("Publications", "${titles.size} listed")
+                titles.take(3).forEach { facts += Fact("Work", it) }
+            }
+        }
+        return facts to current
+    }
 
     private fun titleCase(s: String) = s.lowercase().split(' ').joinToString(" ") { w -> w.split('-').joinToString("-") { p -> p.replaceFirstChar { it.uppercase() } } }
 
@@ -219,7 +251,20 @@ class PeopleSource @Inject constructor(
     private suspend fun orcid(given: String, family: String): List<Finding> {
         if (given == family) return emptyList()
         val url = "${endpoints.orcid}/v3.0/expanded-search/".toHttpUrl().newBuilder().addQueryParameter("q", "given-names:$given AND family-name:$family").addQueryParameter("rows", "5").build()
-        return PeopleParsers.orcid(get(url, "Accept" to "application/json"))
+        val hits = PeopleParsers.orcid(get(url, "Accept" to "application/json"))
+        // Read each profile's employment and publications now, so the match is useful without leaving the app. A failed detail request just leaves the basics.
+        return coroutineScope {
+            hits.mapIndexed { i, h ->
+                async {
+                    if (i >= 3) return@async h
+                    val id = h.url!!.substringAfterLast('/')
+                    val emp = runCatching { get("${endpoints.orcid}/v3.0/$id/employments".toHttpUrl(), "Accept" to "application/json") }.getOrNull()
+                    val works = runCatching { get("${endpoints.orcid}/v3.0/$id/works".toHttpUrl(), "Accept" to "application/json") }.getOrNull()
+                    val (facts, current) = PeopleParsers.orcidDetail(emp, works)
+                    if (facts.isEmpty()) h else h.copy(detail = (current?.let { "$it\n" } ?: "") + h.detail, facts = facts)
+                }
+            }.map { it.await() }
+        }
     }
 
     private suspend fun courts(name: String): List<Finding> {

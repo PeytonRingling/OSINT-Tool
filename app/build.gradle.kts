@@ -95,6 +95,7 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.sqlite)
+    implementation(libs.androidx.browser)
     implementation(libs.sqlcipher) { artifact { type = "aar" } }
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.security.crypto)

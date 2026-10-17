@@ -77,7 +77,14 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, "geo:${g.lat},${g.lng}?q=${g.lat},${g.lng}".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 },
                 onOpenUrl = { url ->
-                    runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                    // An in-app Custom Tab keeps you in Recon (back returns here). Falls back to the browser if none is available.
+                    // Note: a Custom Tab uses the browser's own network, not Recon's Tor/proxy setting.
+                    val ok = runCatching {
+                        val tab = androidx.browser.customtabs.CustomTabsIntent.Builder().setShowTitle(true).build()
+                        tab.intent.data = url.toUri(); tab.intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        context.startActivity(tab.intent, tab.startAnimationBundle)
+                    }.isSuccess
+                    if (!ok) runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 },
             ),
             exportScan = { input, findings -> export("recon-scan-${input.type.name.lowercase()}.json", Export.scan(input, findings)) },
