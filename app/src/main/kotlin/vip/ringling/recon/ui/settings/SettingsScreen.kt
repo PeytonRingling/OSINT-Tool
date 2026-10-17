@@ -27,6 +27,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -87,6 +88,7 @@ data class SettingsActions(
     val onAppLock: (Boolean) -> Unit = {},
     val onExportBackup: () -> Unit = {},
     val onImportBackup: () -> Unit = {},
+    val onTestRoute: suspend () -> vip.ringling.recon.data.net.RouteResult = { vip.ringling.recon.data.net.RouteResult.Failed("not available") },
 )
 
 /** "System": status panel, privacy & network, display, API keys (status list that expands to edit), updates, data and about. */
@@ -173,13 +175,14 @@ private fun PrivacySection(state: SettingsUiState, a: SettingsActions) {
             SegmentedControl(modes.map { it.label.substringBefore(" (").let { l -> if (l == "Custom SOCKS5") "Custom" else l } }, state.settings.proxyMode.ordinal, { a.onProxyMode(modes[it]) })
             when (state.settings.proxyMode) {
                 ProxyMode.OFF -> Text("Requests go straight from this phone.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
-                ProxyMode.TOR -> Text("Uses Orbot's SOCKS proxy at 127.0.0.1:9050 (start Orbot first). If it isn't running, lookups fail rather than leaking. Map tiles and photos are not proxied.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                ProxyMode.TOR -> Text("Uses Orbot's SOCKS proxy at 127.0.0.1:9050 (start Orbot and connect first). If it isn't running, lookups fail rather than leaking. Photos and map tiles use it too.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
                 ProxyMode.CUSTOM -> {
                     ProxyField("Host", state.settings.proxyHost, KeyboardType.Uri) { a.onProxyHost(it) }
                     ProxyField("Port", state.settings.proxyPort.toString(), KeyboardType.Number) { it.toIntOrNull()?.let(a.onProxyPort) }
                     Text("SOCKS5 only. Invalid settings fail closed.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
                 }
             }
+            RouteTestRow(state.settings.proxyMode, a.onTestRoute)
         }
         Divider()
         SwitchRow("App lock", "Fingerprint, face or PIN. Hides Recon from recents.", state.settings.appLock, a.onAppLock)
@@ -354,5 +357,21 @@ private fun AboutSection(state: SettingsUiState) {
             Text("Extra username sites derived from WhatsMyName © Micah Hoffman and contributors, CC BY-SA 4.0 (github.com/WebBreacher/WhatsMyName).", color = sig.muted, style = MaterialTheme.typography.bodySmall)
             Text("Fonts: Instrument Serif, Geist and Geist Mono (SIL Open Font License 1.1).", color = sig.muted, style = MaterialTheme.typography.bodySmall)
         }
+    }
+}
+
+/** "Test connection": shows what an outside server sees (Tor exit / your proxy / your real address), so Tor mode can be verified. */
+@Composable
+private fun RouteTestRow(mode: ProxyMode, test: suspend () -> vip.ringling.recon.data.net.RouteResult) {
+    val sig = ReconTheme.signal
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var verdict by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        SignalButton(if (busy) "Testing…" else "Test connection", {
+            busy = true; verdict = null
+            scope.launch { verdict = vip.ringling.recon.data.net.RouteTester.describe(mode, test()); busy = false }
+        }, enabled = !busy, mono = true)
+        verdict?.let { (text, ok) -> Text(text, Modifier.weight(1f), color = if (ok) sig.safeText else sig.alertText, style = MaterialTheme.typography.bodySmall) }
     }
 }

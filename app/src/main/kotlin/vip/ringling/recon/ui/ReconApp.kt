@@ -198,7 +198,8 @@ fun ReconApp() {
                             st,
                             SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock,
                                 onExportBackup = { scope.launch { actions.saveFile("recon-backup-${java.time.LocalDate.now()}.json", vm.backupText().toByteArray()) } },
-                                onImportBackup = { picker.launch(arrayOf("application/json", "text/plain", "*/*")) }),
+                                onImportBackup = { picker.launch(arrayOf("application/json", "text/plain", "*/*")) },
+                                onTestRoute = vm::testRoute),
                             contentPadding = pad,
                         )
                     }

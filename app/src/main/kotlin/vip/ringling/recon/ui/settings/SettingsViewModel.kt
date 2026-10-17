@@ -25,7 +25,9 @@ class SettingsViewModel @Inject constructor(
     private val updates: UpdateManager,
     private val snapshots: vip.ringling.recon.data.SnapshotRepository,
     private val backup: vip.ringling.recon.data.BackupManager,
+    private val route: vip.ringling.recon.data.net.RouteTester,
 ) : ViewModel() {
+    suspend fun testRoute() = route.test()
     suspend fun backupText(): String = backup.export()
     suspend fun importBackup(text: String) = backup.import(text)
     val state: StateFlow<SettingsUiState> = combine(repo.settings, apiKeys.keys, history.records, updates.state) { s, k, h, u ->
