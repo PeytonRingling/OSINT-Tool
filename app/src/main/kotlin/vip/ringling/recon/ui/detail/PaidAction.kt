@@ -29,17 +29,18 @@ fun PaidActionCard(action: PaidAction, onConfirmed: () -> Unit, modifier: Modifi
     if (confirming) {
         AlertDialog(
             onDismissRequest = { confirming = false },
-            title = { Text("Run a paid lookup?") },
+            title = { Text(if (action.cost.startsWith("Free", ignoreCase = true)) "Run this lookup?" else "Run a paid lookup?") },
             text = { PaidConfirmBody(action) },
-            confirmButton = { TextButton(onClick = { confirming = false; onConfirmed() }) { Text("Confirm and pay") } },
+            confirmButton = { TextButton(onClick = { confirming = false; onConfirmed() }) { Text(if (action.cost.startsWith("Free", ignoreCase = true)) "Run it" else "Confirm and pay") } },
             dismissButton = { TextButton(onClick = { confirming = false }) { Text("Cancel") } },
         )
     }
     Surface(modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = cs.surfaceContainer, border = BorderStroke(1.dp, cs.tertiary.copy(alpha = 0.5f))) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("PAID LOOKUP", style = MaterialTheme.typography.labelMedium, color = cs.tertiary)
-            Text("Costs ${action.cost}", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
-            Text("Nothing is sent and nothing is charged until you confirm.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+            val free = action.cost.startsWith("Free", ignoreCase = true)
+            Text(if (free) "OPTIONAL LOOKUP" else "PAID LOOKUP", style = MaterialTheme.typography.labelMedium, color = cs.tertiary)
+            Text(if (free) action.cost else "Costs ${action.cost}", style = MaterialTheme.typography.titleMedium, color = cs.onSurface)
+            Text(if (free) "Nothing is sent until you confirm." else "Nothing is sent and nothing is charged until you confirm.", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
             Button(onClick = { confirming = true }, Modifier.fillMaxWidth().heightIn(min = 52.dp)) { Text("${action.label}…") }
         }
     }
@@ -49,8 +50,8 @@ fun PaidActionCard(action: PaidAction, onConfirmed: () -> Unit, modifier: Modifi
 @Composable
 fun PaidConfirmBody(action: PaidAction, modifier: Modifier = Modifier) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Text("Cost: ${action.cost}.", style = MaterialTheme.typography.titleMedium)
+        Text(if (action.cost.startsWith("Free", ignoreCase = true)) action.cost else "Cost: ${action.cost}.", style = MaterialTheme.typography.titleMedium)
         Text(action.explanation, style = MaterialTheme.typography.bodyMedium)
-        Text("Prices are the provider's published list prices and may differ on your account.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        if (!action.cost.startsWith("Free", ignoreCase = true)) Text("Prices are the provider's published list prices and may differ on your account.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

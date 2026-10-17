@@ -51,6 +51,7 @@ abstract class AppModule {
     @Binds @IntoSet abstract fun emailIntel(s: EmailIntelSource): OsintSource
     @Binds abstract fun disposable(s: AssetDisposableDomains): DisposableDomains
     @Binds @IntoSet abstract fun domain(s: DomainSource): OsintSource
+    @Binds @IntoSet abstract fun lookalikePaid(s: vip.ringling.recon.data.sources.domain.LookalikeLookup): vip.ringling.recon.domain.PaidLookups
     @Binds @IntoSet abstract fun registry(s: RegistrySource): OsintSource
     @Binds @IntoSet abstract fun idaho(a: IdahoRegistryAdapter): RegistryAdapter
 }

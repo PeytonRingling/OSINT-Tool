@@ -32,6 +32,7 @@ class DomainSource @Inject constructor(
 
     override suspend fun run(input: ScanInput): Flow<Finding> = channelFlow {
         val d = input.raw.lowercase()
+        send(LookalikeLookup.offer(d))
         check("dns", "DNS records") {
             coroutineScope {
                 val a = async { doh.query(d, DnsType.A) }

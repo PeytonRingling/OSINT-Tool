@@ -113,7 +113,7 @@ class DomainSourceTest {
         srv.use {
             val f = DomainSource(Http(), srv.endpoints()).collect(ScanInput("northwind.io", InputType.DOMAIN))
             val byId = f.associateBy { it.id }
-            assertEquals(12, f.size, f.map { it.id }.toString())
+            assertEquals(13, f.size, f.map { it.id }.toString())
             assertTrue("104.21.44.9" in byId.getValue("DOMAIN-a").detail)
             assertEquals(Severity.INFO, byId.getValue("DOMAIN-spf").severity)
             assertEquals(Severity.EXPOSED, byId.getValue("DOMAIN-dmarc").severity)
