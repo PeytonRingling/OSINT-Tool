@@ -45,6 +45,7 @@ class UpdateRepository @Inject constructor(private val http: Http, private val e
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun latest(token: String?): ReleaseInfo {
+        if (endpoints.updateRepo.isBlank()) throw UpdateException("This build has no update source. Updates work in builds made by the project's CI.")
         val req = Request.Builder().url("${endpoints.github}/repos/${endpoints.updateRepo}/releases/tags/latest")
             .header("Accept", "application/vnd.github+json").header("X-GitHub-Api-Version", "2022-11-28")
             .apply { if (token != null) header("Authorization", "Bearer $token") }.build()

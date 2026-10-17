@@ -17,6 +17,8 @@ android {
         targetSdk = 37
         versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
         versionName = "0.1.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
+        // "owner/repo" for in-app updates. CI supplies it (GITHUB_REPOSITORY); the source tree names no account. Local builds leave it empty (they can't update anyway: versionCode 1).
+        buildConfigField("String", "UPDATE_REPO", "\"${System.getenv("GITHUB_REPOSITORY") ?: ""}\"")
     }
 
     signingConfigs {

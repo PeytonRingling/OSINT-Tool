@@ -3,7 +3,7 @@
 Android-only, Kotlin + Jetpack Compose, Material 3 Expressive. Package `vip.ringling.recon`.
 minSdk 29, target/compileSdk 37. Replaces an earlier Python desktop project (reference only for
 endpoints/logic; its `offender_registry.py` is NOT in this repo — inspect the live Idaho forms).
-Private, sideloaded app. Repo: testuser/OSINT-Tool. Work branch: `claude/busy-pascal-nd1y36`.
+Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner is deliberately not named in the source: CI passes it as `GITHUB_REPOSITORY`, which becomes `BuildConfig.UPDATE_REPO` and drives in-app updates and the User-Agent; local builds leave it empty). Work branch: `claude/busy-pascal-nd1y36`.
 
 ## Process rules
 - **Phase 1 (done, approved):** scaffold, design system, four tab screens + detail, committed screenshots.

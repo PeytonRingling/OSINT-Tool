@@ -11,7 +11,7 @@ import okhttp3.Request
 import okhttp3.Response
 import java.util.concurrent.TimeUnit
 
-const val USER_AGENT = "Recon-Android/0.2 (personal OSINT toolkit; +https://github.com/testuser/OSINT-Tool)"
+val USER_AGENT = "Recon-Android/0.2 (personal OSINT toolkit" + vip.ringling.recon.BuildConfig.UPDATE_REPO.let { if (it.isBlank()) "" else "; +https://github.com/$it" } + ")"
 
 fun buildHttpClient(): OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(10, TimeUnit.SECONDS)

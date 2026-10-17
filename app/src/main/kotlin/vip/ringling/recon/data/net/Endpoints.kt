@@ -23,6 +23,6 @@ data class Endpoints(
     val blockscout: String = "https://eth.blockscout.com",
     val wordpress: String = "https://public-api.wordpress.com",
     val duolingo: String = "https://www.duolingo.com",
-    val updateRepo: String = "testuser/OSINT-Tool",
+    val updateRepo: String = vip.ringling.recon.BuildConfig.UPDATE_REPO,
     val idahoSor: String = "https://apps.isp.idaho.gov/sor_id",
 )
