@@ -12,7 +12,7 @@ data class CaseFile(val id: String, val name: String, val createdAt: Long, val n
 data class CaseTargetState(val target: CaseTarget, val latest: ScanSnapshot?, val scans: List<ScanSnapshot>) {
     val risk: Int? get() = latest?.takeIf { !it.isArea }?.risk
     val records: Int? get() = latest?.records
-    val isArea: Boolean get() = target.type == InputType.ZIP
+    val isArea: Boolean get() = target.type.countsOnly
 }
 
 enum class CaseStatus(val label: String) { CRITICAL("Critical"), MODERATE("Moderate"), CLEAN("Clean"), AREA("Area scan"), UNSCANNED("Not scanned") }

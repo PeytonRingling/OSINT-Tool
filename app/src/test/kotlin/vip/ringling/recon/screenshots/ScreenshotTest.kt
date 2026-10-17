@@ -200,6 +200,11 @@ class ScreenshotTest(private val device: Device, private val dark: Boolean) {
 
     @Test fun area_pin_preview() = shot("06f_area_pin_preview", tab = null, me = GeoPoint(43.6125, -116.2105), content = results(ResultsUiState(input = zip, statuses = zipDone.statuses, findings = zipDone.findings, registryAck = true, selectedId = zipDone.findings.first { it.isRegistryRecord }.id)))
 
+    @Test fun person_results() = shot("12_person_results", tab = null) { _, pad ->
+        val p = ScanInput("Jordan Example", InputType.PERSON)
+        vip.ringling.recon.ui.results.PersonScreen(ResultsUiState(input = p, findings = MockData.people(p) + vip.ringling.recon.domain.Finding("PEOPLE-court-error", ModuleId.PEOPLE, "Court dockets unavailable", "Rate-limited; try again in a minute", vip.ringling.recon.domain.Severity.INFO), statuses = mapOf(ModuleId.PEOPLE to ModuleStatus.DONE)), ResultsActions(), contentPadding = pad)
+    }
+
     @Test fun area_results_no_location() = shot("06c_area_results_no_location", tab = null, content = results(ResultsUiState(input = zip, statuses = zipDone.statuses, findings = zipDone.findings, registryAck = true)))
 
     @Test fun registry_fullscreen_map_satellite_selected() = shot("06d_registry_fullscreen_map", tab = null, me = GeoPoint(43.6125, -116.2105)) { _, _ ->

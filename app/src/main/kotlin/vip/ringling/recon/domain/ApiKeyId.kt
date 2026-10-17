@@ -6,5 +6,6 @@ enum class ApiKeyId(val label: String, val hint: String) {
     VERIPHONE("Veriphone (phone lookup)", "Optional, free tier (1,000/month): current carrier and landline/mobile/VoIP type."),
     TWILIO_SID("Twilio Account SID (owner name)", "Optional, paid per lookup (~1¢): caller-ID name registered for a number, plus live carrier and VoIP check. Needs the Auth Token too."),
     TWILIO_TOKEN("Twilio Auth Token", "Pairs with the Account SID above. Stored encrypted; only ever sent to Twilio."),
+    FEC("FEC (campaign donations)", "Optional, free from api.data.gov: adds public political donations (date, amount, committee, city/state, employer) to name searches. Never street addresses."),
     GITHUB("GitHub (app updates)", "Only needed while the repo is private: fine-grained token, this repo only, Contents: read."),
 }

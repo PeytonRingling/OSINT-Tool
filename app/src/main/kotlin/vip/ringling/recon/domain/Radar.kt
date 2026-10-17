@@ -18,7 +18,7 @@ data class RadarTarget(
     val recordId: String?,
 ) {
     val key: String get() = "${input.type.name}:${input.raw}"
-    val isArea: Boolean get() = input.type == InputType.ZIP
+    val isArea: Boolean get() = input.type.countsOnly
     val critical: Boolean get() = !isArea && risk >= 50
     val clean: Boolean get() = if (isArea) records == 0 else risk == 0
 }
@@ -71,7 +71,7 @@ object RadarMath {
     fun targets(records: List<ScanRecord>, recordCounts: Map<String, Int> = emptyMap()): List<RadarTarget> =
         records.groupBy { it.input.type to it.input.raw }.map { (_, rs) ->
             val latest = rs.maxBy { it.timestampMillis }
-            val zip = latest.input.type == InputType.ZIP
+            val zip = latest.input.type.countsOnly
             RadarTarget(latest.input, if (zip) 0 else latest.risk, if (zip) recordCounts["${latest.input.type.name}:${latest.input.raw}"] else null, latest.timestampMillis, rs.size, if (zip) null else latest.id)
         }.sortedByDescending { it.lastScanMillis }
 }

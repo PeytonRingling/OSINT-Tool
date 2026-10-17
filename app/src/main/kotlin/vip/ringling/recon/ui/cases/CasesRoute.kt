@@ -82,7 +82,7 @@ fun CaseDetailRoute(
                 // Follow the leads this case has found, one level deep: add each as a target (max 8 new) and scan them.
                 val have = c.file.targets.map { it.key }.toSet()
                 val leads = c.pivots.asSequence().mapNotNull { p -> InputDetector.detect(p.query)?.let { t -> ScanInput(InputDetector.normalize(p.query, t), t) } }
-                    .filter { it.type != vip.ringling.recon.domain.InputType.ZIP && it.type != vip.ringling.recon.domain.InputType.IMAGE && "${it.type.name}:${it.raw}" !in have }.distinctBy { it.type to it.raw }.take(8).toList()
+                    .filter { !it.type.countsOnly && it.type != vip.ringling.recon.domain.InputType.IMAGE && "${it.type.name}:${it.raw}" !in have }.distinctBy { it.type to it.raw }.take(8).toList()
                 vm.addTargets(leads); onRescan(leads)
             }, onRename = { dialog = "rename" }, onDelete = { dialog = "delete" }, onChanges = { onChanges(vm.caseId) },
         ),

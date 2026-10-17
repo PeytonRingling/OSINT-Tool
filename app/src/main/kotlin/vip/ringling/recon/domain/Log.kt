@@ -4,7 +4,7 @@ package vip.ringling.recon.domain
 data class LogTarget(val type: InputType, val value: String, val scans: List<ScanSnapshot>) {
     val key: String get() = "${type.name}:$value"
     val latest: ScanSnapshot get() = scans.last()
-    val isArea: Boolean get() = type == InputType.ZIP
+    val isArea: Boolean get() = type.countsOnly
     /** Risk series for the sparkline (areas have no score). */
     val risks: List<Int> get() = if (isArea) emptyList() else scans.map { it.risk }
     /** Change of the latest scan against the FIRST scan of this target; null with a single scan or for areas. */

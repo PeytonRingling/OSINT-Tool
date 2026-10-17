@@ -209,11 +209,11 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
             }
             val breaches = scored.filter { it.module == ModuleId.BREACH }.sortedBy { if (it.severity == Severity.EXPOSED) 0 else 1 }
             if (breaches.isNotEmpty()) item(key = "breaches") {
-                FindingGroup("Breaches", "${breaches.size} · tap for details", breaches, state.handled, actions.onFinding)
+                FindingGroup("Breaches", "${breaches.size} · tap for details", breaches, state.handled, onOpen = actions.onFinding)
             }
             val others = scored.filter { it.module != ModuleId.BREACH }.sortedBy { if (it.severity == Severity.EXPOSED) 0 else 1 }
             if (others.isNotEmpty()) item(key = "others") {
-                FindingGroup("Other findings", "${others.size}", others, state.handled, actions.onFinding)
+                FindingGroup("Other findings", "${others.size}", others, state.handled, onOpen = actions.onFinding)
             }
             if (steps.isNotEmpty()) item {
                 HairPanel(Modifier.fillMaxWidth()) {
@@ -282,7 +282,7 @@ fun FindingsList(state: ResultsUiState, actions: ResultsActions, modifier: Modif
         state.statuses.keys.sortedBy { it.ordinal }.forEach { m ->
             val list = byModule[m].orEmpty()
             if (list.isEmpty() && state.filter != FindingFilter.ALL) return@forEach
-            if (compact) { if (list.isNotEmpty()) item(key = "m-$m") { FindingGroup(m.label, "${list.size}", list, state.handled, actions.onFinding) }; return@forEach }
+            if (compact) { if (list.isNotEmpty()) item(key = "m-$m") { FindingGroup(m.label, "${list.size}", list, state.handled, onOpen = actions.onFinding) }; return@forEach }
             item(key = "m-$m") {
                 ModuleCard(m, state.statuses[m] ?: ModuleStatus.DONE, list, state.errors[m], state.selectedId, actions.onFinding)
             }
@@ -463,7 +463,7 @@ fun RegistryRow(f: Finding, me: GeoPoint?, selected: Boolean, onOpen: (() -> Uni
 
 /** Tappable list of findings on the exposure screen: logo, title, one summary line, the first data classes (risky ones red) and severity. */
 @Composable
-fun FindingGroup(title: String, trailing: String, items: List<Finding>, handled: Set<String> = emptySet(), onOpen: (Finding) -> Unit) {
+fun FindingGroup(title: String, trailing: String, items: List<Finding>, handled: Set<String> = emptySet(), showSeverity: Boolean = true, showTags: Boolean = true, onOpen: (Finding) -> Unit) {
     val sig = ReconTheme.signal
     HairPanel(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(start = 14.dp, end = 6.dp, top = 12.dp, bottom = 4.dp)) {
@@ -481,7 +481,7 @@ fun FindingGroup(title: String, trailing: String, items: List<Finding>, handled:
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
                         Text(f.title, color = sig.text, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         Text(f.detail.lineSequence().first(), color = sig.muted, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        if (f.tags.isNotEmpty()) {
+                        if (showTags && f.tags.isNotEmpty()) {
                             val shown = (f.tags.filter { it in f.hotTags } + f.tags.filter { it !in f.hotTags }).take(3)
                             androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 2.dp)) {
                                 shown.forEach { StatusTag(it, if (it in f.hotTags) Tone.ALERT else Tone.INFO) }
@@ -490,7 +490,7 @@ fun FindingGroup(title: String, trailing: String, items: List<Finding>, handled:
                         }
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        if (done) StatusTag("Handled ✓", Tone.SAFE) else StatusTag(if (f.severity == Severity.EXPOSED) "Exposed" else "Info", if (f.severity == Severity.EXPOSED) Tone.ALERT else Tone.INFO)
+                        if (done) StatusTag("Handled ✓", Tone.SAFE) else if (showSeverity) StatusTag(if (f.severity == Severity.EXPOSED) "Exposed" else "Info", if (f.severity == Severity.EXPOSED) Tone.ALERT else Tone.INFO)
                         Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = sig.muted)
                     }
                 }

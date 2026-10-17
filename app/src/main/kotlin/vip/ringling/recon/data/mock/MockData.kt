@@ -1,6 +1,7 @@
 package vip.ringling.recon.data.mock
 
 import vip.ringling.recon.domain.Confidence
+import vip.ringling.recon.domain.Link
 import vip.ringling.recon.domain.Finding
 import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.domain.InputType
@@ -105,6 +106,21 @@ object MockData {
         }
     }
 
+    /** Clearly fictional public-record matches for screenshots only. */
+    fun people(input: ScanInput): List<Finding> {
+        if (input.type != InputType.PERSON) return emptyList()
+        fun hit(id: String, title: String, detail: String, tag: String) =
+            Finding("PEOPLE-hit-$id", ModuleId.PEOPLE, title, detail + "\nMatched by name only: common names return other people, so confirm it's the right person before relying on it.", Severity.INFO, url = "https://example.org/$id", confidence = Confidence.LOW, tags = listOf(tag))
+        return listOf(
+            hit("wd-1", input.raw, "Fictional scientist and writer (1950–2020)", "Wikidata (public figures)"),
+            hit("orcid-1", input.raw, "ORCID researcher profile · Example University", "ORCID (researchers)"),
+            hit("court-1", "Example v. ${input.raw.substringAfterLast(' ')}", "U.S. District Court, D. Idaho · filed 2019-04-02 · docket 1:19-cv-00123", "Court dockets"),
+            hit("court-2", "${input.raw.substringAfterLast(' ')} v. Placeholder Corp.", "U.S. District Court, D. Idaho · filed 2021-09-14 · docket 1:21-cv-00456", "Court dockets"),
+            hit("fec-1", "\$250 to EXAMPLE PAC", "2022-10-03 · Boise, ID · Placeholder Co. · Engineer", "FEC donations"),
+            Finding("PEOPLE-links", ModuleId.PEOPLE, "Official and public portals", "Open these to search by name yourself.", Severity.INFO, links = listOf(Link("Federal court cases (PACER Case Locator)", "https://pcl.uscourts.gov/"))),
+        )
+    }
+
     fun forModule(module: ModuleId, input: ScanInput): List<Finding> = when (module) {
         ModuleId.BREACH -> breach(input)
         ModuleId.IDENTITY -> identity(input)
@@ -112,6 +128,7 @@ object MockData {
         ModuleId.IMAGE, ModuleId.NETWORK, ModuleId.CRYPTO, ModuleId.CODE, ModuleId.EMAILINTEL, ModuleId.DORKS -> emptyList()
         ModuleId.DOMAIN -> domain(input)
         ModuleId.REGISTRY -> registry(input)
+        ModuleId.PEOPLE -> people(input)
     }
 
     fun allFor(input: ScanInput): List<Finding> = ModuleId.entries.flatMap { forModule(it, input) }
@@ -142,5 +159,6 @@ object MockData {
         InputType.IMAGE -> setOf(ModuleId.IMAGE)
         InputType.IP -> setOf(ModuleId.NETWORK)
         InputType.WALLET -> setOf(ModuleId.CRYPTO)
+        InputType.PERSON -> setOf(ModuleId.PEOPLE)
     }
 }

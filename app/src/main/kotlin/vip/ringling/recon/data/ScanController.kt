@@ -93,7 +93,7 @@ class ScanController @Inject constructor(
                 val prev = before.filter { it.type == input.type && it.value == input.raw }.maxByOrNull { it.ts }
                 val diff = if (ok && last.findings.isNotEmpty()) {
                     val id = UUID.randomUUID().toString(); val now = System.currentTimeMillis()
-                    val storable = last.findings.filter { it.module != ModuleId.REGISTRY && it.paid == null }
+                    val storable = last.findings.filter { it.module != ModuleId.REGISTRY && it.module != ModuleId.PEOPLE && it.paid == null }
                     history.add(ScanRecord(id, input, now, storable))
                     val snap = vip.ringling.recon.domain.ScanSnapshot.of(id, input, last.findings, now)
                     snapshots.add(snap)
@@ -122,7 +122,7 @@ class ScanController @Inject constructor(
             runner.session(input, enabled).collect { s -> last = s; _session.value = s }
             // Registry results are live-lookup only and must never be stored (Idaho Code §74-120): keep the
             // query in history, drop the findings.
-            val storable = last.findings.filter { it.module != ModuleId.REGISTRY && it.paid == null }
+            val storable = last.findings.filter { it.module != ModuleId.REGISTRY && it.module != ModuleId.PEOPLE && it.paid == null }
             if (last.findings.isNotEmpty()) {
                 val id = UUID.randomUUID().toString(); val now = System.currentTimeMillis()
                 history.add(ScanRecord(id, input, now, storable))

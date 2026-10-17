@@ -24,5 +24,5 @@ object ScanDiffs {
 
     /** Targets worth re-scanning in bulk: registry (live lookups, user-run only) and photo inputs are never batched. */
     fun batchable(inputs: List<ScanInput>): List<ScanInput> =
-        inputs.filter { it.type != InputType.ZIP && it.type != InputType.IMAGE }.distinctBy { it.type to it.raw }
+        inputs.filter { !it.type.countsOnly && it.type != InputType.IMAGE }.distinctBy { it.type to it.raw }
 }

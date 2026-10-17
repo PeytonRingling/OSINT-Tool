@@ -299,6 +299,8 @@ private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingVa
     val main: MainViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
     val vm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
     val st by vm.state.collectAsStateWithLifecycle()
+    var showPerson by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    if (showPerson) vip.ringling.recon.ui.radar.PersonSearchDialog(onSearch = { showPerson = false; vm.searchPerson(it) }, onDismiss = { showPerson = false })
     var showPassword by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     if (showPassword) vip.ringling.recon.ui.radar.PasswordCheckDialog(vm::passwordCount) { showPassword = false }
     val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> uri?.let { vm.analyzePhoto(it.toString()) } }
@@ -306,7 +308,7 @@ private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingVa
         st,
         vip.ringling.recon.ui.radar.RadarActions(
             onQuery = vm::onQueryChange, onSubmit = vm::submit, onTarget = vm::open, onLoadout = onLoadout,
-            onPhoto = { pickPhoto.launch("image/*") }, onNewCase = { main.requestNewCase(); nav.goTab(Tab.CASES) }, onPassword = { showPassword = true },
+            onPhoto = { pickPhoto.launch("image/*") }, onNewCase = { main.requestNewCase(); nav.goTab(Tab.CASES) }, onPassword = { showPassword = true }, onPerson = { showPerson = true },
         ),
         contentPadding = pad, wide = expanded,
     )

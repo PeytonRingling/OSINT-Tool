@@ -31,6 +31,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.ContentPaste
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.rounded.Close
@@ -74,12 +75,13 @@ data class RadarActions(
     val onPhoto: () -> Unit = {},
     val onNewCase: () -> Unit = {},
     val onPassword: () -> Unit = {},
+    val onPerson: () -> Unit = {},
 )
 
 private val shortNames = mapOf(
     ModuleId.BREACH to "Breach", ModuleId.IDENTITY to "Identity", ModuleId.PHONE to "Phone intel", ModuleId.DOMAIN to "Domain",
     ModuleId.REGISTRY to "Registry", ModuleId.IMAGE to "Photo", ModuleId.NETWORK to "Network", ModuleId.CRYPTO to "Crypto",
-    ModuleId.CODE to "Code", ModuleId.EMAILINTEL to "Email intel", ModuleId.DORKS to "Dorks",
+    ModuleId.CODE to "Code", ModuleId.EMAILINTEL to "Email intel", ModuleId.DORKS to "Dorks", ModuleId.PEOPLE to "Public records",
 )
 
 fun typeLabel(t: InputType?): String = t?.label ?: "none"
@@ -194,7 +196,10 @@ private fun ActionButtons(actions: RadarActions) {
         SignalButton("Photo meta", actions.onPhoto, Modifier.weight(1f), icon = Icons.Outlined.Image)
         SignalButton("New case", actions.onNewCase, Modifier.weight(1f), icon = Icons.Outlined.AddCircleOutline)
     }
-    SignalButton("Password check", actions.onPassword, Modifier.fillMaxWidth(), icon = Icons.Outlined.Lock, mono = true)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        SignalButton("Name search", actions.onPerson, Modifier.weight(1f), icon = Icons.Outlined.Badge, mono = true)
+        SignalButton("Password", actions.onPassword, Modifier.weight(1f), icon = Icons.Outlined.Lock, mono = true)
+    }
 }
 
 @Composable
@@ -225,6 +230,7 @@ private val tiles = listOf(
     TileSpec(ModuleId.CRYPTO, "Crypto wallet", "Public block explorers"),
     TileSpec(ModuleId.CODE, "Code footprint", "GitHub public API"),
     TileSpec(ModuleId.EMAILINTEL, "Email intel", "Offline checks + DNS"),
+    TileSpec(ModuleId.PEOPLE, "Public records", "Name search · Wikidata · ORCID · courts"),
     TileSpec(ModuleId.DORKS, "Search dorks", "Ready-made operators · no network"),
 )
 

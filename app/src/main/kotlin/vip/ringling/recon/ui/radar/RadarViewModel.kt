@@ -91,6 +91,12 @@ class RadarViewModel @Inject constructor(
     /** Re-runs a scan of [input] (used for ZIP targets, whose registry results are never stored). */
     fun rerun(input: ScanInput) { controller.start(input); _events.tryEmit(RadarEvent.OpenLive) }
 
+    fun searchPerson(name: String) {
+        val n = InputDetector.normalize(name, InputType.PERSON)
+        if (n.split(' ').count { it.length >= 2 } < 2) return
+        controller.start(ScanInput(n, InputType.PERSON)); _events.tryEmit(RadarEvent.OpenLive)
+    }
+
     fun analyzePhoto(uri: String) { controller.start(ScanInput(uri, InputType.IMAGE)); _events.tryEmit(RadarEvent.OpenLive) }
 
     fun toggle(m: ModuleId, on: Boolean) = controller.setEnabled(m, on)

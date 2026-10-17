@@ -13,6 +13,11 @@ enum class InputType(val label: String) {
     IMAGE("Photo"),
     IP("IP"),
     WALLET("Wallet"),
+    /** Never auto-detected (names look like anything): the user picks "Name search". Live lookup; findings are never stored. */
+    PERSON("Person");
+
+    /** Live lookups that show a neutral result count instead of a risk score, and whose findings are never stored. */
+    val countsOnly: Boolean get() = this == ZIP || this == PERSON
 }
 
 @Serializable
@@ -37,6 +42,7 @@ enum class ModuleId(val label: String, val tagline: String) {
     CRYPTO("Crypto wallet", "On-chain activity · scam reports"),
     CODE("Code footprint", "GitHub profile · commit emails"),
     EMAILINTEL("Email intel", "Provider · disposable · pivots"),
+    PEOPLE("Public records", "Wikidata · ORCID · court dockets · FEC"),
     DORKS("Search dorks", "Ready-made operators"),
 }
 
@@ -118,7 +124,7 @@ data class ScanRecord(
     val risk: Int get() = RiskScore.compute(findings)
     val legacyScore: Boolean get() = scoreVersion < RiskScore.VERSION
     /** ZIP / offender-registry searches are live lookups, not risk assessments: they show a neutral result count instead. */
-    val neutral: Boolean get() = input.type == InputType.ZIP
+    val neutral: Boolean get() = input.type.countsOnly
 }
 
 /**
@@ -153,10 +159,13 @@ private val NON_EVIDENCE_SUFFIXES = listOf("-error", "-summary", "-manual", "-li
 
 /** True when the finding is evidence about the subject (see [RiskScore]). */
 val Finding.scorable: Boolean
-    get() = module != ModuleId.REGISTRY && module != ModuleId.DORKS && paid == null && NON_EVIDENCE_SUFFIXES.none { id.endsWith(it) }
+    get() = module != ModuleId.REGISTRY && module != ModuleId.PEOPLE && module != ModuleId.DORKS && paid == null && NON_EVIDENCE_SUFFIXES.none { id.endsWith(it) }
 
 /** True for findings that must be shown neutrally (no severity chip, no "Exposed" wording). */
-val Finding.neutral: Boolean get() = module == ModuleId.REGISTRY
+val Finding.neutral: Boolean get() = module == ModuleId.REGISTRY || module == ModuleId.PEOPLE
+
+/** A record found by name (as opposed to a source-status or links row of the public-records module). */
+val Finding.isPersonMatch: Boolean get() = module == ModuleId.PEOPLE && id.startsWith("PEOPLE-hit-")
 
 /** An actual registrant record (as opposed to the summary / notes / "none found" rows of the registry module). */
 val Finding.isRegistryRecord: Boolean get() = module == ModuleId.REGISTRY && Regex("^REGISTRY-[A-Z]{2}-.+").matches(id)

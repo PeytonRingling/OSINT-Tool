@@ -120,7 +120,7 @@ fun LogScreen(state: LogUiState, actions: LogActions, modifier: Modifier = Modif
                     }
                 }
             }
-            if (state.targets.any { it.type != vip.ringling.recon.domain.InputType.ZIP }) item {
+            if (state.targets.any { !it.type.countsOnly }) item {
                 SignalButton("Re-scan all targets", actions.onRescanAll, Modifier.fillMaxWidth(), mono = true)
             }
             if (state.scanCount == 0 && state.undoCount == 0) item {

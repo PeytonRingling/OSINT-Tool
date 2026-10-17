@@ -39,6 +39,7 @@ object InputDetector {
             InputType.IMAGE -> s
             InputType.IP -> s.lowercase()
             InputType.WALLET -> s
+            InputType.PERSON -> s.replace(Regex("\\s+"), " ")
         }
     }
 }

@@ -186,6 +186,12 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 - **Site health** (`SiteHealth`): username sites inconclusive 5 sweeps in a row are skipped for a week; a sweep where nothing was conclusive records nothing.
 - **Lint** runs in CI (`lintDebug`). Fixed: `InputStream.readNBytes` (API 33) crash on API 29-32, missing `USE_BIOMETRIC`, `LocalActivity`, location SecurityException.
 
+## Public-records name search (added 2026-10-17)
+- `InputType.PERSON` ("Name search" button on Radar; NEVER auto-detected) and `ModuleId.PEOPLE`. `InputType.countsOnly` (ZIP, PERSON) = live lookup, neutral count instead of a risk score, snapshot stores only the count, findings are NEVER saved to History and not exportable (`ScanController` strips PEOPLE like REGISTRY; `Export.exportable`).
+- Sources (`data/sources/people/People.kt`, all "matched by name only", LOW confidence): Wikidata humans (`haswbstatement:P31=Q5`, live-verified), ORCID (live-verified), CourtListener RECAP dockets (anonymous; may 429; shape from docs), FEC individual donations (optional free api.data.gov key `ApiKeyId.FEC`; shape from docs; city/state/employer only, NEVER street addresses), plus a links finding to official/public portals (PACER, NSOPW, EDGAR, BrokerCheck, OpenCorporates, Scholar, Patents, News).
+- Deliberately NOT included: people-finder / data-broker sites (Spokeo, Whitepages, ...) and home addresses/phones; tested. OpenCorporates' API needs a token and GDELT limits to 1 req / 5 s, so they are links only.
+- UI: `PersonSearchDialog` (states the lawful-use notice), `PersonScreen` (match count, source groups, "sources with no result", portals).
+
 ## Open items / notes
 - **Legal notice wording** (`ui/components/Cards.kt`, Settings) now follows the statements on the Idaho SOR site itself
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.

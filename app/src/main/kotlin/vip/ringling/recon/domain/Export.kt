@@ -21,7 +21,7 @@ object Export {
     }
 
     /** Registry findings are never exported: a saved file of registrants is a compiled list (Idaho Code §74-120). */
-    fun exportable(f: Finding) = f.module != ModuleId.REGISTRY
+    fun exportable(f: Finding) = f.module != ModuleId.REGISTRY && f.module != ModuleId.PEOPLE
 
     fun scan(input: ScanInput, findings: List<Finding>): String {
         val kept = findings.filter(::exportable)
