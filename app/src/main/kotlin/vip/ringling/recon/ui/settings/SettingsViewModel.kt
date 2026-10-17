@@ -26,7 +26,15 @@ class SettingsViewModel @Inject constructor(
     private val snapshots: vip.ringling.recon.data.SnapshotRepository,
     private val backup: vip.ringling.recon.data.BackupManager,
     private val route: vip.ringling.recon.data.net.RouteTester,
+    private val guard: vip.ringling.recon.data.DataGuard,
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context,
 ) : ViewModel() {
+    fun setRetention(days: Int) = viewModelScope.launch { repo.setRetentionDays(days); guard.purgeOlderThan(days) }
+    fun setAutoRescan(on: Boolean) = viewModelScope.launch {
+        repo.setAutoRescan(on)
+        vip.ringling.recon.data.watch.AutoRescanScheduler.sync(appContext, on)
+    }
+    fun wipeEverything() = viewModelScope.launch { guard.wipeEverything() }
     suspend fun testRoute() = route.test()
     suspend fun backupText(): String = backup.export()
     suspend fun importBackup(text: String) = backup.import(text)

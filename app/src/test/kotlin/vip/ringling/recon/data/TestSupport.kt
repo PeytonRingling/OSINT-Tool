@@ -52,5 +52,6 @@ class FakeSnapshotDao : vip.ringling.recon.data.db.SnapshotDao {
     override suspend fun insert(e: vip.ringling.recon.data.db.SnapshotEntity) { state.value = state.value.filterNot { it.id == e.id } + e }
     override suspend fun insertAll(e: List<vip.ringling.recon.data.db.SnapshotEntity>) { e.forEach { insert(it) } }
     override suspend fun clear() { state.value = emptyList() }
+    override suspend fun deleteBefore(cutoff: Long) { state.value = state.value.filter { it.ts >= cutoff } }
     override suspend fun deleteTarget(type: String, value: String) { state.value = state.value.filterNot { it.targetType == type && it.targetValue == value } }
 }

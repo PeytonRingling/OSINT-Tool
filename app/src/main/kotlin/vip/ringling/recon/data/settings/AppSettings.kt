@@ -12,4 +12,11 @@ data class AppSettings(
     val proxyPort: Int = 1080,
     /** Require device biometrics / PIN to open the app, and hide it from the recents screen. */
     val appLock: Boolean = false,
+    /** Delete scans older than this many days (0 = keep everything). Cases are never auto-deleted. */
+    val retentionDays: Int = 0,
+    /** Re-scan every case target once a day in the background and notify only when something changed. */
+    val autoRescan: Boolean = false,
+    val onboarded: Boolean = false,
+    /** False until DataStore has delivered its first value, so first-run UI doesn't flash for existing users. */
+    val loaded: Boolean = false,
 )

@@ -43,6 +43,9 @@ interface ScanDao {
     @Query("DELETE FROM scans WHERE id = :id")
     suspend fun delete(id: String)
 
+    @Query("DELETE FROM scans WHERE timestamp < :cutoff")
+    suspend fun deleteBefore(cutoff: Long)
+
     @Query("DELETE FROM scans")
     suspend fun clear()
 }
@@ -112,6 +115,9 @@ interface SnapshotDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(e: List<SnapshotEntity>)
+
+    @Query("DELETE FROM scan_snapshot WHERE ts < :cutoff")
+    suspend fun deleteBefore(cutoff: Long)
 
     @Query("DELETE FROM scan_snapshot")
     suspend fun clear()

@@ -26,6 +26,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     private val proxyHostKey = stringPreferencesKey("proxy_host")
     private val proxyPortKey = intPreferencesKey("proxy_port")
     private val lockKey = booleanPreferencesKey("app_lock")
+    private val retentionKey = intPreferencesKey("retention_days")
+    private val rescanKey = booleanPreferencesKey("auto_rescan")
+    private val onboardedKey = booleanPreferencesKey("onboarded")
 
     val settings: Flow<AppSettings> = context.store.data.map { p ->
         AppSettings(
@@ -37,6 +40,10 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             proxyHost = p[proxyHostKey].orEmpty(),
             proxyPort = p[proxyPortKey] ?: 1080,
             appLock = p[lockKey] ?: false,
+            retentionDays = p[retentionKey] ?: 0,
+            autoRescan = p[rescanKey] ?: false,
+            onboarded = p[onboardedKey] ?: false,
+            loaded = true,
         )
     }
 
@@ -48,4 +55,9 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     suspend fun setProxyHost(h: String) = context.store.edit { it[proxyHostKey] = h }
     suspend fun setProxyPort(p: Int) = context.store.edit { it[proxyPortKey] = p }
     suspend fun setAppLock(on: Boolean) = context.store.edit { it[lockKey] = on }
+    suspend fun setRetentionDays(d: Int) = context.store.edit { it[retentionKey] = d }
+    suspend fun setAutoRescan(on: Boolean) = context.store.edit { it[rescanKey] = on }
+    suspend fun setOnboarded(on: Boolean = true) = context.store.edit { it[onboardedKey] = on }
+    /** Forget every setting (used by "Wipe everything"). */
+    suspend fun reset() { context.store.edit { it.clear() } }
 }

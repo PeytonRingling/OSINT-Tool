@@ -140,6 +140,8 @@ fun ReconApp() {
     newCaseFor?.let { input ->
         vip.ringling.recon.ui.cases.NewCaseDialog(onDismiss = { newCaseFor = null }, onCreate = { name -> main.createCaseWith(name, input); newCaseFor = null })
     }
+    val firstRun by main.firstRun.collectAsStateWithLifecycle()
+    if (firstRun) vip.ringling.recon.ui.settings.WelcomeDialog(onSetupKeys = { main.dismissWelcome(); nav.goTab(Tab.SETTINGS) }, onSkip = main::dismissWelcome)
     val batch by main.batch.collectAsStateWithLifecycle()
     if (batch.active) vip.ringling.recon.ui.log.RescanSheet(batch, onClose = main::dismissBatch, onCancel = main::cancelBatch)
     if (showLoadout) {
@@ -199,7 +201,7 @@ fun ReconApp() {
                             SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock,
                                 onExportBackup = { scope.launch { actions.saveFile("recon-backup-${java.time.LocalDate.now()}.json", vm.backupText().toByteArray()) } },
                                 onImportBackup = { picker.launch(arrayOf("application/json", "text/plain", "*/*")) },
-                                onTestRoute = vm::testRoute),
+                                onTestRoute = vm::testRoute, onRetention = vm::setRetention, onAutoRescan = vm::setAutoRescan, onWipe = vm::wipeEverything),
                             contentPadding = pad,
                         )
                     }

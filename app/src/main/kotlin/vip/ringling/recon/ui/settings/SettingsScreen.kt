@@ -88,6 +88,9 @@ data class SettingsActions(
     val onAppLock: (Boolean) -> Unit = {},
     val onExportBackup: () -> Unit = {},
     val onImportBackup: () -> Unit = {},
+    val onRetention: (Int) -> Unit = {},
+    val onAutoRescan: (Boolean) -> Unit = {},
+    val onWipe: () -> Unit = {},
     val onTestRoute: suspend () -> vip.ringling.recon.data.net.RouteResult = { vip.ringling.recon.data.net.RouteResult.Failed("not available") },
 )
 
@@ -338,6 +341,30 @@ private fun DataSection(state: SettingsUiState, a: SettingsActions) {
             }
             SignalButton("Export", a.onExportBackup, mono = true)
             SignalButton("Import", a.onImportBackup, mono = true)
+        }
+        Divider()
+        val options = listOf(0 to "Off", 30 to "30 days", 90 to "90 days", 365 to "1 year")
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Auto-delete scans", color = sig.text, style = MaterialTheme.typography.titleSmall)
+            SegmentedControl(options.map { it.second }, options.indexOfFirst { it.first == state.settings.retentionDays }.coerceAtLeast(0), { a.onRetention(options[it].first) })
+            Text("Removes older scans and their Log entries from this device. Cases, notes and the watchlist are kept.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+        }
+        Divider()
+        SwitchRow("Re-scan cases daily", "Scans every case target in the background and notifies you only if something got worse or is new.", state.settings.autoRescan, a.onAutoRescan)
+        Divider()
+        var wipe by remember { mutableStateOf(false) }
+        if (wipe) AlertDialog(
+            onDismissRequest = { wipe = false }, title = { Text("Wipe everything?") },
+            text = { Text("Deletes all scans, cases, notes, the watchlist, saved API keys and settings from this device. This can't be undone. Export a backup first if you might need anything.") },
+            confirmButton = { TextButton(onClick = { wipe = false; a.onWipe() }) { Text("Wipe everything", color = sig.alertText) } },
+            dismissButton = { TextButton(onClick = { wipe = false }) { Text("Cancel") } },
+        )
+        Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 14.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text("Wipe everything", color = sig.alertText, style = MaterialTheme.typography.titleSmall)
+                Text("One tap removes all data, keys and settings.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+            }
+            SignalButton("Wipe", { wipe = true }, mono = true)
         }
     }
 }

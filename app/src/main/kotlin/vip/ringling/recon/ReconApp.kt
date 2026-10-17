@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import vip.ringling.recon.data.net.ProxyState
@@ -22,9 +23,17 @@ import vip.ringling.recon.data.net.USER_AGENT
 @HiltAndroidApp
 class ReconApp : Application(), SingletonImageLoader.Factory {
     @Inject lateinit var settingsRepo: SettingsRepository
+    @Inject lateinit var dataGuard: vip.ringling.recon.data.DataGuard
 
     override fun onCreate() {
         super.onCreate()
+        // Age-based deletion runs at every launch and whenever the setting changes; the daily case re-scan is (re)scheduled to match the setting.
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            settingsRepo.settings.filter { it.loaded }.map { it.retentionDays to it.autoRescan }.distinctUntilChanged().collect { (days, rescan) ->
+                runCatching { dataGuard.purgeOlderThan(days) }
+                runCatching { vip.ringling.recon.data.watch.AutoRescanScheduler.sync(this@ReconApp, rescan) } // WorkManager may be absent (e.g. under test)
+            }
+        }
         // Keep the global proxy in sync with settings (Tor / custom SOCKS5 for every lookup).
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             settingsRepo.settings.map { Triple(it.proxyMode, it.proxyHost, it.proxyPort) }.distinctUntilChanged()

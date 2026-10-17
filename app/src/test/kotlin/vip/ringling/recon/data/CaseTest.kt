@@ -73,6 +73,19 @@ class CaseTest {
         a.close(); b.close()
     }
 
+    @Test fun ageBasedDeleteRemovesOnlyOldScansAndKeepsCases() = runTest {
+        val db = Room.inMemoryDatabaseBuilder(ctx, HistoryDb::class.java).allowMainThreadQueries().build()
+        db.scans().insert(vip.ringling.recon.data.db.ScanEntity("old", "a", "USERNAME", 1_000, "[]", 2)); db.scans().insert(vip.ringling.recon.data.db.ScanEntity("new", "b", "USERNAME", 9_000_000_000_000, "[]", 2))
+        db.snapshots().insert(vip.ringling.recon.data.db.SnapshotEntity("old", "USERNAME", "a", 1_000, 0, 0, 0, "")); db.snapshots().insert(vip.ringling.recon.data.db.SnapshotEntity("new", "USERNAME", "b", 9_000_000_000_000, 0, 0, 0, ""))
+        vip.ringling.recon.data.CaseFileRepository(db.caseFiles()).create("keep me")
+        db.scans().deleteBefore(5_000); db.snapshots().deleteBefore(5_000)
+        assertEquals(listOf("new"), db.scans().all().first().map { it.id }); assertEquals(listOf("new"), db.snapshots().snapshot().map { it.id })
+        assertEquals(1, db.caseFiles().cases().first().size)
+        db.clearAllTables()
+        assertEquals(0, db.scans().all().first().size); assertEquals(0, db.caseFiles().cases().first().size)
+        db.close()
+    }
+
     @Test fun caseReportCarriesTargetsChangesPivotsAndNotes() {
         val file = vip.ringling.recon.domain.CaseFile("c", "My footprint", 1, 1, listOf(vip.ringling.recon.domain.CaseTarget(vip.ringling.recon.domain.InputType.EMAIL, "ann@b.com", 1), vip.ringling.recon.domain.CaseTarget(vip.ringling.recon.domain.InputType.USERNAME, "ann", 1)), listOf(vip.ringling.recon.domain.CaseNote(1, "check the old gmail", 1_700_000_000_000)))
         val s1 = vip.ringling.recon.domain.ScanSnapshot("1", vip.ringling.recon.domain.InputType.EMAIL, "ann@b.com", 1_700_000_000_000, 34, 3, 5, emptyList())

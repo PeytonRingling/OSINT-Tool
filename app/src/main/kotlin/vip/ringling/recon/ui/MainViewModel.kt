@@ -33,7 +33,12 @@ class MainViewModel @Inject constructor(
     private val userLocation: UserLocation,
     private val updates: UpdateManager,
     private val caseFiles: vip.ringling.recon.data.CaseFileRepository,
+    private val apiKeys: vip.ringling.recon.data.secret.ApiKeys,
 ) : ViewModel() {
+    /** True on a fresh install (settings loaded, never dismissed, no key saved yet). */
+    val firstRun: StateFlow<Boolean> = kotlinx.coroutines.flow.combine(settings.settings, apiKeys.keys) { s, k -> s.loaded && !s.onboarded && k.isEmpty() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, false)
+    fun dismissWelcome() { viewModelScope.launch { settingsRepo.setOnboarded() } }
     /** Bumped when something outside the Cases screen (the radar's "New case" button) asks it to open the new-case dialog. */
     private val _newCase = kotlinx.coroutines.flow.MutableStateFlow(0)
     val newCaseRequests: StateFlow<Int> = _newCase

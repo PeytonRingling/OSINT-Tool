@@ -155,4 +155,12 @@ object Notifier {
             .setContentIntent(open).setAutoCancel(true).build()
         nm.notify(email.hashCode(), n)
     }
+
+    fun rescan(ctx: Context, summary: String) {
+        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(ctx, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
+        val nm = ctx.getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(NotificationChannel(CHANNEL, "Watchlist alerts", NotificationManager.IMPORTANCE_DEFAULT))
+        val open = PendingIntent.getActivity(ctx, 0, Intent(ctx, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        nm.notify(0x5ca7, NotificationCompat.Builder(ctx, CHANNEL).setSmallIcon(R.mipmap.ic_launcher).setContentTitle("Case targets changed").setContentText(summary).setContentIntent(open).setAutoCancel(true).build())
+    }
 }
