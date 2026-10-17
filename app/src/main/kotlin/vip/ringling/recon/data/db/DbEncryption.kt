@@ -82,15 +82,15 @@ object DbEncryption {
                 src.rawExecSQL("ATTACH DATABASE '${tmp.path.replace("'", "''")}' AS encrypted KEY '$pass'")
                 stage = "copying the data"
                 src.rawExecSQL("SELECT sqlcipher_export('encrypted')")
-                stage = "copying the schema version"
-                src.rawExecSQL("PRAGMA encrypted.user_version = $version")
                 src.rawExecSQL("DETACH DATABASE encrypted")
             } finally { src.close() }
             stage = "verifying the encrypted copy"
             val check = SQLiteDatabase.openDatabase(tmp.path, pass.toByteArray(Charsets.US_ASCII), null, SQLiteDatabase.OPEN_READWRITE, noHook)
             val problem = try {
+                // sqlcipher_export does not carry user_version over; set it through the API (Room reads it to decide whether to migrate).
+                check.version = version
                 val v = check.version; val t = count(check)
-                if (v != version) "schema version $v != $version" else if (t != tables) "$t objects != $tables" else null
+                if (v != version) "schema version $v != $version" else if (t != tables) "$t tables != $tables" else null
             } finally { check.close() }
             if (problem != null) { deleteDbFiles(tmp); return "verifying the copy failed ($problem)" }
             stage = "swapping the files"
@@ -107,7 +107,8 @@ object DbEncryption {
         }
     }
 
-    private fun count(db: SQLiteDatabase): Long = db.rawQuery("SELECT count(*) FROM sqlite_master", arrayOf<String>()).use { c -> if (c.moveToFirst()) c.getLong(0) else -1L }
+    /** Number of real tables (ignores SQLite internals and Android's locale table, which the two sides treat differently). */
+    private fun count(db: SQLiteDatabase): Long = db.rawQuery("SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'android_metadata'", arrayOf<String>()).use { c -> if (c.moveToFirst()) c.getLong(0) else -1L }
 
     /** Best effort to leave no readable copy behind (flash storage may still keep remnants). */
     private fun overwriteAndDelete(f: File) {

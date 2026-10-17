@@ -38,8 +38,14 @@ suspend fun Call.await(): Response = suspendCancellableCoroutine { cont ->
 
 /** Thin wrapper so sources are testable and never touch OkHttp directly. */
 class Http(val client: OkHttpClient = buildHttpClient()) {
+    /**
+     * Runs [block] (usually reading the body) on an IO thread. Without this, a caller on the main thread (a button's coroutine) would read the
+     * response there and Android throws NetworkOnMainThreadException.
+     */
     suspend fun <T> execute(request: Request, block: (Response) -> T): T =
-        client.newCall(if (request.header("User-Agent") == null) request.newBuilder().header("User-Agent", USER_AGENT).build() else request).await().use(block)
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            client.newCall(if (request.header("User-Agent") == null) request.newBuilder().header("User-Agent", USER_AGENT).build() else request).await().use(block)
+        }
 }
 
 /** Browser-like UA for site probes: many sites 403 non-browser agents. Requests run from the user's own device. */

@@ -55,4 +55,14 @@ class RouteTesterTest {
             assertTrue(both is RouteResult.Failed && both.message.isNotBlank())
         } finally { srv.shutdown() }
     }
+
+    @Test fun responseBodiesAreReadOffTheCallersThread() = runTest {
+        val (srv, _) = server("/t" to { json("{}") })
+        try {
+            val caller = Thread.currentThread()
+            var inBlock: Thread? = null
+            Http().execute(okhttp3.Request.Builder().url(srv.url("/t")).build()) { r -> inBlock = Thread.currentThread(); r.body.string() }
+            assertTrue(inBlock != null && inBlock !== caller, "the body must not be read on the main/caller thread (NetworkOnMainThreadException)")
+        } finally { srv.shutdown() }
+    }
 }
