@@ -48,6 +48,8 @@ androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 androidx-security-crypto = { module = "androidx.security:security-crypto", version.ref = "securityCrypto" }
 androidx-work = { module = "androidx.work:work-runtime-ktx", version = "2.10.1" }
+androidx-sqlite = { module = "androidx.sqlite:sqlite", version = "2.5.2" }
+sqlcipher = { module = "net.zetetic:sqlcipher-android", version = "4.6.1" }
 androidx-window = { module = "androidx.window:window", version = "1.4.0" }
 androidx-exif = { module = "androidx.exifinterface:exifinterface", version = "1.4.1" }
 androidx-datastore = { module = "androidx.datastore:datastore-preferences", version.ref = "datastore" }

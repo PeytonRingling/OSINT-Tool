@@ -18,6 +18,7 @@ android {
         versionCode = (System.getenv("GITHUB_RUN_NUMBER") ?: "1").toInt()
         versionName = "0.1.${System.getenv("GITHUB_RUN_NUMBER") ?: "0"}"
         // "owner/repo" for in-app updates. CI supplies it (GITHUB_REPOSITORY); the source tree names no account. Local builds leave it empty (they can't update anyway: versionCode 1).
+        ndk { abiFilters += listOf("arm64-v8a", "x86_64") }
         buildConfigField("String", "UPDATE_REPO", "\"${System.getenv("GITHUB_REPOSITORY") ?: ""}\"")
     }
 
@@ -93,6 +94,8 @@ dependencies {
 
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.sqlite)
+    implementation(libs.sqlcipher) { artifact { type = "aar" } }
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.datastore)
