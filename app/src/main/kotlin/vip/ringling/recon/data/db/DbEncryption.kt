@@ -67,24 +67,46 @@ object DbEncryption {
      * what failed (the original is left untouched).
      */
     private fun migrate(file: File, pass: String): String? {
+        val a = migrateOnce(file, pass, reverse = false) ?: return null
+        val b = migrateOnce(file, pass, reverse = true) ?: return null
+        return "$a; second method: $b"
+    }
+
+    /**
+     * [reverse] = false: open the plaintext file and attach the encrypted twin (SQLCipher's documented route).
+     * [reverse] = true: create the encrypted twin, attach the plaintext file to it and export from there.
+     */
+    private fun migrateOnce(file: File, pass: String, reverse: Boolean): String? {
         val tmp = File(file.parentFile, "recon-enc.tmp")
         val bak = File(file.parentFile, "recon-plain.bak")
         deleteDbFiles(tmp); bak.delete()
         var stage = "opening the existing database"
         try {
-            val src = SQLiteDatabase.openDatabase(file.path, "", null, SQLiteDatabase.OPEN_READWRITE, noHook)
             val version: Int; val tables: Long
-            try {
-                stage = "reading the existing database"
-                version = src.version
-                tables = count(src)
-                stage = "attaching the encrypted copy"
-                src.rawExecSQL("ATTACH DATABASE '${tmp.path.replace("'", "''")}' AS encrypted KEY '$pass'")
-                stage = "copying the data"
-                src.rawExecSQL("SELECT sqlcipher_export('encrypted')")
-                src.rawExecSQL("DETACH DATABASE encrypted")
-            } finally { src.close() }
-            stage = "verifying the encrypted copy"
+            run {
+                val plain = SQLiteDatabase.openDatabase(file.path, "", null, SQLiteDatabase.OPEN_READWRITE, noHook)
+                try { stage = "reading the existing database"; version = plain.version; tables = count(plain) } finally { plain.close() }
+            }
+            if (!reverse) {
+                val src = SQLiteDatabase.openDatabase(file.path, "", null, SQLiteDatabase.OPEN_READWRITE, noHook)
+                try {
+                    stage = "attaching the encrypted copy"
+                    src.rawExecSQL("ATTACH DATABASE '${tmp.path.replace("'", "''")}' AS encrypted KEY '$pass'")
+                    stage = "copying the data"
+                    src.rawExecSQL("SELECT sqlcipher_export('encrypted')")
+                    src.rawExecSQL("DETACH DATABASE encrypted")
+                } finally { src.close() }
+            } else {
+                val dst = SQLiteDatabase.openDatabase(tmp.path, pass.toByteArray(Charsets.US_ASCII), null, SQLiteDatabase.OPEN_READWRITE or SQLiteDatabase.CREATE_IF_NECESSARY, noHook)
+                try {
+                    stage = "attaching the existing database"
+                    dst.rawExecSQL("ATTACH DATABASE '${file.path.replace("'", "''")}' AS plaintext KEY ''")
+                    stage = "copying the data"
+                    dst.rawExecSQL("SELECT sqlcipher_export('main', 'plaintext')")
+                    dst.rawExecSQL("DETACH DATABASE plaintext")
+                } finally { dst.close() }
+            }
+            stage = "verifying the encrypted copy (file ${if (tmp.exists()) "${tmp.length()} bytes" else "missing"})"
             val check = SQLiteDatabase.openDatabase(tmp.path, pass.toByteArray(Charsets.US_ASCII), null, SQLiteDatabase.OPEN_READWRITE, noHook)
             val problem = try {
                 // sqlcipher_export does not carry user_version over; set it through the API (Room reads it to decide whether to migrate).

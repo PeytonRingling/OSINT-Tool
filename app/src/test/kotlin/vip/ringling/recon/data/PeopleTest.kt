@@ -168,4 +168,13 @@ class PeopleTest {
         assertEquals("Grace Hopper", saved.input.raw); assertTrue(saved.findings.isEmpty(), "name-search results are never persisted")
         assertEquals(InputType.PERSON, vip.ringling.recon.domain.InputDetector.detect("grace").let { InputType.PERSON }.takeIf { vip.ringling.recon.domain.InputDetector.detect("Grace Hopper") == null })
     }
+
+    @Test fun lookalikeNamesAreFilteredOut() {
+        val bsky = """{"actors":[{"did":"1","handle":"a.bsky.social","displayName":"Peyton Vanest"},{"did":"2","handle":"b.bsky.social","displayName":"Michael Peyton"},{"did":"3","handle":"c.bsky.social","displayName":"Peyton Ringling"}]}"""
+        assertEquals(listOf("Peyton Ringling"), PeopleParsers.bluesky(bsky, "Peyton Ringling").map { it.title })
+        val finra = """{"hits":{"hits":[{"_source":{"ind_source_id":"1","ind_firstname":"Terry","ind_lastname":"Belton"}},{"_source":{"ind_source_id":"2","ind_firstname":"Peyton","ind_middlename":"J","ind_lastname":"Ringling"}}]}}"""
+        assertEquals(listOf("Peyton J Ringling"), PeopleParsers.brokerCheck(finra, "peyton ringling").map { it.title })
+        assertEquals(null, PeopleParsers.githubUser("""{"login":"x","name":"Someone Else"}""", "Peyton Ringling"))
+        assertEquals(emptyList(), PeopleParsers.orcid("""{"expanded-result":null,"num-found":0}"""))
+    }
 }

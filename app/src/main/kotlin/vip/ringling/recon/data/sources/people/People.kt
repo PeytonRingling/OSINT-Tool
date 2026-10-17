@@ -43,20 +43,30 @@ const val BY_NAME_ONLY = "Matched by name only: common names return other people
 object PeopleParsers {
     internal val json = Json { ignoreUnknownKeys = true; isLenient = true }
     internal fun JsonElement?.str(): String? = (this as? JsonPrimitive)?.contentOrNull?.takeIf { it.isNotBlank() && it != "null" }
+    internal fun JsonElement?.arr(): List<JsonElement> = (this as? JsonArray).orEmpty()
+
+    /** True when every word of [query] is a whole word of [candidate] (case/accents/punctuation aside), so "Peyton Vanest" and "Michael Peyton" don't match "Peyton Ringling". */
+    internal fun nameMatches(candidate: String?, query: String?): Boolean {
+        if (query.isNullOrBlank()) return true
+        fun words(x: String) = java.text.Normalizer.normalize(x.lowercase(), java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").split(Regex("[^a-z0-9]+")).filter { it.isNotEmpty() }
+        val have = words(candidate.orEmpty()).toSet()
+        return words(query).all { it in have }
+    }
+
     internal fun JsonObject.s(k: String) = this[k].str()
     internal fun hit(id: String, title: String, detail: String, url: String?, tag: String, facts: List<Fact> = emptyList(), image: String? = null, pivots: List<vip.ringling.recon.domain.Pivot> = emptyList()) =
         Finding("PEOPLE-hit-$id", ModuleId.PEOPLE, title, detail + "\n" + BY_NAME_ONLY, Severity.INFO, url = url, confidence = Confidence.LOW, tags = listOf(tag), facts = facts, imageUrl = image, imageLargeUrl = image, pivots = pivots)
 
     /** Wikidata search restricted to humans (`haswbstatement:P31=Q5`); the snippet is the entity's one-line description. */
     fun wikidata(body: String, name: String): List<Finding> =
-        json.parseToJsonElement(body).jsonObject["query"]?.jsonObject?.get("search")?.jsonArray.orEmpty().mapNotNull { e ->
+        json.parseToJsonElement(body).jsonObject["query"]?.jsonObject?.get("search").arr().mapNotNull { e ->
             val o = e.jsonObject; val id = o.s("title") ?: return@mapNotNull null
             hit("wikidata-$id", name, o.s("snippet") ?: "Person entry on Wikidata", "https://www.wikidata.org/wiki/$id", "Wikidata (public figures)")
         }.take(5)
 
     /** ORCID public researcher profiles. */
     fun orcid(body: String): List<Finding> =
-        json.parseToJsonElement(body).jsonObject["expanded-result"]?.jsonArray.orEmpty().mapNotNull { e ->
+        json.parseToJsonElement(body).jsonObject["expanded-result"].arr().mapNotNull { e ->
             val o = e.jsonObject; val id = o.s("orcid-id") ?: return@mapNotNull null
             val name = listOfNotNull(o.s("given-names"), o.s("family-names")).joinToString(" ").ifBlank { o.s("credit-name") ?: id }
             val orgs = (o["institution-name"] as? JsonArray).orEmpty().mapNotNull { it.str() }
@@ -65,7 +75,7 @@ object PeopleParsers {
 
     /** CourtListener (RECAP) docket search results. */
     fun courts(body: String, base: String): List<Finding> =
-        json.parseToJsonElement(body).jsonObject["results"]?.jsonArray.orEmpty().mapNotNull { e ->
+        json.parseToJsonElement(body).jsonObject["results"].arr().mapNotNull { e ->
             val o = e.jsonObject; val caption = o.s("caseName") ?: o.s("case_name") ?: return@mapNotNull null
             val docketId = o.s("docket_id") ?: o.s("docketNumber") ?: caption.hashCode().toString()
             val bits = listOfNotNull(o.s("court"), o.s("dateFiled")?.let { "filed ${it.take(10)}" }, o.s("docketNumber")?.let { "docket $it" })
@@ -79,7 +89,7 @@ object PeopleParsers {
 
     /** FEC individual contributions. Street addresses are deliberately never read: only city/state, employer and the gift itself. */
     fun fec(body: String): List<Finding> =
-        json.parseToJsonElement(body).jsonObject["results"]?.jsonArray.orEmpty().mapNotNull { e ->
+        json.parseToJsonElement(body).jsonObject["results"].arr().mapNotNull { e ->
             val o = e.jsonObject
             val amount = (o["contribution_receipt_amount"] as? JsonPrimitive)?.doubleOrNull ?: return@mapNotNull null
             val committee = o["committee"]?.jsonObject?.s("name") ?: o.s("committee_name") ?: "a committee"
@@ -95,7 +105,7 @@ object PeopleParsers {
 
     /** Totals across the donations returned (up to 50): count, sum and the top committees, so the picture is visible at a glance. */
     fun fecSummary(body: String): Finding? {
-        val rows = json.parseToJsonElement(body).jsonObject["results"]?.jsonArray.orEmpty().mapNotNull { e ->
+        val rows = json.parseToJsonElement(body).jsonObject["results"].arr().mapNotNull { e ->
             val o = e.jsonObject; val amount = (o["contribution_receipt_amount"] as? JsonPrimitive)?.doubleOrNull ?: return@mapNotNull null
             (o["committee"]?.jsonObject?.s("name") ?: o.s("committee_name") ?: "a committee") to amount
         }
@@ -129,17 +139,19 @@ object PeopleParsers {
         }
 
     /** Public Bluesky profiles whose display name matches. */
-    fun bluesky(body: String): List<Finding> =
-        json.parseToJsonElement(body).jsonObject["actors"]?.jsonArray.orEmpty().mapNotNull { e ->
+    fun bluesky(body: String, name: String? = null): List<Finding> =
+        json.parseToJsonElement(body).jsonObject["actors"].arr().mapNotNull { e ->
             val o = e.jsonObject; val handle = o.s("handle") ?: return@mapNotNull null
+            if (!nameMatches(o.s("displayName"), name)) return@mapNotNull null
             hit("bsky-${o.s("did") ?: handle}", o.s("displayName") ?: handle, listOfNotNull("@$handle", o.s("description")?.lineSequence()?.firstOrNull()?.take(160)).joinToString(" · "), "https://bsky.app/profile/$handle", "Bluesky profiles", image = o.s("avatar"))
         }.take(5)
 
     /** GitHub user search by name (logins only); [githubUser] then reads each profile. */
-    fun githubLogins(body: String): List<String> = json.parseToJsonElement(body).jsonObject["items"]?.jsonArray.orEmpty().mapNotNull { (it as? JsonObject)?.s("login") }.take(3)
+    fun githubLogins(body: String): List<String> = json.parseToJsonElement(body).jsonObject["items"].arr().mapNotNull { (it as? JsonObject)?.s("login") }.take(3)
 
-    fun githubUser(body: String): Finding? {
+    fun githubUser(body: String, query: String? = null): Finding? {
         val o = json.parseToJsonElement(body).jsonObject; val login = o.s("login") ?: return null
+        if (!nameMatches(o.s("name"), query)) return null
         val facts = listOfNotNull(o.s("company")?.let { Fact("Company", it) }, o.s("location")?.let { Fact("Location", it) }, o.s("blog")?.let { Fact("Website", it) }, o.s("bio")?.let { Fact("Bio", it.take(200)) },
             (o["public_repos"] as? JsonPrimitive)?.contentOrNull?.let { Fact("Public repositories", it) }, (o["followers"] as? JsonPrimitive)?.contentOrNull?.let { Fact("Followers", it) })
         return hit("github-$login", o.s("name") ?: login, listOfNotNull("@$login on GitHub", o.s("company"), o.s("location")).joinToString(" · "), o.s("html_url") ?: "https://github.com/$login", "GitHub profiles",
@@ -147,10 +159,11 @@ object PeopleParsers {
     }
 
     /** FINRA BrokerCheck individuals: current firm and branch city/state and whether regulatory disclosures exist. Never ZIP codes or street addresses. */
-    fun brokerCheck(body: String): List<Finding> =
-        json.parseToJsonElement(body).jsonObject["hits"]?.jsonObject?.get("hits")?.jsonArray.orEmpty().mapNotNull { e ->
+    fun brokerCheck(body: String, query: String? = null): List<Finding> =
+        json.parseToJsonElement(body).jsonObject["hits"]?.jsonObject?.get("hits").arr().mapNotNull { e ->
             val o = e.jsonObject["_source"]?.jsonObject ?: return@mapNotNull null; val id = o.s("ind_source_id") ?: return@mapNotNull null
             val name = listOfNotNull(o.s("ind_firstname"), o.s("ind_middlename"), o.s("ind_lastname")).joinToString(" ").ifBlank { return@mapNotNull null }
+            if (!nameMatches(name, query)) return@mapNotNull null
             val jobs = (o["ind_current_employments"] as? JsonArray).orEmpty().mapNotNull { it as? JsonObject }
             val firms = jobs.mapNotNull { it.s("firm_name") }.distinct().take(3)
             val where = jobs.firstOrNull()?.let { listOfNotNull(it.s("branch_city"), it.s("branch_state")).joinToString(", ") }.orEmpty()
@@ -161,7 +174,7 @@ object PeopleParsers {
 
     /** SEC EDGAR full-text hits (filings that name this person): form type, filer entities, date and place. */
     fun sec(body: String): List<Finding> =
-        json.parseToJsonElement(body).jsonObject["hits"]?.jsonObject?.get("hits")?.jsonArray.orEmpty().mapNotNull { e ->
+        json.parseToJsonElement(body).jsonObject["hits"]?.jsonObject?.get("hits").arr().mapNotNull { e ->
             val src = e.jsonObject["_source"]?.jsonObject ?: return@mapNotNull null; val id = e.jsonObject.s("_id") ?: return@mapNotNull null
             val adsh = src.s("adsh") ?: id.substringBefore(':'); val file = id.substringAfter(':', "")
             val cik = (src["ciks"] as? JsonArray)?.firstOrNull()?.str()?.trimStart('0')
@@ -177,7 +190,7 @@ object PeopleParsers {
         var current: String? = null
         employments?.let { body ->
             runCatching {
-                json.parseToJsonElement(body).jsonObject["affiliation-group"]?.jsonArray.orEmpty().mapNotNull { g ->
+                json.parseToJsonElement(body).jsonObject["affiliation-group"].arr().mapNotNull { g ->
                     g.jsonObject["summaries"]?.jsonArray?.firstOrNull()?.jsonObject?.get("employment-summary")?.jsonObject
                 }.take(5).forEach { s ->
                     val org = (s["organization"] as? JsonObject)?.s("name") ?: return@forEach
@@ -191,7 +204,7 @@ object PeopleParsers {
         }
         works?.let { body ->
             runCatching {
-                val titles = json.parseToJsonElement(body).jsonObject["group"]?.jsonArray.orEmpty().mapNotNull { g ->
+                val titles = json.parseToJsonElement(body).jsonObject["group"].arr().mapNotNull { g ->
                     g.jsonObject["work-summary"]?.jsonArray?.firstOrNull()?.jsonObject?.get("title")?.jsonObject?.get("title")?.jsonObject?.s("value")
                 }
                 if (titles.isNotEmpty()) facts += Fact("Publications", "${titles.size} listed")
@@ -205,7 +218,7 @@ object PeopleParsers {
 
     /** CMS NPI registry (US healthcare providers). Only name, credential, specialty and practice city/state are read: never street addresses or phone numbers. */
     fun npi(body: String): List<Finding> =
-        json.parseToJsonElement(body).jsonObject["results"]?.jsonArray.orEmpty().mapNotNull { e ->
+        json.parseToJsonElement(body).jsonObject["results"].arr().mapNotNull { e ->
             val o = e.jsonObject; val number = o.s("number") ?: return@mapNotNull null
             val basic = o["basic"]?.jsonObject ?: return@mapNotNull null
             val name = listOfNotNull(basic.s("first_name"), basic.s("last_name")).joinToString(" ").let(::titleCase).ifBlank { return@mapNotNull null }
@@ -218,7 +231,7 @@ object PeopleParsers {
 
     /** OpenAlex author records (publications). */
     fun openAlex(body: String): List<Finding> =
-        json.parseToJsonElement(body).jsonObject["results"]?.jsonArray.orEmpty().mapNotNull { e ->
+        json.parseToJsonElement(body).jsonObject["results"].arr().mapNotNull { e ->
             val o = e.jsonObject; val id = o.s("id") ?: return@mapNotNull null; val name = o.s("display_name") ?: return@mapNotNull null
             val inst = (o["last_known_institutions"] as? JsonArray).orEmpty().mapNotNull { it.jsonObject.s("display_name") }.firstOrNull()
             val works = (o["works_count"] as? JsonPrimitive)?.contentOrNull; val cites = (o["cited_by_count"] as? JsonPrimitive)?.contentOrNull
@@ -414,7 +427,7 @@ class PeopleSource @Inject constructor(
 
     private suspend fun bluesky(name: String): List<Finding> {
         val url = "${endpoints.bluesky}/xrpc/app.bsky.actor.searchActors".toHttpUrl().newBuilder().addQueryParameter("q", name).addQueryParameter("limit", "5").build()
-        return PeopleParsers.bluesky(get(url))
+        return PeopleParsers.bluesky(get(url), name)
     }
 
     private suspend fun github(name: String): List<Finding> {
@@ -423,14 +436,14 @@ class PeopleSource @Inject constructor(
         val search = "${endpoints.github}/search/users".toHttpUrl().newBuilder().addQueryParameter("q", "$name in:fullname type:user").addQueryParameter("per_page", "3").build()
         val logins = PeopleParsers.githubLogins(get(search, "Accept" to "application/vnd.github+json", *auth))
         return coroutineScope {
-            logins.map { l -> async { runCatching { PeopleParsers.githubUser(get("${endpoints.github}/users/$l".toHttpUrl(), "Accept" to "application/vnd.github+json", *auth)) }.getOrNull() } }.awaitAll().filterNotNull()
+            logins.map { l -> async { runCatching { PeopleParsers.githubUser(get("${endpoints.github}/users/$l".toHttpUrl(), "Accept" to "application/vnd.github+json", *auth), name) }.getOrNull() } }.awaitAll().filterNotNull()
         }
     }
 
     private suspend fun brokerCheck(name: String): List<Finding> {
         val url = "${endpoints.finra}/search/individual".toHttpUrl().newBuilder().addQueryParameter("query", name).addQueryParameter("filter", "active=true,prev=true,bar=true")
             .addQueryParameter("includePrevious", "true").addQueryParameter("nrows", "5").addQueryParameter("start", "0").addQueryParameter("sort", "score desc").addQueryParameter("wt", "json").build()
-        return PeopleParsers.brokerCheck(get(url))
+        return PeopleParsers.brokerCheck(get(url), name)
     }
 
     private suspend fun sec(name: String): List<Finding> {
