@@ -39,7 +39,7 @@ class SettingsViewModel @Inject constructor(
     suspend fun backupText(): String = backup.export()
     suspend fun importBackup(text: String) = backup.import(text)
     val state: StateFlow<SettingsUiState> = combine(repo.settings, apiKeys.keys, history.records, updates.state) { s, k, h, u ->
-        SettingsUiState(s, k, h.size, BuildConfig.VERSION_NAME, updates.installedBuild, u)
+        SettingsUiState(s, k, h.size, BuildConfig.VERSION_NAME, updates.installedBuild, u, vip.ringling.recon.data.db.DbEncryption.status)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     fun setTheme(m: ThemeMode) = viewModelScope.launch { repo.setTheme(m) }

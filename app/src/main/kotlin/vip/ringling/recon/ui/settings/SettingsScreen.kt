@@ -69,6 +69,7 @@ data class SettingsUiState(
     val versionName: String = "0.1.0",
     val installedBuild: Int = 1,
     val update: UpdateState = UpdateState.Idle,
+    val dbStatus: vip.ringling.recon.data.db.DbStatus? = null,
 ) {
     val keysSet: Int get() = ApiKeyId.entries.count { !keys[it].isNullOrBlank() }
 }
@@ -341,6 +342,23 @@ private fun DataSection(state: SettingsUiState, a: SettingsActions) {
             }
             SignalButton("Export", a.onExportBackup, mono = true)
             SignalButton("Import", a.onImportBackup, mono = true)
+        }
+        Divider()
+        Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 14.dp, end = 10.dp, top = 8.dp, bottom = 8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text("Database encryption", color = sig.text, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    when (val d = state.dbStatus) {
+                        null -> "Checking…"
+                        else -> if (d.encrypted) "Scans, cases and notes are encrypted on this phone; the key stays in the Android Keystore." else d.reason
+                    },
+                    color = sig.muted, style = MaterialTheme.typography.bodySmall,
+                )
+            }
+            when (val d = state.dbStatus) {
+                null -> StatusTag("Unknown", Tone.MUTED)
+                else -> StatusTag(if (d.encrypted) "Encrypted" else "Not encrypted", if (d.encrypted) Tone.SAFE else Tone.ALERT)
+            }
         }
         Divider()
         val options = listOf(0 to "Off", 30 to "30 days", 90 to "90 days", 365 to "1 year")

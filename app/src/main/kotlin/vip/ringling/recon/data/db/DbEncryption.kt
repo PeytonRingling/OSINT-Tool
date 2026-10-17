@@ -21,7 +21,14 @@ import net.zetetic.database.sqlcipher.SQLiteDatabaseHook
  * Everything here is best-effort and fail-safe: if the native library or Keystore is unavailable (or the conversion fails), [prepare]
  * returns null and the database simply stays as it is, so the app never loses data or refuses to start.
  */
+/** Whether the Room database is encrypted right now, and (when not) why. Shown in System → Data. */
+data class DbStatus(val encrypted: Boolean, val reason: String = "")
+
 object DbEncryption {
+    /** Set by [prepare]; `null` until the database has been opened. */
+    @Volatile var status: DbStatus? = null
+        private set
+
     private const val DB = "recon.db"
     private val PLAIN_HEADER = "SQLite format 3\u0000".toByteArray(Charsets.ISO_8859_1)
 
@@ -35,8 +42,12 @@ object DbEncryption {
             if (file.exists() && !isPlaintext(file)) deleteDbFiles(file)
             pass = DbKey.create(context)
         }
-        if (file.exists() && isPlaintext(file) && !migrate(file, pass)) null else pass.toByteArray(Charsets.US_ASCII)
+        if (file.exists() && isPlaintext(file) && !migrate(file, pass)) {
+            status = DbStatus(false, "Converting the existing database failed, so it was left unchanged.")
+            null
+        } else { status = DbStatus(true); pass.toByteArray(Charsets.US_ASCII) }
     } catch (t: Throwable) {
+        status = DbStatus(false, "Encryption isn't available on this device (${t.javaClass.simpleName}).")
         null
     }
 
