@@ -35,9 +35,10 @@ class RouteTesterTest {
     }
 
     @Test fun failuresAreReportedAsFailClosedWhenAProxyIsOn() = runTest {
-        val s = server("nope", 503)
+        val s = server("nope", 503).apply { enqueue(MockResponse().setResponseCode(503)) }
         try {
-            val r = RouteTester(Http(), s.url("").toString().trimEnd('/')).test()
+            val base = s.url("").toString().trimEnd('/')
+            val r = RouteTester(Http(), base, "$base/echo").test()
             assertTrue(r is RouteResult.Failed)
             assertTrue(RouteTester.describe(ProxyMode.TOR, r).first.contains("fail-closed"))
             assertTrue(!RouteTester.describe(ProxyMode.OFF, r).first.contains("fail-closed"))
