@@ -171,6 +171,7 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
                 }
             }
             item { TickBar(ceil(score / 5.0).toInt().coerceIn(0, 20), tone = tone, modifier = Modifier.padding(top = 2.dp)) }
+            if (state.findings.isNotEmpty()) item(key = "briefing") { BriefingCard(vip.ringling.recon.domain.BriefingBuilder.build(input?.type, state.findings, state.statuses.keys)) }
             item {
                 BracketPanel(Modifier.fillMaxWidth().height(262.dp)) {
                     OrbitGraph(input?.type?.icon() ?: ModuleId.BREACH.icon(), input?.raw.orEmpty(), nodes, Modifier.fillMaxSize(), onNode = { sheet = SheetFor.Module(it.module, it.label) }, scanning = state.running)

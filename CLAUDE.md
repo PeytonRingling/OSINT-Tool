@@ -196,6 +196,7 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 ## Wow pass (added 2026-10-17)
 - Motion: `RiskNumeral` counts up (and glides on change); `OrbitGraph` nodes grow in staggered as each module first reports, and a radar sweep circles the target while `scanning` (scan running). All of it stays still when the system's animations are off (`rememberAnimationsEnabled`).
 - **Lead graph** (`domain/EntityGraph.kt`, `ui/results/EntityGraphScreen.kt`): full-screen pan/zoom dialog, target -> modules -> leads, built ONLY from findings' `pivots` (a lead shows under every module that listed it; target, DORKS excluded; max 40). Tap a lead -> "Search this" pivots via `ResultsActions.onPivot`. Button on the exposure screen when there are leads. Tests: `EntityGraphTest`.
+- **Briefing** (`domain/Briefing.kt` `BriefingBuilder`, `ui/results/Briefing.kt`): templated plain-English summary card on the exposure screen (headline, breach span/most recent, per-module counts, unreachable sources, "Start with" = first fix-first step). Pure function of findings; tests in `BriefingTest`.
 - Decided against more: backend/off-device features. Still ideas: dossier PDF cover, correlation timeline, on-device "what to fix first" summary.
 
 ## Open items / notes
