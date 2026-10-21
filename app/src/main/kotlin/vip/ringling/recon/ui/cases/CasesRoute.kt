@@ -57,6 +57,16 @@ fun CaseDetailRoute(
     var dialog by rememberSaveable { mutableStateOf("") }
     val stamp = remember { java.time.LocalDate.now().toString() }
     fun report() = CaseReport.markdown(c.file, c.states, c.events, c.pivots, stamp)
+    fun cover(): PdfWriter.Cover {
+        val exposure = vip.ringling.recon.domain.CaseLogic.exposure(c.states)
+        val edges = vip.ringling.recon.domain.CaseLogic.edges(c.states.map { it.target }).count { it.kind != vip.ringling.recon.domain.EdgeKind.NONE }
+        return PdfWriter.Cover(
+            "Recon // Dossier", c.file.name, "${c.states.size} target${if (c.states.size == 1) "" else "s"} · generated $stamp",
+            exposure?.toString(), if (exposure != null) "Case exposure · ${vip.ringling.recon.domain.Exposure.headline(exposure)}" else "",
+            listOfNotNull("Status: ${vip.ringling.recon.domain.CaseLogic.status(c.states).label}", if (edges > 0) "$edges link${if (edges == 1) "" else "s"} between targets (shared handles or domains)" else null, "${c.events.size} recorded scan${if (c.events.size == 1) "" else "s"}"),
+            "Compiled on-device from public sources and stored scans. Matching names or handles do not prove the same person.",
+        )
+    }
     when (dialog) {
         "add" -> AddTargetDialog({ dialog = "" }, vm::addTarget)
         "tags" -> EditTagsDialog(c.file.tags, { dialog = "" }) { vm.setTags(it); dialog = "" }
@@ -74,7 +84,7 @@ fun CaseDetailRoute(
             },
             onAddNote = vm::addNote, onDeleteNote = { vm.deleteNote(it.id) },
             onSaveMarkdown = { actions.saveFile("recon-case-${c.file.name.lowercase().replace(Regex("[^a-z0-9]+"), "-")}-$stamp.md", report().toByteArray()) },
-            onSavePdf = { actions.saveFile("recon-case-${c.file.name.lowercase().replace(Regex("[^a-z0-9]+"), "-")}-$stamp.pdf", PdfWriter.fromMarkdown(report())) },
+            onSavePdf = { actions.saveFile("recon-case-${c.file.name.lowercase().replace(Regex("[^a-z0-9]+"), "-")}-$stamp.pdf", PdfWriter.fromMarkdown(report(), cover())) },
             onShare = { actions.shareText("Recon case report", report()) },
             onRescan = { onRescan(c.file.targets.map { ScanInput(it.value, it.type) }) },
             onTags = { dialog = "tags" },

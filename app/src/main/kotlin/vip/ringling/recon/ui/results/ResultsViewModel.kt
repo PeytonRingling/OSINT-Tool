@@ -9,7 +9,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import vip.ringling.recon.data.HistoryRepository
@@ -36,6 +40,8 @@ data class ResultsUiState(
     val filter: FindingFilter = FindingFilter.ALL,
     val sort: AreaSort = AreaSort.NEAREST,
     val handled: Set<String> = emptySet(),
+    /** The previous saved scan of this same target, for the "since last scan" banner. */
+    val previous: vip.ringling.recon.domain.ScanRecord? = null,
 )
 
 /**
@@ -57,11 +63,21 @@ class ResultsViewModel @Inject constructor(
     private val filter = MutableStateFlow(FindingFilter.ALL)
     private val sort = MutableStateFlow(AreaSort.NEAREST)
 
-    private val ui = combine(selected, filter, sort, handledRepo.handled) { sel, f, so, h -> arrayOf(sel, f, so, h) }
+    private fun sameTarget(a: ScanInput, b: ScanInput) = a.type == b.type && a.raw.trim().equals(b.raw.trim(), ignoreCase = true)
+
+    /** Live scan: the newest saved scan of the same target at the moment the scan starts. Saved record: the next-older scan of that target. */
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    private val previous: kotlinx.coroutines.flow.Flow<ScanRecord?> =
+        if (recordId != null) record.map { r -> if (r == null) null else history.records.first().filter { it.timestampMillis < r.timestampMillis && sameTarget(it.input, r.input) }.maxByOrNull { it.timestampMillis } }
+        else combine(controller.serial, controller.session.map { it?.input }.distinctUntilChanged()) { n, i -> n to i }.distinctUntilChanged().flatMapLatest { (_, i) ->
+            flow { emit(i?.let { inp -> history.records.first().filter { sameTarget(it.input, inp) }.maxByOrNull { it.timestampMillis } }) }
+        }
+
+    private val ui = combine(selected, filter, sort, handledRepo.handled, previous) { sel, f, so, h, p -> arrayOf(sel, f, so, h, p) }
 
     val state: StateFlow<ResultsUiState> = combine(controller.session, controller.serial, record, ackSerial, ui) { session, serial, rec, ack, u ->
         @Suppress("UNCHECKED_CAST")
-        val common = ResultsUiState(selectedId = u[0] as String?, filter = u[1] as FindingFilter, sort = u[2] as AreaSort, handled = u[3] as Set<String>)
+        val common = ResultsUiState(selectedId = u[0] as String?, filter = u[1] as FindingFilter, sort = u[2] as AreaSort, handled = u[3] as Set<String>, previous = u[4] as ScanRecord?)
         if (recordId != null) {
             rec?.let { r -> common.copy(input = r.input, findings = r.findings, statuses = r.findings.map { it.module }.distinct().sortedBy { it.ordinal }.associateWith { ModuleStatus.DONE }, live = false, registryAck = true) }
                 ?: common.copy(live = false)

@@ -197,6 +197,8 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 - Motion: `RiskNumeral` counts up (and glides on change); `OrbitGraph` nodes grow in staggered as each module first reports, and a radar sweep circles the target while `scanning` (scan running). All of it stays still when the system's animations are off (`rememberAnimationsEnabled`).
 - **Lead graph** (`domain/EntityGraph.kt`, `ui/results/EntityGraphScreen.kt`): full-screen pan/zoom dialog, target -> modules -> leads, built ONLY from findings' `pivots` (a lead shows under every module that listed it; target, DORKS excluded; max 40). Tap a lead -> "Search this" pivots via `ResultsActions.onPivot`. Button on the exposure screen when there are leads. Tests: `EntityGraphTest`.
 - **Briefing** (`domain/Briefing.kt` `BriefingBuilder`, `ui/results/Briefing.kt`): templated plain-English summary card on the exposure screen (headline, breach span/most recent, per-module counts, unreachable sources, "Start with" = first fix-first step). Pure function of findings; tests in `BriefingTest`.
+- **Since last scan** (`domain/SinceLast.kt`, `SinceLastCard`): results banner comparing against the previous saved scan of the same target (`ResultsViewModel.previous`): risk delta, new titles, gone count (suppressed when any source failed). Not for countsOnly types. Tests `SinceLastTest`.
+- **Dossier PDF cover** (`PdfWriter.Cover`): dark title page (kicker, title, big exposure number, key lines) before the report pages of a case PDF. Robolectric cannot run PdfDocument, so the PDF path is UNVERIFIED off-device.
 - Decided against more: backend/off-device features. Still ideas: dossier PDF cover, correlation timeline, on-device "what to fix first" summary.
 
 ## Open items / notes

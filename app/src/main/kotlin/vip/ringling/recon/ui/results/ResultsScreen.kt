@@ -134,6 +134,7 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
     val steps = Exposure.fixFirst(state.findings)
     val tone = riskTone(score)
     val leadGraph = androidx.compose.runtime.remember(state.findings, input?.raw) { EntityGraph.build(input?.raw.orEmpty(), state.findings) }
+    val since = androidx.compose.runtime.remember(state.previous, state.findings, input?.type) { vip.ringling.recon.domain.SinceLastBuilder.compute(state.previous, input?.type, state.findings) }
     var showLeads by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     if (showLeads) EntityGraphDialog(leadGraph, onPivot = { showLeads = false; actions.onPivot(it) }, onDismiss = { showLeads = false })
     var sheet by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf<SheetFor?>(null) }
@@ -171,6 +172,7 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
                 }
             }
             item { TickBar(ceil(score / 5.0).toInt().coerceIn(0, 20), tone = tone, modifier = Modifier.padding(top = 2.dp)) }
+            if (since != null && !state.running) item(key = "since") { SinceLastCard(since) }
             if (state.findings.isNotEmpty()) item(key = "briefing") { BriefingCard(vip.ringling.recon.domain.BriefingBuilder.build(input?.type, state.findings, state.statuses.keys)) }
             item {
                 BracketPanel(Modifier.fillMaxWidth().height(262.dp)) {
