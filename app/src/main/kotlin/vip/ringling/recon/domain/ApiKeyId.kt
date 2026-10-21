@@ -7,5 +7,6 @@ enum class ApiKeyId(val label: String, val hint: String) {
     TWILIO_SID("Twilio Account SID (owner name)", "Optional, paid per lookup (~1¢): caller-ID name registered for a number, plus live carrier and VoIP check. Needs the Auth Token too."),
     TWILIO_TOKEN("Twilio Auth Token", "Pairs with the Account SID above. Stored encrypted; only ever sent to Twilio."),
     FEC("FEC (campaign donations)", "Optional, free from api.data.gov: adds public political donations (date, amount, committee, city/state, employer) to name searches. Never street addresses."),
+    VIRUSTOTAL("VirusTotal (link & domain reputation)", "Optional, free from virustotal.com (4 lookups/minute): checks what ~70 security engines say about a domain or link. Domain lookups send only the domain; a link lookup sends that link."),
     GITHUB("GitHub (app updates)", "Only needed while the repo is private: fine-grained token, this repo only, Contents: read."),
 }

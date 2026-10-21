@@ -17,7 +17,7 @@ import kotlin.math.min
 
 object Geo {
     private const val EARTH_M = 6_371_008.8
-    private const val METERS_PER_MILE = 1609.344
+    const val METERS_PER_MILE = 1609.344
     private const val TILE = 256.0
 
     fun distanceMeters(a: GeoPoint, b: GeoPoint): Double {
@@ -96,21 +96,29 @@ object Geo {
 
 /** An address search around one street address: kept in [ScanInput.raw] as "700 W JEFFERSON ST, BOISE (3 mi)" so it can be shown, re-run and listed like any other target. */
 data class AddressQuery(val street: String, val city: String, val miles: Int) {
-    val raw: String get() = "$street, $city ($miles mi)"
+    /** 0 miles = "city-wide": everyone the registry lists in the city, ordered by distance from the address. */
+    val cityWide: Boolean get() = miles == CITY_WIDE
+    val raw: String get() = if (cityWide) "$street, $city (city)" else "$street, $city ($miles mi)"
 
     companion object {
+        const val CITY_WIDE = 0
+        /** The registry's map search offers exactly these radii; city-wide goes further by listing the whole city. */
         val RADII = listOf(1, 3, 5)
+        val CHOICES = RADII + CITY_WIDE
 
         fun of(street: String, city: String, miles: Int): AddressQuery? {
             val s = street.trim().replace(Regex("\\s+"), " ").replace(",", ""); val c = city.trim().replace(Regex("\\s+"), " ").replace(",", "").uppercase()
-            if (s.length < 5 || s.none { it.isDigit() } || s.none { it.isLetter() } || c.length < 2 || miles !in RADII) return null
+            if (s.length < 5 || s.none { it.isDigit() } || s.none { it.isLetter() } || c.length < 2 || miles !in CHOICES) return null
             return AddressQuery(s.uppercase(), c, miles)
         }
 
         fun parse(raw: String): AddressQuery? =
-            Regex("""^(.+),\s*([^,]+?)\s*\((\d)\s*mi\)$""").find(raw.trim())?.let { m -> of(m.groupValues[1], m.groupValues[2], m.groupValues[3].toInt()) }
+            Regex("""^(.+),\s*([^,]+?)\s*\((?:(\d)\s*mi|(city))\)$""").find(raw.trim())?.let { m -> of(m.groupValues[1], m.groupValues[2], if (m.groupValues[4].isNotEmpty()) CITY_WIDE else m.groupValues[3].toInt()) }
     }
 }
+
+/** Pin colour for a registry record: the coral "alert" pin for non-compliant or multiple-conviction records, otherwise the record's own (neutral) colour. Wording elsewhere stays neutral. */
+fun Finding.pinSeverity(): Severity = if (module == ModuleId.REGISTRY && tags.any { it in hotTags }) Severity.EXPOSED else severity
 
 /** Offenses of a registry record as shown in its detail ("• 18-1506 – …" lines, or the single "Offense (as listed): …" line of an address search), for the map preview cards. */
 fun Finding.offenseLines(): List<String> = detail.lines().mapNotNull { l ->
@@ -120,3 +128,14 @@ fun Finding.offenseLines(): List<String> = detail.lines().mapNotNull { l ->
         else -> null
     }
 }.filter { it.isNotBlank() }
+
+/** Fact label on an address-search summary: the exact radius (metres) of the registry's search, so the map ring matches it. */
+const val SEARCH_RADIUS_FACT = "Search radius (m)"
+const val SEARCH_CENTER_FACT = "Search center"
+
+/** Where the registry placed the searched address, and the exact radius it used (null for a city-wide search), from the address-search summary finding. */
+fun List<Finding>.searchArea(): Pair<GeoPoint, Double?>? {
+    val s = firstOrNull { it.id == "REGISTRY-summary" } ?: return null
+    val c = s.facts.firstOrNull { it.label == SEARCH_CENTER_FACT }?.value?.split(',')?.takeIf { it.size == 2 }?.let { p -> val la = p[0].toDoubleOrNull(); val ln = p[1].toDoubleOrNull(); if (la != null && ln != null) GeoPoint(la, ln) else null } ?: return null
+    return c to s.facts.firstOrNull { it.label == SEARCH_RADIUS_FACT }?.value?.toDoubleOrNull()
+}

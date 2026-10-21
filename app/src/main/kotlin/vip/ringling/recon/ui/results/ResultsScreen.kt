@@ -1,5 +1,7 @@
 package vip.ringling.recon.ui.results
 
+import vip.ringling.recon.domain.searchArea
+import vip.ringling.recon.domain.pinSeverity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -320,11 +322,18 @@ fun AreaScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modifie
     val me = LocalUserLocation.current
     val records = state.findings.filter { it.isRegistryRecord }
     val located = records.filter { it.geo != null }
-    val rings = remember(located) { vip.ringling.recon.domain.Geo.scanRings(located.map { it.geo!! }) }
+    // Address searches ring the searched address at the registry's exact radius; ZIP searches keep the spread-of-records rings.
+    val area = remember(state.findings) { state.findings.searchArea() }
+    val rings = remember(located, area) {
+        area?.let { (c, r) ->
+            val far = located.mapNotNull { it.fromSearchMeters }.maxOrNull() ?: 0.0
+            c to (r?.let { listOf(it) } ?: listOf(5, 10, 15, 25).map { it * vip.ringling.recon.domain.Geo.METERS_PER_MILE }.filter { it <= maxOf(far * 1.3, 5 * vip.ringling.recon.domain.Geo.METERS_PER_MILE) })
+        } ?: vip.ringling.recon.domain.Geo.scanRings(located.map { it.geo!! })
+    }
     val mapBox: @Composable (Modifier) -> Unit = { mod ->
         Box(mod) {
             TileMap(
-                pins = located.map { MapPin(it.id, it.geo!!, it.severity, it.title, vip.ringling.recon.domain.APPROXIMATE_TAG in it.tags) },
+                pins = located.map { MapPin(it.id, it.geo!!, it.pinSeverity(), it.title, vip.ringling.recon.domain.APPROXIMATE_TAG in it.tags) },
                 me = me, selectedId = state.selectedId, onPinClick = { p -> located.firstOrNull { it.id == p.id }?.let(actions.onSelect) },
                 modifier = Modifier.fillMaxSize(), clipShape = androidx.compose.ui.graphics.RectangleShape,
                 camera = vip.ringling.recon.domain.MapMemory.camera("area"), ringCenter = rings?.first, ringMeters = rings?.second.orEmpty(),
@@ -409,7 +418,7 @@ private fun GlassButton(icon: androidx.compose.ui.graphics.vector.ImageVector, d
 fun AreaSheetList(state: ResultsUiState, actions: ResultsActions, records: List<Finding>, me: GeoPoint?, modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues()) {
     val sig = ReconTheme.signal
     val sorted = remember(records, state.sort, me) {
-        if (state.sort == AreaSort.NEAREST && me != null) records.sortedBy { r -> r.geo?.let { vip.ringling.recon.domain.Geo.distanceMeters(me, it) } ?: Double.MAX_VALUE }
+        if (state.sort == AreaSort.NEAREST && (me != null || records.any { it.fromSearchMeters != null })) records.sortedBy { r -> r.fromSearchMeters ?: r.geo?.let { g -> me?.let { vip.ringling.recon.domain.Geo.distanceMeters(it, g) } } ?: Double.MAX_VALUE }
         else records.sortedBy { it.title.lowercase() }
     }
     val extras = state.findings.filter { it.module == ModuleId.REGISTRY && !it.isRegistryRecord }
@@ -437,6 +446,8 @@ fun AreaSheetList(state: ResultsUiState, actions: ResultsActions, records: List<
                 LegalNoticeBanner(Modifier.padding(horizontal = 0.dp))
                 summary?.let { RegistrySummaryRow(it, Modifier.padding(horizontal = 0.dp)) }
             }
+            val closest = records.filter { it.fromSearchMeters != null }.sortedBy { it.fromSearchMeters }.take(3)
+            if (closest.isNotEmpty()) item(key = "closest") { ClosestCard(closest) { actions.onFinding(it) } }
             extras.filter { it.id != "REGISTRY-summary" }.forEach { n -> item(key = n.id) { RegistryNoteRow(n) } }
             items(sorted, key = { it.id }) { r -> RegistryRow(r, me, state.selectedId == r.id, onOpen = { actions.onOpenFinding(r) }) { actions.onFinding(r) } }
             if (records.isEmpty() && !state.running) item { Text(if (state.input?.type == vip.ringling.recon.domain.InputType.ADDRESS) "No registrants near this address." else "No records for this ZIP.", color = sig.safeText, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 16.dp)) }
@@ -553,6 +564,30 @@ fun RecordPreview(f: Finding, me: GeoPoint?, onOpen: () -> Unit, onClose: () -> 
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SignalButton("Details", onOpen, Modifier.heightIn(min = 48.dp), filled = true, mono = true)
                 dist?.let { Text(vip.ringling.recon.domain.Geo.formatDistance(it), color = sig.signal, style = ReconType.value.copy(fontSize = 12.sp), maxLines = 1, softWrap = false) }
+            }
+        }
+    }
+}
+
+/** The registrants nearest the searched address, with how far and what the registry lists, so the answer to "who is closest?" is at the top. */
+@Composable
+private fun ClosestCard(closest: List<Finding>, onOpen: (Finding) -> Unit) {
+    val sig = ReconTheme.signal
+    HairPanel(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SignalLabel("Closest to this address")
+            closest.forEach { f ->
+                Row(Modifier.fillMaxWidth().heightIn(min = 52.dp).clickable(onClickLabel = "Open ${f.title}") { onOpen(f) }, horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    RemoteImage(f.imageUrl, "Photo of ${f.title}", Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)))
+                    Column(Modifier.weight(1f)) {
+                        Text(f.title, color = sig.text, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(f.offenseLines().firstOrNull() ?: f.detail.lineSequence().first(), color = sig.muted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(vip.ringling.recon.domain.Geo.formatDistance(f.fromSearchMeters ?: 0.0), color = sig.signal, style = ReconType.value.copy(fontSize = 13.sp), maxLines = 1)
+                        if (f.tags.any { it in f.hotTags }) StatusTag(f.tags.first { it in f.hotTags }, Tone.ALERT)
+                    }
+                }
             }
         }
     }

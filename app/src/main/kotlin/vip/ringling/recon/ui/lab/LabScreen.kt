@@ -3,7 +3,6 @@ package vip.ringling.recon.ui.lab
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -152,7 +154,21 @@ private fun LinkTool(vm: LabViewModel, onPivot: (String) -> Unit, prefill: Strin
     var result by remember { mutableStateOf<TraceResult?>(null) }
     var domainFlags by remember { mutableStateOf<List<Flag>?>(null) }
     var checking by remember { mutableStateOf(false) }
-    fun checkDomain(target: String) { LinkAnalysis.host(LinkTracerNormalize(target))?.let { h -> checking = true; scope.launch { domainFlags = vm.domainCheck(h); checking = false } } }
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    val hasVt = remember { vm.hasVtKey() }
+    var vtFlags by remember { mutableStateOf<List<Flag>?>(null) }
+    var vtTarget by remember { mutableStateOf<String?>(null) }     // the domain VirusTotal's page should open for
+    var vtBusy by remember { mutableStateOf(false) }
+    fun checkDomain(target: String) {
+        LinkAnalysis.host(LinkTracerNormalize(target))?.let { h ->
+            checking = true; vtTarget = h; vtFlags = null
+            scope.launch {
+                domainFlags = vm.domainCheck(h); checking = false
+                // With a VirusTotal key the DOMAIN (only) is looked up automatically.
+                if (hasVt) vtFlags = vip.ringling.recon.data.lab.VirusTotal.flags(vm.vtDomain(h), "domain")
+            }
+        }
+    }
     // A link handed over from the QR or message tool is followed straight away.
     androidx.compose.runtime.LaunchedEffect(prefill) { if (prefill != null) { url = prefill; onPrefillUsed(); busy = true; domainFlags = null; result = vm.trace(prefill); busy = false; result?.chain?.lastOrNull()?.let { checkDomain(it) } } }
     Text("Follows the link's redirects to show where it really ends up. Recon contacts the link (through your Tor/proxy setting if on) but never loads the page.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
@@ -163,6 +179,20 @@ private fun LinkTool(vm: LabViewModel, onPivot: (String) -> Unit, prefill: Strin
     }
     Text("\"Check domain only\" never contacts the site: it asks a DNS block list and the domain registry (RDAP) instead.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
     domainFlags?.let { fl -> HairPanel(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { SignalLabel("Domain check · no contact"); fl.sortedBy { -it.severity.ordinal }.forEach { FlagRow(it) } } } }
+    vtTarget?.let { host ->
+        HairPanel(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SignalLabel("VirusTotal")
+                vtFlags?.sortedBy { -it.severity.ordinal }?.forEach { FlagRow(it) }
+                if (!hasVt) Text("Add a free VirusTotal key under System → API keys to see what ~70 security engines say about this domain here. Without one you can open the report in your browser.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                SignalButton("Open domain report on VirusTotal", { vip.ringling.recon.ui.LinkOpener.open(ctx, vip.ringling.recon.data.lab.VirusTotal.domainPage(host)) }, Modifier.fillMaxWidth(), mono = true)
+                val full = result?.chain?.lastOrNull() ?: LinkTracerNormalize(url)
+                if (hasVt) {
+                    SignalButton(if (vtBusy) "Looking up…" else "Look up the full link (sends it to VirusTotal)", { vtBusy = true; scope.launch { vtFlags = (vtFlags.orEmpty().filter { it.text.startsWith("VirusTotal:") && "domain" in it.text }) + vip.ringling.recon.data.lab.VirusTotal.flags(vm.vtUrl(full), "link").map { it.copy(text = "Link " + it.text) }; vtBusy = false } }, Modifier.fillMaxWidth(), enabled = !vtBusy, mono = true)
+                } else SignalButton("Open link report on VirusTotal", { vip.ringling.recon.ui.LinkOpener.open(ctx, vip.ringling.recon.data.lab.VirusTotal.urlPage(full)) }, Modifier.fillMaxWidth(), mono = true)
+            }
+        }
+    }
     result?.let { r ->
         val flags = LinkAnalysis.analyze(r.chain, failed = r.error != null && r.hops.isNotEmpty())
         r.error?.takeIf { r.hops.isEmpty() }?.let { Text(it, color = sig.alertText, style = MaterialTheme.typography.bodyMedium) }
@@ -207,18 +237,25 @@ private fun PasswordTool(vm: LabViewModel) {
     msg?.let { (text, ok) -> Text(text, color = if (ok) sig.safeText else sig.alertText, style = MaterialTheme.typography.titleSmall) }
 }
 
+/** All tools at once, in a grid (no sideways scrolling): three per row. */
 @Composable
 private fun ToolChips(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     val sig = ReconTheme.signal
-    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        options.forEachIndexed { i, label ->
-            val on = i == selected
-            Box(
-                Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).background(if (on) sig.signal else androidx.compose.ui.graphics.Color.Transparent)
-                    .border(1.dp, if (on) sig.signal else androidx.compose.ui.graphics.Color.White.copy(alpha = 0.12f), RoundedCornerShape(10.dp))
-                    .clickable(role = androidx.compose.ui.semantics.Role.Tab, onClickLabel = label) { onSelect(i) }.padding(horizontal = 16.dp),
-                contentAlignment = Alignment.Center,
-            ) { Text(label.uppercase(), color = if (on) sig.onSignal else sig.muted, style = ReconType.button.copy(fontSize = 11.sp)) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.chunked(3).forEachIndexed { row, group ->
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                group.forEachIndexed { col, label ->
+                    val i = row * 3 + col
+                    val on = i == selected
+                    Box(
+                        Modifier.weight(1f).heightIn(min = 48.dp).clip(RoundedCornerShape(10.dp)).background(if (on) sig.signal else androidx.compose.ui.graphics.Color.Transparent)
+                            .border(1.dp, if (on) sig.signal else androidx.compose.ui.graphics.Color.White.copy(alpha = 0.12f), RoundedCornerShape(10.dp))
+                            .clickable(role = androidx.compose.ui.semantics.Role.Tab, onClickLabel = label) { onSelect(i) }.semantics { this.selected = on },
+                        contentAlignment = Alignment.Center,
+                    ) { Text(label.uppercase(), color = if (on) sig.onSignal else sig.muted, style = ReconType.button.copy(fontSize = 11.sp), maxLines = 1) }
+                }
+                repeat(3 - group.size) { Box(Modifier.weight(1f)) }
+            }
         }
     }
 }
@@ -263,8 +300,22 @@ private fun QrTool(onInspectLink: (String) -> Unit) {
             text = bmp?.let { vip.ringling.recon.data.lab.QrReader.decode(it) }; failed = text == null
         }
     }
-    Text("Pick a screenshot or photo of a QR code. It is decoded on this phone (no camera, no upload) so you can see where it leads before you open it.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
-    SignalButton("Choose image", { pick.launch("image/*") }, Modifier.fillMaxWidth(), filled = true)
+    var scanning by remember { mutableStateOf(false) }
+    var denied by remember { mutableStateOf(false) }
+    val cameraPermission = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { ok -> denied = !ok; scanning = ok }
+    Text("Point the camera at a QR code, or pick a screenshot or photo of one. It is decoded on this phone (nothing is uploaded or saved) so you can see where it leads before you open it.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        SignalButton(if (scanning) "Stop camera" else "Scan with camera", {
+            if (scanning) scanning = false
+            else if (androidx.core.content.ContextCompat.checkSelfPermission(ctx, android.Manifest.permission.CAMERA) == android.content.pm.PackageManager.PERMISSION_GRANTED) { denied = false; scanning = true }
+            else cameraPermission.launch(android.Manifest.permission.CAMERA)
+        }, Modifier.weight(1f), filled = true)
+        SignalButton("Choose image", { scanning = false; pick.launch("image/*") }, Modifier.weight(1f))
+    }
+    if (denied) Text("Camera permission was declined. You can still pick an image, or allow the camera for Recon in system settings.", color = sig.alertText, style = MaterialTheme.typography.bodySmall)
+    if (scanning) Box(Modifier.fillMaxWidth().height(320.dp).clip(RoundedCornerShape(12.dp)).border(1.dp, sig.signal.copy(alpha = 0.5f), RoundedCornerShape(12.dp))) {
+        QrCameraScanner(onResult = { t -> text = t; failed = false; scanning = false }, modifier = Modifier.fillMaxSize())
+    }
     if (failed) Text("No QR code found in that image. Try a sharper, closer crop.", color = sig.alertText, style = MaterialTheme.typography.bodyMedium)
     text?.let { t ->
         HairPanel(Modifier.fillMaxWidth()) {

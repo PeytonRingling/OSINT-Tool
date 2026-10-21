@@ -88,6 +88,8 @@ data class Finding(
     val links: List<Link> = emptyList(),
     val pivots: List<Pivot> = emptyList(),
     val paid: PaidAction? = null,
+    /** Registry address searches: distance from the searched address in metres (computed from the registry's own coordinates). */
+    val fromSearchMeters: Double? = null,
 )
 
 data class ScanInput(val raw: String, val type: InputType)

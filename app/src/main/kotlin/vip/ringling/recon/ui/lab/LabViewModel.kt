@@ -9,7 +9,10 @@ import vip.ringling.recon.data.sources.breach.PwnedPasswords
 
 /** Lab tools are one-shot and keep nothing: pasted headers, links and passwords live only in the screen's state. */
 @HiltViewModel
-class LabViewModel @Inject constructor(private val tracer: LinkTracer, private val pwned: PwnedPasswords, private val intel: vip.ringling.recon.data.lab.LinkIntel) : ViewModel() {
+class LabViewModel @Inject constructor(private val tracer: LinkTracer, private val pwned: PwnedPasswords, private val intel: vip.ringling.recon.data.lab.LinkIntel, private val vt: vip.ringling.recon.data.lab.VirusTotal) : ViewModel() {
+    fun hasVtKey() = vt.hasKey()
+    suspend fun vtDomain(host: String) = vt.domain(host)
+    suspend fun vtUrl(url: String) = vt.url(url)
     suspend fun domainCheck(host: String) = intel.check(host)
     suspend fun trace(url: String): TraceResult = tracer.trace(url)
     suspend fun passwordCount(pw: String): Long = pwned.count(pw)

@@ -5,6 +5,7 @@ data class Endpoints(
     val hibp: String = "https://haveibeenpwned.com/api/v3",
     val leakCheckApi: String = "https://leakcheck.io/api/v2",
     val leakCheckPublic: String = "https://leakcheck.io/api/public",
+    val virusTotal: String = "https://www.virustotal.com/api/v3",
     val doh: String = "https://cloudflare-dns.com/dns-query",
     /** Cloudflare's malware-blocking resolver: answers 0.0.0.0 for domains it knows to be malicious. */
     val dohSecurity: String = "https://security.cloudflare-dns.com/dns-query",

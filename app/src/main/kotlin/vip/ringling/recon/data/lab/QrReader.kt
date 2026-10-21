@@ -14,6 +14,13 @@ object QrReader {
         return runCatching { reader.decodeWithState(BinaryBitmap(HybridBinarizer(RGBLuminanceSource(width, height, pixels)))).text }.getOrNull()
     }
 
+    /** Decodes the luminance (Y) plane of a camera frame. [rowStride] can be wider than [width]; the plane is padded if the last row is short. */
+    fun decodeLuma(y: ByteArray, width: Int, height: Int, rowStride: Int): String? {
+        val data = if (y.size >= rowStride * height) y else y.copyOf(rowStride * height)
+        val reader = MultiFormatReader().apply { setHints(mapOf(DecodeHintType.TRY_HARDER to true, DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE, BarcodeFormat.DATA_MATRIX, BarcodeFormat.CODE_128, BarcodeFormat.EAN_13, BarcodeFormat.PDF_417))) }
+        return runCatching { reader.decodeWithState(BinaryBitmap(HybridBinarizer(com.google.zxing.PlanarYUVLuminanceSource(data, rowStride, height, 0, 0, width, height, false)))).text }.getOrNull()
+    }
+
     fun decode(bitmap: android.graphics.Bitmap): String? {
         // Big photos are scaled down: QR detection doesn't need more than ~1500px and it keeps memory bounded.
         val scale = minOf(1f, 1500f / maxOf(bitmap.width, bitmap.height))

@@ -32,3 +32,14 @@ class LabTextTest {
         assertEquals(null, QrReader.decode(10, 10, IntArray(100) { 0xFFFFFFFF.toInt() }))
     }
 }
+
+class QrLumaTest {
+    @Test fun decodesACameraStyleLumaPlaneWithRowPadding() {
+        val m = com.google.zxing.qrcode.QRCodeWriter().encode("https://example.com/cam", com.google.zxing.BarcodeFormat.QR_CODE, 240, 240)
+        val stride = 256                                          // camera planes are often wider than the image
+        val y = ByteArray(stride * 240) { 0xFF.toByte() }
+        for (r in 0 until 240) for (c in 0 until 240) if (m.get(c, r)) y[r * stride + c] = 0
+        assertEquals("https://example.com/cam", QrReader.decodeLuma(y, 240, 240, stride))
+        assertEquals(null, QrReader.decodeLuma(ByteArray(stride * 240) { 0xFF.toByte() }, 240, 240, stride))
+    }
+}

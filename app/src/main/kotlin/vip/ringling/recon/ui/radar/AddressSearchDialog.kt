@@ -26,16 +26,17 @@ fun AddressSearchDialog(onSearch: (AddressQuery) -> Unit, onDismiss: () -> Unit)
     var street by remember { mutableStateOf("") }
     var city by remember { mutableStateOf("") }
     var radiusIndex by remember { mutableIntStateOf(1) }
-    val query = AddressQuery.of(street, city, AddressQuery.RADII[radiusIndex])
+    val query = AddressQuery.of(street, city, AddressQuery.CHOICES[radiusIndex])
     AlertDialog(
         onDismissRequest = onDismiss, title = { Text("Registry near an address") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SignalTextField(street, { street = it }, "Street address, e.g. 700 W Jefferson St", description = "Street address")
                 SignalTextField(city, { city = it }, "Idaho city, e.g. Boise", description = "City", onGo = { query?.let(onSearch) })
-                SignalLabel("Radius (miles)")
-                SegmentedControl(AddressQuery.RADII.map { "$it mi" }, radiusIndex, { radiusIndex = it })
-                Text("Uses the Idaho State Police registry's own map search: it lists registrants whose registered address is within the radius, nearest first. Idaho addresses only. Shown live and not saved.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                SignalLabel("How far")
+                SegmentedControl(AddressQuery.CHOICES.map { if (it == AddressQuery.CITY_WIDE) "City" else "$it mi" }, radiusIndex, { radiusIndex = it })
+                Text(if (AddressQuery.CHOICES[radiusIndex] == AddressQuery.CITY_WIDE) "City: lists everyone the registry has in that city, nearest to your address first (up to 400 placed on the map)." else "Exact radius from the registry's own map search (it offers 1, 3 or 5 miles).", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                Text("Uses the Idaho State Police registry: registrants whose registered address is within the radius (or in the city), nearest first. Idaho addresses only. Shown live and not saved.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
                 Text("Idaho Code 74-120: this information may not be used for any commercial purpose or to compile a telephone or mailing list, and must not be used to harass, threaten or harm anyone.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
             }
         },

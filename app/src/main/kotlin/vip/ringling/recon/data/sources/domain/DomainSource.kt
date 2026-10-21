@@ -24,6 +24,7 @@ import vip.ringling.recon.domain.Severity
 class DomainSource @Inject constructor(
     private val http: Http,
     private val endpoints: Endpoints,
+    private val keys: vip.ringling.recon.data.secret.ApiKeys,
 ) : OsintSource {
     override val id = ModuleId.DOMAIN
     override val supportedInputTypes = setOf(InputType.DOMAIN)
@@ -66,6 +67,14 @@ class DomainSource @Inject constructor(
                     val body = http.execute(req) { r -> if (r.code == 404) "{\"detail\":\"none\"}" else if (r.code != 200) throw HttpException(r.code, "InternetDB returned HTTP ${r.code}") else r.body.string() }
                     DomainExtras.internetDb(ip, body)
                 } }.awaitAll().filterNotNull().forEach { send(it) }
+            }
+        }
+        // With a VirusTotal key: what the security engines say about the domain (only the domain is sent).
+        if (keys.get(vip.ringling.recon.domain.ApiKeyId.VIRUSTOTAL) != null) check("vt", "VirusTotal") {
+            val r = vip.ringling.recon.data.lab.VirusTotal(http, keys, endpoints).domain(d)
+            if (r is vip.ringling.recon.data.lab.VtResult.Failed) throw HttpException(0, r.message)
+            vip.ringling.recon.data.lab.VirusTotal.flags(r, "domain").firstOrNull()?.let { f ->
+                send(Finding("DOMAIN-vt", ModuleId.DOMAIN, "VirusTotal", f.text, f.severity, vip.ringling.recon.data.lab.VirusTotal.domainPage(d)))
             }
         }
         check("mx", "MX") { send(DomainAnalysis.mx(doh.query(d, DnsType.MX))) }

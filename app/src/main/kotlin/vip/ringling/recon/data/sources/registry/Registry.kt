@@ -27,8 +27,8 @@ data class RegistryEntry(
     val imageLargeUrl: String? = null,
     val tags: List<String> = emptyList(),
     val hotTags: Set<String> = emptySet(),
-    /** Distance from the searched address (address searches only), used for ordering. */
-    val miles: Double? = null,
+    /** Distance from the searched address in metres (address searches only), used for ordering. */
+    val searchMeters: Double? = null,
 )
 
 /**
@@ -37,7 +37,7 @@ data class RegistryEntry(
  * [totalMatches] is what the registry reports; [listed] is how many rows we are showing; [capped] means some were left out.
  */
 sealed interface RegistryEvent {
-    data class Header(val totalMatches: Int, val listed: Int, val capped: Boolean, val searchUrl: String, val notes: List<String> = emptyList()) : RegistryEvent
+    data class Header(val totalMatches: Int, val listed: Int, val capped: Boolean, val searchUrl: String, val notes: List<String> = emptyList(), val center: GeoPoint? = null, val radiusMeters: Double? = null) : RegistryEvent
     data class Entry(val entry: RegistryEntry) : RegistryEvent
 }
 
@@ -115,17 +115,23 @@ class RegistrySource @Inject constructor(private val adapters: Set<@JvmSuppressW
             when (ev) {
                 is RegistryEvent.Header -> {
                     ev.notes.forEachIndexed { i, n -> emit(Finding("REGISTRY-note-$i", ModuleId.REGISTRY, "Part of the registry could not be searched", n, Severity.INFO)) }
-                    val where = "${q.miles} mile${if (q.miles == 1) "" else "s"} of ${q.street}, ${q.city}"
+                    val where = if (q.cityWide) "${q.city} (nearest to ${q.street} first)" else "${q.miles} mile${if (q.miles == 1) "" else "s"} of ${q.street}, ${q.city}"
                     if (ev.totalMatches == 0 && ev.listed == 0) {
                         emit(Finding("REGISTRY-none", ModuleId.REGISTRY, "No registrants within $where", "The ${adapter.stateName} registry lists no registrant addresses in that radius.", Severity.CLEAN, ev.searchUrl))
                     } else {
                         emit(
                             Finding(
                                 id = "REGISTRY-summary", module = ModuleId.REGISTRY,
-                                title = "${ev.totalMatches} registrant${if (ev.totalMatches == 1) "" else "s"} within $where",
+                                title = "${ev.totalMatches} registrant${if (ev.totalMatches == 1) "" else "s"} ${if (q.cityWide) "in" else "within"} $where",
                                 detail = (if (ev.capped) "Showing ${ev.listed} of ${ev.totalMatches}; open the official ${adapter.stateName} registry for the rest. " else "") +
                                     "Distances are from the address you typed, as mapped by the registry. The registry warns that its map locations can be approximate and that records may not relate to the person you have in mind; verify before relying on any of this.",
                                 severity = Severity.INFO, url = ev.searchUrl,
+                                // The searched address itself (where the registry placed it) and the exact search radius, for the map ring.
+                                // (Kept in facts, not geo, so the searched address is never mistaken for a registrant's pin.)
+                                facts = listOfNotNull(
+                                    ev.center?.let { vip.ringling.recon.domain.Fact(vip.ringling.recon.domain.SEARCH_CENTER_FACT, "${it.lat},${it.lng}") },
+                                    ev.radiusMeters?.let { vip.ringling.recon.domain.Fact(vip.ringling.recon.domain.SEARCH_RADIUS_FACT, it.toInt().toString()) },
+                                ),
                             ),
                         )
                     }
@@ -136,7 +142,7 @@ class RegistrySource @Inject constructor(private val adapters: Set<@JvmSuppressW
                         Finding(
                             id = "REGISTRY-${adapter.stateCode}-${e.key}", module = ModuleId.REGISTRY, title = e.name, detail = e.summary,
                             severity = e.severity, url = e.sourceUrl, raw = "", confidence = Confidence.HIGH,
-                            geo = e.geo, imageUrl = e.imageUrl, imageLargeUrl = e.imageLargeUrl, tags = e.tags, hotTags = e.hotTags,
+                            geo = e.geo, imageUrl = e.imageUrl, imageLargeUrl = e.imageLargeUrl, tags = e.tags, hotTags = e.hotTags, fromSearchMeters = e.searchMeters,
                         ),
                     )
                 }

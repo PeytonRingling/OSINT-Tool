@@ -209,7 +209,8 @@ fun TileMap(
                     ringMeters.forEachIndexed { i, m ->
                         drawCircle(ringColor.copy(alpha = if (i == 0) 0.5f else 0.3f), (m / mpp).toFloat(), o, style = androidx.compose.ui.graphics.drawscope.Stroke(1.5f, pathEffect = if (i == 0) null else androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(4f, 10f))))
                     }
-                    drawLine(ringColor, Offset(o.x, o.y - 12f), Offset(o.x, o.y + 12f), 1.5f); drawLine(ringColor, Offset(o.x - 12f, o.y), Offset(o.x + 12f, o.y), 1.5f)
+                    drawLine(ringColor, Offset(o.x, o.y - 14f), Offset(o.x, o.y + 14f), 2.5f); drawLine(ringColor, Offset(o.x - 14f, o.y), Offset(o.x + 14f, o.y), 2.5f)
+                    drawCircle(Color.Black, 7f, o); drawCircle(ringColor, 5f, o)
                 }
             }
             fun screen(p: GeoPoint) = Offset((Geo.worldX(p.lng, zoom) - cx + wPx / 2).toFloat(), (Geo.worldY(p.lat, zoom) - cy + hPx / 2).toFloat())

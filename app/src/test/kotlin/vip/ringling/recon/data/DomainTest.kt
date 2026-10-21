@@ -111,7 +111,7 @@ class DomainSourceTest {
             "/urlscan/api/v1/search/" to { json(fixture("urlscan.json")) },
         )
         srv.use {
-            val f = DomainSource(Http(), srv.endpoints()).collect(ScanInput("northwind.io", InputType.DOMAIN))
+            val f = DomainSource(Http(), srv.endpoints(), vip.ringling.recon.data.secret.InMemoryApiKeys()).collect(ScanInput("northwind.io", InputType.DOMAIN))
             val byId = f.associateBy { it.id }
             assertEquals(13, f.size, f.map { it.id }.toString())
             assertTrue("104.21.44.9" in byId.getValue("DOMAIN-a").detail)
@@ -132,7 +132,7 @@ class DomainSourceTest {
             "/rdap/" to { MockResponse().setResponseCode(404) },
         )
         srv.use {
-            val f = DomainSource(Http(), srv.endpoints()).collect(ScanInput("nowhere.example", InputType.DOMAIN))
+            val f = DomainSource(Http(), srv.endpoints(), vip.ringling.recon.data.secret.InMemoryApiKeys()).collect(ScanInput("nowhere.example", InputType.DOMAIN))
             val subs = f.first { it.id == "DOMAIN-subs-error" }
             assertTrue("502" in subs.detail, subs.detail)
             assertTrue("No RDAP record" in f.first { it.id == "DOMAIN-rdap-error" }.detail)
@@ -144,7 +144,7 @@ class DomainSourceTest {
     @Test fun dnsServfailIsAnErrorNotAnEmptyAnswer() = runTest {
         val (srv, _) = server("/doh" to { json("""{"Status":2}""") }, "/crt/" to { json("[]") }, "/rdap/" to { json(fixture("rdap.json")) })
         srv.use {
-            val f = DomainSource(Http(), srv.endpoints()).collect(ScanInput("broken.example", InputType.DOMAIN))
+            val f = DomainSource(Http(), srv.endpoints(), vip.ringling.recon.data.secret.InMemoryApiKeys()).collect(ScanInput("broken.example", InputType.DOMAIN))
             assertTrue("RCODE 2" in f.first { it.id == "DOMAIN-spf-error" }.detail)
             assertTrue(f.none { it.id == "DOMAIN-spf" }, "must not claim 'no SPF' when DNS failed")
         }

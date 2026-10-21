@@ -1,5 +1,6 @@
 package vip.ringling.recon.ui.detail
 
+import vip.ringling.recon.domain.pinSeverity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -146,7 +147,7 @@ fun FindingDetail(
                             }
                         }
                     }
-                    distanceLabel(finding)?.let { Text("$it from you", style = MaterialTheme.typography.titleMedium, color = cs.primary) }
+                    distanceLabel(finding)?.let { Text("$it ${vip.ringling.recon.ui.components.distanceSuffix(finding)}", style = MaterialTheme.typography.titleMedium, color = cs.primary) }
                 }
             }
         }
@@ -160,7 +161,7 @@ fun FindingDetail(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     TileMap(
-                        pins = listOf(MapPin(finding.id, g, finding.severity, finding.title)), me = LocalUserLocation.current,
+                        pins = listOf(MapPin(finding.id, g, finding.pinSeverity(), finding.title)), me = LocalUserLocation.current,
                         selectedId = finding.id, onPinClick = {}, modifier = Modifier.fillMaxWidth().height(220.dp),
                     )
                     OutlinedButton(onClick = { actions.onOpenMap(g) }, modifier = Modifier.heightIn(min = 48.dp)) {

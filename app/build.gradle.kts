@@ -96,6 +96,10 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.sqlite)
     implementation(libs.androidx.browser)
+    implementation(libs.camerax.core)
+    implementation(libs.camerax.camera2)
+    implementation(libs.camerax.lifecycle)
+    implementation(libs.camerax.view)
     implementation(libs.sqlcipher) { artifact { type = "aar" } }
     implementation(libs.zxing.core)
     ksp(libs.androidx.room.compiler)

@@ -57,10 +57,15 @@ class IdahoRegistryAdapter @Inject constructor(
     internal var maxEnriched = 200
     /** A 5-mile search in a city can list hundreds of registrants; show the nearest this many. */
     internal var maxMapRecords = 300
+    /** City-wide searches place (fetch coordinates for) at most this many registrants, same-ZIP first. */
+    internal var maxCityLocated = 400
 
     private class Listing(val label: String, val rows: List<IdahoRow>, val total: Int, val pagesMissed: Int, val pageCapped: Boolean)
 
-    override fun search(query: RegistryQuery): Flow<RegistryEvent> = channelFlow {
+    private class Collected(val rows: List<Pair<String, IdahoRow>>, val total: Int, val notes: List<String>)
+
+    /** Every results page (adult and juvenile) of ONE list query, bounded by [maxPagesPerDatabase]. Nothing is kept beyond this call. */
+    private suspend fun collectRows(query: RegistryQuery): Collected {
         // 1) First page of the adult and juvenile databases, concurrently.
         val first = coroutineScope {
             listOf("A" to "Adult", "J" to "Juvenile").map { (code, label) ->
@@ -87,9 +92,12 @@ class IdahoRegistryAdapter @Inject constructor(
                 }
             }.awaitAll()
         }
-        val total = listings.sumOf { it.total }
-        val rows = listings.flatMap { l -> l.rows.map { l.label to it } }
         listings.filter { it.pagesMissed > 0 }.forEach { notes += "${it.label} registry: ${it.pagesMissed} results page(s) could not be loaded." }
+        return Collected(listings.flatMap { l -> l.rows.map { l.label to it } }, listings.sumOf { it.total }, notes)
+    }
+
+    override fun search(query: RegistryQuery): Flow<RegistryEvent> = channelFlow {
+        val (rows, total, notes) = collectRows(query).let { Triple(it.rows, it.total, it.notes) }
         send(RegistryEvent.Header(total, rows.size, capped = rows.size < total, searchUrl = "${endpoints.idahoSor}/search_zip.html", notes = notes))
 
         // 3) Details and coordinates, streamed as each record completes. Beyond the cap a row is shown without them.
@@ -124,20 +132,53 @@ class IdahoRegistryAdapter @Inject constructor(
     }
 
     override fun searchAddress(query: vip.ringling.recon.domain.AddressQuery): Flow<RegistryEvent> = channelFlow {
-        val form = FormBody.Builder().add("adr", query.street).add("cty", query.city).add("sta", "IDAHO").add("rad", query.miles.toString()).add("sz", "400").build()
+        // The registry's own map search (1, 3 or 5 miles). A city-wide search still starts with a 1-mile one: it tells us where the registry placed the address.
+        val form = FormBody.Builder().add("adr", query.street).add("cty", query.city).add("sta", "IDAHO").add("rad", (if (query.cityWide) 1 else query.miles).toString()).add("sz", "400").build()
         val html = http.execute(Request.Builder().url("${endpoints.idahoSor}/jsp/map_search_result.jsp").post(form).build()) { r ->
             if (r.code != 200) throw HttpException(r.code, "Idaho registry returned HTTP ${r.code}")
             r.body.string()
         }
         if (html.contains("Unable to display a map for the requested address", ignoreCase = true)) throw AdapterUnavailable("The registry couldn't map that address. Check the street number, name and city.")
-        val all = parseMapSearch(html).sortedBy { it.miles ?: Double.MAX_VALUE }
-        val records = all.take(maxMapRecords)
-        send(RegistryEvent.Header(all.size, records.size, capped = records.size < all.size, searchUrl = "${endpoints.idahoSor}/map_search.html"))
-        coroutineScope {
-            records.forEachIndexed { i, rec ->
+        val page = parseMapSearchPage(html)
+        val center = page.center
+        fun metersOf(rec: MapRecord): Double? =
+            if (center != null && rec.geo != null) vip.ringling.recon.domain.Geo.distanceMeters(center, rec.geo) else rec.miles?.let { it * vip.ringling.recon.domain.Geo.METERS_PER_MILE }
+        val near = page.records.map { it to metersOf(it) }.sortedBy { it.second ?: Double.MAX_VALUE }
+        val nearShown = near.take(maxMapRecords)
+
+        suspend fun emitMapRecords(list: List<Pair<MapRecord, Double?>>) = coroutineScope {
+            list.forEachIndexed { i, (rec, m) ->
                 launch {
                     val detail = if (i < maxEnriched) optional { limiter.run { fetch(rec.href) { parseDetail(it) } } } else null
-                    send(RegistryEvent.Entry(toEntry(rec.toRow(), detail, rec.geo, rec.label, miles = rec.miles, listedOffense = rec.offense)))
+                    send(RegistryEvent.Entry(toEntry(rec.toRow(), detail, rec.geo, rec.label, meters = m, listedOffense = rec.offense)))
+                }
+            }
+        }
+
+        if (!query.cityWide) {
+            send(RegistryEvent.Header(near.size, nearShown.size, capped = nearShown.size < near.size, searchUrl = "${endpoints.idahoSor}/map_search.html", center = center, radiusMeters = page.radiusMeters ?: (query.miles * vip.ringling.recon.domain.Geo.METERS_PER_MILE)))
+            emitMapRecords(nearShown)
+            return@channelFlow
+        }
+
+        // City-wide: everyone the registry lists in the city (its own city search), placed with the registry's own coordinates and ordered by distance from the address.
+        val collected = collectRows(RegistryQuery(city = query.city))
+        val have = near.map { it.first.id }.toSet()
+        val centerZip = near.firstOrNull()?.first?.zip?.take(5)
+        val rest = collected.rows.filter { (_, row) -> row.id !in have }.sortedBy { (_, row) -> if (centerZip != null && row.zip.take(5) == centerZip) 0 else 1 }
+        val located = rest.take(maxCityLocated)
+        val total = maxOf(collected.total, near.size)
+        send(RegistryEvent.Header(total, nearShown.size + located.size, capped = nearShown.size + located.size < total, searchUrl = "${endpoints.idahoSor}/search_city.html", notes = collected.notes, center = center, radiusMeters = null))
+        coroutineScope {
+            launch { emitMapRecords(nearShown) }
+            var detailed = 0
+            located.forEach { (label, row) ->
+                launch {
+                    val geo = row.mapHref?.let { href -> optional { limiter.run { fetch(href) { parseGeo(it) } } } }
+                    val m = if (geo != null && center != null) vip.ringling.recon.domain.Geo.distanceMeters(center, geo) else null
+                    // Offense details only for people reasonably close, so a big city doesn't mean hundreds of extra page loads.
+                    val detail = if (m != null && m <= 10 * vip.ringling.recon.domain.Geo.METERS_PER_MILE && detailed++ < maxEnriched) optional { limiter.run { fetch(row.href) { parseDetail(it) } } } else null
+                    send(RegistryEvent.Entry(toEntry(row, detail, geo, label, meters = m)))
                 }
             }
         }
@@ -161,7 +202,7 @@ class IdahoRegistryAdapter @Inject constructor(
         return parse(html)
     }
 
-    internal fun toEntry(row: IdahoRow, d: IdahoDetail?, geo: GeoPoint?, label: String, miles: Double? = null, listedOffense: String? = null): RegistryEntry {
+    internal fun toEntry(row: IdahoRow, d: IdahoDetail?, geo: GeoPoint?, label: String, meters: Double? = null, listedOffense: String? = null): RegistryEntry {
         val status = (d?.regStatus ?: row.status).takeIf { it.isNotBlank() }
         val nonCompliant = status?.contains("NON", ignoreCase = true) == true
         val dates = d?.offenses?.map { it.date }?.filter { it.isNotBlank() }?.distinct().orEmpty()
@@ -174,7 +215,7 @@ class IdahoRegistryAdapter @Inject constructor(
         val place = listOf(row.address, row.city, row.county.takeIf { it.isNotBlank() }?.let { "$it County" }, row.zip).filter { !it.isNullOrBlank() }.joinToString(", ")
         val lines = buildList {
             add(place)
-            miles?.let { add("%.2f mi from the searched address".format(it)) }
+            meters?.let { add("${vip.ringling.recon.domain.Geo.formatDistance(it)} from the searched address") }
             add(listOfNotNull(status?.let { "Status: $it" }, d?.lastRegistered?.takeIf { it.isNotBlank() }?.let { "Last registered: $it" }).joinToString(" · "))
             when {
                 d == null -> add(listedOffense?.let { "Offense (as listed): $it" } ?: "Offense details unavailable (open the official record).")
@@ -199,7 +240,7 @@ class IdahoRegistryAdapter @Inject constructor(
             imageLargeUrl = abs(d?.photoHref ?: row.photoHref),
             tags = tags,
             hotTags = setOf("Non-compliant", "Multiple convictions"),
-            miles = miles,
+            searchMeters = meters,
         )
     }
 
@@ -218,7 +259,18 @@ class IdahoRegistryAdapter @Inject constructor(
          * followed by the marker that places it; registrants at one address share a marker. Strings are rebuilt (`" + 123 + "` joins) and read
          * as HTML. Only what the page itself lists is read; date of birth and descriptions are not on it.
          */
-        fun parseMapSearch(html: String): List<MapRecord> {
+        /** The registry's own placement of the searched address and the radius of its search circle (metres), when the page has them. */
+        data class MapSearchPage(val center: GeoPoint?, val radiusMeters: Double?, val records: List<MapRecord>)
+
+        fun parseMapSearch(html: String): List<MapRecord> = parseMapSearchPage(html).records
+
+        fun parseMapSearchPage(html: String): MapSearchPage {
+            val c = Regex("""center:\s*new google\.maps\.LatLng\(\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)""").find(html)?.let { GeoPoint(it.groupValues[1].toDouble(), it.groupValues[2].toDouble()) }
+            val r = Regex("""radius:\s*(\d+)""").find(html)?.groupValues?.get(1)?.toDoubleOrNull()
+            return MapSearchPage(c, r, parseMapRecords(html))
+        }
+
+        private fun parseMapRecords(html: String): List<MapRecord> {
             val out = mutableListOf<MapRecord>(); val pending = mutableListOf<MapRecord>(); var kind = "Adult"
             for (m in mapToken.findAll(html)) {
                 val rec = m.groups["rec"]?.value
