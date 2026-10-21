@@ -2,6 +2,8 @@ package vip.ringling.recon.ui.lab
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,13 +50,14 @@ import vip.ringling.recon.ui.signal.Tone
 import vip.ringling.recon.ui.theme.ReconTheme
 import vip.ringling.recon.ui.theme.ReconType
 
-private val tools = listOf("Headers", "Link", "Password")
+private val tools = listOf("Headers", "Message", "Link", "QR", "Decode", "Password")
 
 /** The Lab tab: small one-shot tools that answer "is this message / link / password safe?" without creating a scan. */
 @Composable
 fun LabScreen(vm: LabViewModel, onPivot: (String) -> Unit, modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues()) {
     val sig = ReconTheme.signal
     var tool by rememberSaveable { mutableStateOf(0) }
+    var prefill by remember { mutableStateOf<String?>(null) }
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = contentPadding.calculateTopPadding() + 8.dp, bottom = contentPadding.calculateBottomPadding() + 24.dp, start = 16.dp, end = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -63,10 +66,13 @@ fun LabScreen(vm: LabViewModel, onPivot: (String) -> Unit, modifier: Modifier = 
             SignalLabel("Lab")
             Text("Check a message, a link or a password", color = sig.text, style = MaterialTheme.typography.titleMedium)
         }
-        SegmentedControl(tools, tool, { tool = it })
+        ToolChips(tools, tool) { tool = it }
         when (tool) {
             0 -> HeaderTool(onPivot)
-            1 -> LinkTool(vm, onPivot)
+            1 -> MessageTool { prefill = it; tool = 2 }
+            2 -> LinkTool(vm, onPivot, prefill) { prefill = null }
+            3 -> QrTool { prefill = it; tool = 2 }
+            4 -> DecodeTool()
             else -> PasswordTool(vm)
         }
     }
@@ -136,12 +142,14 @@ private fun HeaderTool(onPivot: (String) -> Unit) {
 }
 
 @Composable
-private fun LinkTool(vm: LabViewModel, onPivot: (String) -> Unit) {
+private fun LinkTool(vm: LabViewModel, onPivot: (String) -> Unit, prefill: String? = null, onPrefillUsed: () -> Unit = {}) {
     val sig = ReconTheme.signal
     val scope = rememberCoroutineScope()
     var url by rememberSaveable { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<TraceResult?>(null) }
+    // A link handed over from the QR or message tool is followed straight away.
+    androidx.compose.runtime.LaunchedEffect(prefill) { if (prefill != null) { url = prefill; onPrefillUsed(); busy = true; result = vm.trace(prefill); busy = false } }
     Text("Follows the link's redirects to show where it really ends up. Recon contacts the link (through your Tor/proxy setting if on) but never loads the page.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
     SignalTextField(url, { url = it; result = null }, "Paste a link", description = "Link to inspect", keyboard = androidx.compose.ui.text.input.KeyboardType.Uri)
     SignalButton(if (busy) "Following…" else "Follow link", { busy = true; scope.launch { result = vm.trace(url); busy = false } }, Modifier.fillMaxWidth(), filled = true, enabled = url.isNotBlank() && !busy)
@@ -187,4 +195,85 @@ private fun PasswordTool(vm: LabViewModel) {
         }
     }, Modifier.fillMaxWidth(), filled = true, enabled = pw.isNotEmpty() && !busy)
     msg?.let { (text, ok) -> Text(text, color = if (ok) sig.safeText else sig.alertText, style = MaterialTheme.typography.titleSmall) }
+}
+
+@Composable
+private fun ToolChips(options: List<String>, selected: Int, onSelect: (Int) -> Unit) {
+    val sig = ReconTheme.signal
+    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        options.forEachIndexed { i, label ->
+            val on = i == selected
+            Box(
+                Modifier.heightIn(min = 44.dp).clip(RoundedCornerShape(10.dp)).background(if (on) sig.signal else androidx.compose.ui.graphics.Color.Transparent)
+                    .border(1.dp, if (on) sig.signal else androidx.compose.ui.graphics.Color.White.copy(alpha = 0.12f), RoundedCornerShape(10.dp))
+                    .clickable(role = androidx.compose.ui.semantics.Role.Tab, onClickLabel = label) { onSelect(i) }.padding(horizontal = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(label.uppercase(), color = if (on) sig.onSignal else sig.muted, style = ReconType.button.copy(fontSize = 11.sp)) }
+        }
+    }
+}
+
+@Composable
+private fun MessageTool(onInspectLink: (String) -> Unit) {
+    val sig = ReconTheme.signal
+    var raw by rememberSaveable { mutableStateOf("") }
+    var run by rememberSaveable { mutableStateOf(false) }
+    val r = if (run) vip.ringling.recon.domain.ScamCheck.analyze(raw) else null
+    Text("Paste a suspicious text, e-mail or chat message. It is checked for the usual scam cues on this phone: nothing is sent or saved.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+    MultiLineField(raw, { raw = it; run = false }, "Paste the message here")
+    SignalButton("Check message", { run = true }, Modifier.fillMaxWidth(), filled = true, enabled = raw.isNotBlank())
+    r?.let {
+        HairPanel(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    SignalLabel("Verdict")
+                    StatusTag(when (it.verdict) { Verdict.CLEAN -> "No scam cues"; Verdict.CHECK -> "A few cues"; Verdict.SUSPICIOUS -> "Likely a scam"; Verdict.FORGED -> "Very likely a scam" }, when (it.verdict) { Verdict.CLEAN -> Tone.SAFE; Verdict.CHECK -> Tone.INFO; else -> Tone.ALERT })
+                }
+                it.flags.sortedBy { f -> -f.severity.ordinal }.forEach { f -> FlagRow(f) }
+            }
+        }
+        if (it.links.isNotEmpty()) HairPanel(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SignalLabel("Links in the message")
+                it.links.take(5).forEach { l -> SignalButton("Inspect " + l.take(40), { onInspectLink(l) }, Modifier.fillMaxWidth(), mono = true) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun QrTool(onInspectLink: (String) -> Unit) {
+    val sig = ReconTheme.signal
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var text by remember { mutableStateOf<String?>(null) }
+    var failed by remember { mutableStateOf(false) }
+    val pick = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) {
+            val bmp = runCatching { ctx.contentResolver.openInputStream(uri)?.use { android.graphics.BitmapFactory.decodeStream(it) } }.getOrNull()
+            text = bmp?.let { vip.ringling.recon.data.lab.QrReader.decode(it) }; failed = text == null
+        }
+    }
+    Text("Pick a screenshot or photo of a QR code. It is decoded on this phone (no camera, no upload) so you can see where it leads before you open it.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+    SignalButton("Choose image", { pick.launch("image/*") }, Modifier.fillMaxWidth(), filled = true)
+    if (failed) Text("No QR code found in that image. Try a sharper, closer crop.", color = sig.alertText, style = MaterialTheme.typography.bodyMedium)
+    text?.let { t ->
+        HairPanel(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SignalLabel("Decoded")
+                Text(t, color = sig.text, style = ReconType.value.copy(fontSize = 13.sp))
+                if (vip.ringling.recon.data.lab.LinkTracer.normalize(t) != null && (t.startsWith("http", true) || '.' in t)) SignalButton("Inspect this link", { onInspectLink(t) }, Modifier.fillMaxWidth(), filled = true)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DecodeTool() {
+    val sig = ReconTheme.signal
+    var raw by rememberSaveable { mutableStateOf("") }
+    val results = vip.ringling.recon.domain.LabDecoder.run(raw)
+    Text("Paste Base64, hex, a URL-encoded string, a JWT or a Unix timestamp. Everything decodes here, live, on this phone.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+    MultiLineField(raw, { raw = it }, "Paste text to decode")
+    if (raw.isNotBlank() && results.isEmpty()) Text("Nothing recognisable. It may be encrypted or hashed, which can't be reversed.", color = sig.muted, style = MaterialTheme.typography.bodyMedium)
+    results.forEach { d -> HairPanel(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) { SignalLabel(d.label, small = true); Text(d.value, color = sig.text, style = ReconType.value.copy(fontSize = 12.sp)) } } }
 }

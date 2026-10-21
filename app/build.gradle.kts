@@ -97,6 +97,7 @@ dependencies {
     implementation(libs.androidx.sqlite)
     implementation(libs.androidx.browser)
     implementation(libs.sqlcipher) { artifact { type = "aar" } }
+    implementation(libs.zxing.core)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.datastore)

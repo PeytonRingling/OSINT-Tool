@@ -400,6 +400,7 @@ private fun AboutSection(state: SettingsUiState) {
                 color = sig.muted, style = MaterialTheme.typography.bodySmall,
             )
             Text("Extra username sites derived from WhatsMyName © Micah Hoffman and contributors, CC BY-SA 4.0 (github.com/WebBreacher/WhatsMyName).", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+            Text("QR decoding uses ZXing (github.com/zxing/zxing), Apache License 2.0.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
             Text("Fonts: Instrument Serif, Geist and Geist Mono (SIL Open Font License 1.1).", color = sig.muted, style = MaterialTheme.typography.bodySmall)
         }
     }
