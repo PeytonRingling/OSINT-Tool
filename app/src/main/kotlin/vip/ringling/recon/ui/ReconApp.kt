@@ -290,7 +290,9 @@ fun recordStatuses(r: vip.ringling.recon.domain.ScanRecord) =
 private fun ResultsEntry(nav: NavHostController, actions: ReconActions, pad: PaddingValues, wide: Boolean, onPin: (vip.ringling.recon.domain.ScanInput) -> Unit) {
     vip.ringling.recon.ui.results.ResultsRoute(
         pad, onBack = { nav.popBackStack() }, onFinding = { f -> nav.navigate("finding/${f.id}") },
-        onExport = { st -> st.input?.let { actions.exportScan(it, st.findings) } }, onPin = { st -> st.input?.let(onPin) }, onPivot = actions.detail.onPivot, wide = wide,
+        onExport = { st -> st.input?.let { actions.exportScan(it, st.findings) } }, onPin = { st -> st.input?.let(onPin) }, onPivot = actions.detail.onPivot,
+        onReport = { st -> st.input?.let { i -> val now = System.currentTimeMillis(); actions.saveFile(vip.ringling.recon.domain.ScanReport.fileName(i, now), vip.ringling.recon.data.PdfWriter.fromMarkdown(vip.ringling.recon.domain.ScanReport.markdown(i, st.findings, now), vip.ringling.recon.domain.ScanReport.cover(i, st.findings, now))) } },
+        wide = wide,
     )
 }
 

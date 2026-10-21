@@ -45,3 +45,25 @@ fun SinceLastCard(s: vip.ringling.recon.domain.SinceLast, modifier: Modifier = M
         }
     }
 }
+
+/** Domain e-mail spoofing grade with its checklist (domain scans only). */
+@Composable
+fun MailGradeCard(g: vip.ringling.recon.domain.MailGrade, modifier: Modifier = Modifier) {
+    val sig = ReconTheme.signal
+    val col = when (g.letter) { "A", "B" -> sig.safeText; "C" -> sig.infoText; else -> sig.alertText }
+    HairPanel(modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                Column { SignalLabel("E-mail spoofing protection"); Text("${g.score}/100", color = sig.muted, style = MaterialTheme.typography.bodySmall) }
+                Text(g.letter, color = col, style = vip.ringling.recon.ui.theme.ReconType.numeral.copy(fontSize = androidx.compose.ui.unit.TextUnit(56f, androidx.compose.ui.unit.TextUnitType.Sp)))
+            }
+            g.checks.forEach { c ->
+                val mark = when (c.state) { vip.ringling.recon.domain.CheckState.PASS -> "✓" to sig.safeText; vip.ringling.recon.domain.CheckState.PARTIAL -> "~" to sig.infoText; vip.ringling.recon.domain.CheckState.FAIL -> "✗" to sig.alertText }
+                androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(mark.first, color = mark.second, style = MaterialTheme.typography.titleSmall)
+                    Column { Text(c.name, color = sig.text, style = MaterialTheme.typography.titleSmall); Text(c.advice, color = sig.muted, style = MaterialTheme.typography.bodySmall) }
+                }
+            }
+        }
+    }
+}

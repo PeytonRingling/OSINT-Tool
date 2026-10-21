@@ -203,6 +203,8 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 - **Weakest link** in the lead graph: `EntityNode.sources/hot`, `EntityGraphModel.weakest` = lead behind an exposed finding listed by the most sources; drawn in alert colour with a pulsing ring, reason shown on tap.
 - **Risk widget** (`RiskWidget`, `domain/WidgetRisk`): 2x1 home-screen gauge showing ONLY the highest latest risk and a band word (no names/values/findings). The number is kept in SharedPreferences `recon_widget` (the only data outside the encrypted DB), published by `ReconApp` from the snapshots flow (clears itself when scans are wiped). Unverified on a device.
 - "Breach sources checked" rows list what each source found (`SourceCheck.findingIds`, bottom sheet), HIBP included.
+- **E-mail spoofing grade** (`domain/MailGrade.kt`, `MailGradeCard`, domain scans): A-F from SPF 30 / DMARC 40 / DKIM 15 / MTA-STS 10 / BIMI 5 with a checklist and advice; null (no grade) when SPF or DMARC did not come back. Tests `MailGradeTest`.
+- **Scan report PDF** (`domain/ScanReport.kt`, header "Save PDF report" button): cover page + summary/briefing/grade + findings by module via the system file picker; registry/name-search/DORKS/error findings never included. PDF rendering unverified off-device. Tests `ScanReportTest`.
 - Decided against more: backend/off-device features. Still ideas: dossier PDF cover, correlation timeline, on-device "what to fix first" summary.
 
 ## Open items / notes

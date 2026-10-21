@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.BookmarkAdd
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -86,6 +87,8 @@ import vip.ringling.recon.domain.EntityGraph
 data class ResultsActions(
     val onBack: () -> Unit = {},
     val onExport: () -> Unit = {},
+    /** Save a PDF report of this scan. */
+    val onReport: () -> Unit = {},
     val onPin: () -> Unit = {},
     val onFinding: (Finding) -> Unit = {},
     val onOpenFinding: (Finding) -> Unit = {},
@@ -116,6 +119,7 @@ fun ResultsHeader(state: ResultsUiState, actions: ResultsActions, modifier: Modi
             Text(state.input?.raw.orEmpty(), color = sig.text, style = ReconType.value, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         SignalIconButton(Icons.Rounded.BookmarkAdd, "Pin to case", actions.onPin)
+        if (state.input?.type?.countsOnly == false && state.findings.any { vip.ringling.recon.domain.Export.exportable(it) }) SignalIconButton(Icons.Rounded.Description, "Save PDF report", actions.onReport)
         if (state.findings.any { vip.ringling.recon.domain.Export.exportable(it) }) SignalIconButton(Icons.Rounded.FileDownload, "Export report", actions.onExport)
     }
 }
@@ -174,6 +178,8 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
             }
             item { TickBar(ceil(score / 5.0).toInt().coerceIn(0, 20), tone = tone, modifier = Modifier.padding(top = 2.dp)) }
             if (since != null && !state.running) item(key = "since") { SinceLastCard(since) }
+            val mailGrade = if (input?.type == vip.ringling.recon.domain.InputType.DOMAIN) vip.ringling.recon.domain.MailGradeBuilder.compute(state.findings) else null
+            if (mailGrade != null) item(key = "mailgrade") { MailGradeCard(mailGrade) }
             if (state.findings.isNotEmpty()) item(key = "briefing") { BriefingCard(vip.ringling.recon.domain.BriefingBuilder.build(input?.type, state.findings, state.statuses.keys)) }
             item {
                 BracketPanel(Modifier.fillMaxWidth().height(262.dp)) {
