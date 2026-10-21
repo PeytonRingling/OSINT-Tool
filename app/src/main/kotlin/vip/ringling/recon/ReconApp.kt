@@ -24,6 +24,7 @@ import vip.ringling.recon.data.net.USER_AGENT
 class ReconApp : Application(), SingletonImageLoader.Factory {
     @Inject lateinit var settingsRepo: SettingsRepository
     @Inject lateinit var dataGuard: vip.ringling.recon.data.DataGuard
+    @Inject lateinit var snapshotRepo: vip.ringling.recon.data.SnapshotRepository
 
     override fun onCreate() {
         super.onCreate()
@@ -33,6 +34,10 @@ class ReconApp : Application(), SingletonImageLoader.Factory {
                 runCatching { dataGuard.purgeOlderThan(days) }
                 runCatching { vip.ringling.recon.data.watch.AutoRescanScheduler.sync(this@ReconApp, rescan) } // WorkManager may be absent (e.g. under test)
             }
+        }
+        // Keep the risk widget's single number in step with the stored scans (also clears it when everything is wiped).
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            runCatching { snapshotRepo.snapshots.map { vip.ringling.recon.domain.WidgetRisk.overall(it) }.distinctUntilChanged().collect { RiskWidget.publish(this@ReconApp, it) } }
         }
         // Keep the global proxy in sync with settings (Tor / custom SOCKS5 for every lookup).
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {

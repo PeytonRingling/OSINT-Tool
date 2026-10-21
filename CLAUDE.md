@@ -199,6 +199,10 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 - **Briefing** (`domain/Briefing.kt` `BriefingBuilder`, `ui/results/Briefing.kt`): templated plain-English summary card on the exposure screen (headline, breach span/most recent, per-module counts, unreachable sources, "Start with" = first fix-first step). Pure function of findings; tests in `BriefingTest`.
 - **Since last scan** (`domain/SinceLast.kt`, `SinceLastCard`): results banner comparing against the previous saved scan of the same target (`ResultsViewModel.previous`): risk delta, new titles, gone count (suppressed when any source failed). Not for countsOnly types. Tests `SinceLastTest`.
 - **Dossier PDF cover** (`PdfWriter.Cover`): dark title page (kicker, title, big exposure number, key lines) before the report pages of a case PDF. Robolectric cannot run PdfDocument, so the PDF path is UNVERIFIED off-device.
+- **Security checkup** (`domain/Checkup.kt`, `CheckupCard` at the top of the Log): latest saved scan per non-area target; fixes ranked by how many targets they help (stealer logs urgent first, same breach across targets = one fix, passkeys). Handled findings excluded. Tests `CheckupTest`.
+- **Weakest link** in the lead graph: `EntityNode.sources/hot`, `EntityGraphModel.weakest` = lead behind an exposed finding listed by the most sources; drawn in alert colour with a pulsing ring, reason shown on tap.
+- **Risk widget** (`RiskWidget`, `domain/WidgetRisk`): 2x1 home-screen gauge showing ONLY the highest latest risk and a band word (no names/values/findings). The number is kept in SharedPreferences `recon_widget` (the only data outside the encrypted DB), published by `ReconApp` from the snapshots flow (clears itself when scans are wiped). Unverified on a device.
+- "Breach sources checked" rows list what each source found (`SourceCheck.findingIds`, bottom sheet), HIBP included.
 - Decided against more: backend/off-device features. Still ideas: dossier PDF cover, correlation timeline, on-device "what to fix first" summary.
 
 ## Open items / notes

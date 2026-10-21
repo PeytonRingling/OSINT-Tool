@@ -110,6 +110,7 @@ fun LogScreen(state: LogUiState, actions: LogActions, modifier: Modifier = Modif
                     Text("${state.scanCount} SCANS\n${state.targets.size} TARGETS", color = sig.muted, textAlign = TextAlign.End, style = ReconType.labelSmall.copy(fontSize = 10.5.sp, letterSpacing = 0.08.sp))
                 }
             }
+            state.checkup?.takeIf { it.fixes.isNotEmpty() && q.isEmpty() }?.let { c -> item(key = "checkup") { CheckupCard(c) } }
             if (state.scanCount > 4) item { vip.ringling.recon.ui.signal.SignalTextField(query, { query = it }, "Search the log", description = "Search the log") }
             item { SegmentedControl(LogMode.entries.map { it.label }, state.mode.ordinal, { actions.onMode(LogMode.entries[it]) }, Modifier.padding(top = 4.dp, bottom = 4.dp)) }
             if (state.undoCount > 0) item {
@@ -200,3 +201,23 @@ private fun ScanRow(s: ScanSnapshot, now: Long, onOpen: () -> Unit) {
 
 @OptIn(ExperimentalFoundationApi::class)
 private fun Modifier.combinedClickableOpen(onOpen: () -> Unit): Modifier = this.combinedClickable(onClickLabel = "Open results", onClick = onOpen)
+
+
+/** Top fixes across everything scanned, ranked by how many targets each one helps. */
+@Composable
+private fun CheckupCard(c: vip.ringling.recon.domain.Checkup) {
+    val sig = ReconTheme.signal
+    vip.ringling.recon.ui.signal.HairPanel(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { SignalLabel("Security checkup"); SignalLabel("${c.targetCount} target${if (c.targetCount == 1) "" else "s"} · worst ${c.worstRisk} · ${c.exposedTotal} exposed") }
+            c.fixes.take(3).forEachIndexed { i, f ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text("${i + 1}. ${f.title}", color = if (f.urgent) sig.alertText else sig.text, style = androidx.compose.material3.MaterialTheme.typography.titleSmall)
+                    Text(f.detail, color = sig.muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                    Text("Helps ${f.targets.size} target${if (f.targets.size == 1) "" else "s"}: " + f.targets.take(3).joinToString(", ") + if (f.targets.size > 3) " +${f.targets.size - 3}" else "", color = sig.signal, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+                }
+            }
+            if (c.fixes.size > 3) Text("+ ${c.fixes.size - 3} more fixes", color = sig.muted, style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+        }
+    }
+}

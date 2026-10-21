@@ -27,6 +27,7 @@ data class LogUiState(
     val now: Long = System.currentTimeMillis(),
     /** Number of scans a Clear all can still bring back (kept in memory only until the app closes or something new is saved). */
     val undoCount: Int = 0,
+    val checkup: vip.ringling.recon.domain.Checkup? = null,
 ) {
     val scanCount: Int get() = scans.size
 }
@@ -35,6 +36,7 @@ data class LogUiState(
 class LogViewModel @Inject constructor(
     private val history: HistoryRepository,
     private val snapshots: SnapshotRepository,
+    private val handled: vip.ringling.recon.data.HandledRepository,
 ) : ViewModel() {
     private val mode = MutableStateFlow(LogMode.BY_TARGET)
 
@@ -43,8 +45,9 @@ class LogViewModel @Inject constructor(
     private var backup: Pair<List<vip.ringling.recon.domain.ScanRecord>, List<ScanSnapshot>>? = null
     private val undo = MutableStateFlow(0)
 
-    val state: StateFlow<LogUiState> = combine(snapshots.snapshots, mode, undo) { snaps, m, u ->
-        LogUiState(LogMath.targets(snaps), snaps.sortedByDescending { it.ts }, m, undoCount = if (snaps.isEmpty()) u else 0, now = System.currentTimeMillis())
+    val state: StateFlow<LogUiState> = combine(snapshots.snapshots, mode, undo, history.records, handled.handled) { snaps, m, u, recs, hand ->
+        val checkup = vip.ringling.recon.domain.CheckupBuilder.build(recs) { f -> vip.ringling.recon.data.HandledRepository.keyOf(f) in hand }
+        LogUiState(LogMath.targets(snaps), snaps.sortedByDescending { it.ts }, m, undoCount = if (snaps.isEmpty()) u else 0, now = System.currentTimeMillis(), checkup = checkup)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), LogUiState())
 
     fun setMode(m: LogMode) { mode.value = m }

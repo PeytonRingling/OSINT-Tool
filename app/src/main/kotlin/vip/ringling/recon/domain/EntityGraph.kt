@@ -4,14 +4,18 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 /** A point on the entity graph. ROOT is the searched target, MODULE a source that produced leads, ENTITY a lead (handle, domain, e-mail, ...) that can be searched next. */
-data class EntityNode(val id: String, val label: String, val kind: Kind, val query: String? = null, val parent: String? = null, val type: InputType? = null) {
+data class EntityNode(val id: String, val label: String, val kind: Kind, val query: String? = null, val parent: String? = null, val type: InputType? = null, val sources: List<String> = emptyList(), val hot: Boolean = false) {
     enum class Kind { ROOT, MODULE, ENTITY }
 }
 
 /** Edge between two nodes; entities found by more than one module get one edge per module. */
 data class EntityEdge(val from: String, val to: String)
 
-data class EntityGraphModel(val nodes: List<EntityNode>, val edges: List<EntityEdge>) {
+data class EntityGraphModel(val nodes: List<EntityNode>, val edges: List<EntityEdge>, /** Id of the lead that most connects this target to its exposure (see [EntityGraph.build]), if any. */ val weakest: String? = null) {
+    fun reason(id: String): String? = nodes.firstOrNull { it.id == id && it.kind == EntityNode.Kind.ENTITY }?.let { n ->
+        listOfNotNull("Listed by ${n.sources.joinToString(", ")}", if (n.hot) "one of those sources flagged it as exposed" else null).joinToString(" · ")
+    }
+
     val entityCount: Int get() = nodes.count { it.kind == EntityNode.Kind.ENTITY }
 }
 
@@ -29,20 +33,26 @@ object EntityGraph {
         val seen = linkedMapOf<String, EntityNode>()
         val moduleOrder = linkedSetOf<ModuleId>()
         val perModule = linkedMapOf<ModuleId, MutableList<String>>()
+        val sourcesOf = mutableMapOf<String, LinkedHashSet<String>>(); val hotOf = mutableSetOf<String>()
         findings.filter { it.module != ModuleId.DORKS }.forEach { f ->
             f.pivots.forEach { p ->
                 val key = p.query.trim().lowercase()
                 if (key.isEmpty() || key == target.trim().lowercase() || (seen.size >= MAX_ENTITIES && key !in seen)) return@forEach
                 if (key !in seen) seen[key] = EntityNode("e:$key", p.label.take(40), EntityNode.Kind.ENTITY, p.query.trim(), parent = "m:${f.module.name}", type = InputDetector.detect(p.query.trim()))
                 moduleOrder += f.module
+                sourcesOf.getOrPut(key) { linkedSetOf() } += Exposure.label(f.module)
+                if (f.severity == Severity.EXPOSED) hotOf += key
                 val list = perModule.getOrPut(f.module) { mutableListOf() }
                 if (key !in list) list += key
             }
         }
         moduleOrder.forEach { m -> nodes += EntityNode("m:${m.name}", Exposure.label(m), EntityNode.Kind.MODULE, parent = ROOT_ID); edges += EntityEdge(ROOT_ID, "m:${m.name}") }
-        seen.values.forEach { nodes += it }
+        val enriched = seen.map { (k, n) -> n.copy(sources = sourcesOf[k].orEmpty().toList(), hot = k in hotOf) }
+        enriched.forEach { nodes += it }
+        // Weakest link: the lead reached through an exposed finding and listed by the most sources (ties keep discovery order).
+        val weakest = enriched.filter { it.hot || it.sources.size >= 2 }.maxWithOrNull(compareBy<EntityNode> { if (it.hot) 1 else 0 }.thenBy { it.sources.size })?.id
         perModule.forEach { (m, keys) -> keys.forEach { k -> edges += EntityEdge("m:${m.name}", "e:$k") } }
-        return EntityGraphModel(nodes, edges)
+        return EntityGraphModel(nodes, edges, weakest)
     }
 
     /** Positions in unit space (root at 0,0, modules on a ring of radius 1, each module's leads fanned out beyond it). */

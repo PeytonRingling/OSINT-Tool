@@ -29,4 +29,14 @@ class EntityGraphTest {
         val g = EntityGraph.build("x", listOf(f("1", ModuleId.IDENTITY, *Array(100) { "u$it" })))
         assertEquals(40, g.entityCount)
     }
+
+    @Test fun weakestLinkIsTheLeadBehindAnExposedFindingListedByMostSources() {
+        fun fx(id: String, m: ModuleId, sev: Severity, vararg q: String) = Finding(id, m, id, "d", sev, pivots = q.map { Pivot(it, it) })
+        val g = EntityGraph.build("x", listOf(
+            fx("1", ModuleId.IDENTITY, Severity.INFO, "calm", "shared"), fx("2", ModuleId.CODE, Severity.EXPOSED, "shared", "risky"), fx("3", ModuleId.BREACH, Severity.INFO, "shared"),
+        ))
+        assertEquals("e:shared", g.weakest)                    // hot (via CODE) and listed by three sources
+        assertTrue(g.reason("e:shared")!!.contains("flagged it as exposed"))
+        assertEquals(null, EntityGraph.build("x", listOf(fx("1", ModuleId.IDENTITY, Severity.INFO, "calm"))).weakest)
+    }
 }

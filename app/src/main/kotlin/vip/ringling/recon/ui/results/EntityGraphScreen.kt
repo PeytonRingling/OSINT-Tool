@@ -2,6 +2,7 @@ package vip.ringling.recon.ui.results
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -68,6 +69,7 @@ fun EntityGraphDialog(model: EntityGraphModel, onPivot: (String) -> Unit, onDism
         // The graph unfolds from the centre on open.
         val open = remember { Animatable(if (animate) 0f else 1f) }
         LaunchedEffect(Unit) { if (animate) open.animateTo(1f, tween(900, easing = FastOutSlowInEasing)) }
+        val pulse = if (animate) androidx.compose.animation.core.rememberInfiniteTransition(label = "pulse").animateFloat(0f, 1f, androidx.compose.animation.core.infiniteRepeatable(androidx.compose.animation.core.tween(1400), androidx.compose.animation.core.RepeatMode.Reverse), label = "p").value else 0f
         var zoom by remember { mutableFloatStateOf(1f) }
         var pan by remember { mutableStateOf(Offset.Zero) }
         var selected by remember { mutableStateOf<String?>(null) }
@@ -97,18 +99,20 @@ fun EntityGraphDialog(model: EntityGraphModel, onPivot: (String) -> Unit, onDism
                 drawCircle(sig.signal.copy(alpha = 0.08f), unit * 1.9f * open.value, c, style = Stroke(1f, pathEffect = dash))
                 model.edges.forEach { e ->
                     val hot = selected != null && (e.from == selected || e.to == selected)
-                    drawLine(if (hot) sig.signal else sig.signal.copy(alpha = 0.3f), at(e.from), at(e.to), strokeWidth = if (hot) 2.5f else 1.2f)
+                    val risky = byId[e.to]?.hot == true
+                    drawLine(if (hot) sig.signal else if (risky) sig.alert.copy(alpha = 0.55f) else sig.signal.copy(alpha = 0.3f), at(e.from), at(e.to), strokeWidth = if (hot) 2.5f else if (risky) 1.8f else 1.2f)
                 }
                 model.nodes.forEach { n ->
                     val p = at(n.id); val isSel = n.id == selected
                     val (r, col) = when (n.kind) {
                         EntityNode.Kind.ROOT -> 30.dp.toPx() to sig.signal
                         EntityNode.Kind.MODULE -> 18.dp.toPx() to sig.info
-                        EntityNode.Kind.ENTITY -> 11.dp.toPx() to sig.safe
+                        EntityNode.Kind.ENTITY -> 11.dp.toPx() to (if (n.hot) sig.alert else sig.safe)
                     }
                     val rr = r * (0.8f + 0.2f * zoom.coerceIn(0.6f, 1.5f))
+                    if (n.id == model.weakest) drawCircle(sig.alert.copy(alpha = 0.35f + 0.25f * pulse), rr + 8.dp.toPx() + 4.dp.toPx() * pulse, p, style = Stroke(2f))
                     drawCircle(col.copy(alpha = 0.16f), rr, p); drawCircle(col, rr, p, style = Stroke(if (isSel) 3.5f else 1.8f))
-                    val label = if (n.kind == EntityNode.Kind.ROOT) n.label.take(22) else n.label
+                    val label = if (n.kind == EntityNode.Kind.ROOT) n.label.take(22) else if (n.id == model.weakest) "${n.label} · WEAKEST LINK" else n.label
                     val t = measurer.measure(label, TextStyle(fontFamily = MonoFont, fontSize = (if (n.kind == EntityNode.Kind.ENTITY) 9f else 10f).sp, color = if (isSel) sig.text else sig.muted, letterSpacing = 0.6.sp))
                     if (open.value > 0.7f) drawText(t, topLeft = Offset(p.x - t.size.width / 2f, p.y + rr + 4.dp.toPx()))
                 }
@@ -127,6 +131,7 @@ fun EntityGraphDialog(model: EntityGraphModel, onPivot: (String) -> Unit, onDism
             ) {
                 SignalLabel(when (sel.kind) { EntityNode.Kind.MODULE -> "Source"; else -> "Lead" + (sel.type?.let { " · ${it.label}" } ?: "") }, small = true)
                 Text(sel.query ?: sel.label, color = sig.text, style = ReconType.value)
+                model.reason(sel.id)?.let { why -> Text((if (sel.id == model.weakest) "Weakest link. " else "") + why + ".", color = if (sel.hot) sig.alertText else sig.muted, style = ReconType.value.copy(fontSize = 11.sp)) }
                 if (sel.query != null) SignalButton("Search this", { onPivot(sel.query) }, Modifier.fillMaxWidth(), filled = true)
             }
         }

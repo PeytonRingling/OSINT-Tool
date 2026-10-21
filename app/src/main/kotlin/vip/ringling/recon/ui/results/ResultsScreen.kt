@@ -142,6 +142,7 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
         val (title, list, empty) = when (sh) {
             is SheetFor.Module -> Triple(sh.label.lowercase().replaceFirstChar { it.uppercase() }, scored.filter { it.module == sh.module }, "Nothing found by this module.")
             is SheetFor.Step -> Triple(sh.step.title, scored.filter { it.id in sh.step.findingIds }, "No matching findings.")
+            is SheetFor.Source -> Triple(sh.check.name + " · " + sh.check.summary, state.findings.filter { it.id in sh.check.findingIds }, "Nothing found by this source.")
         }
         androidx.compose.material3.ModalBottomSheet(onDismissRequest = { sheet = null }, containerColor = sig.panel) {
             Column(Modifier.padding(horizontal = 12.dp).padding(bottom = 24.dp)) {
@@ -199,8 +200,9 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
                         sources.forEachIndexed { i, sc ->
                             if (i > 0) Box(Modifier.fillMaxWidth().height(1.dp).background(Color.White.copy(alpha = 0.07f)))
                             val target = sc.findingId?.let { id -> state.findings.firstOrNull { it.id == id } }
+                            val listable = sc.findingIds.isNotEmpty()
                             Row(
-                                Modifier.fillMaxWidth().heightIn(min = 52.dp).let { m -> if (target == null) m else m.clickable(onClickLabel = "Open ${sc.name} result") { actions.onFinding(target) } }.padding(vertical = 8.dp),
+                                Modifier.fillMaxWidth().heightIn(min = 52.dp).let { m -> if (listable) m.clickable(onClickLabel = "Show what ${sc.name} found") { sheet = SheetFor.Source(sc) } else if (target == null) m else m.clickable(onClickLabel = "Open ${sc.name} result") { actions.onFinding(target) } }.padding(vertical = 8.dp),
                                 verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
                             ) {
                                 Column(Modifier.weight(1f)) {
@@ -213,7 +215,7 @@ fun ExposureScreen(state: ResultsUiState, actions: ResultsActions, modifier: Mod
                                     vip.ringling.recon.domain.SourceState.SKIPPED -> StatusTag("Skipped", Tone.MUTED)
                                     vip.ringling.recon.domain.SourceState.FAILED -> StatusTag("Failed", Tone.ALERT)
                                 }
-                                if (target != null) Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = sig.muted)
+                                if (listable || target != null) Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, null, tint = sig.muted)
                             }
                         }
                     }
@@ -514,6 +516,7 @@ fun FindingGroup(title: String, trailing: String, items: List<Finding>, handled:
 private sealed interface SheetFor {
     data class Module(val module: ModuleId, val label: String) : SheetFor
     data class Step(val step: vip.ringling.recon.domain.FixStep) : SheetFor
+    data class Source(val check: vip.ringling.recon.domain.SourceCheck) : SheetFor
 }
 
 /** Preview that floats over the map when a pin is tapped (phones): photo, name, address, tags, distance and a Details button. */

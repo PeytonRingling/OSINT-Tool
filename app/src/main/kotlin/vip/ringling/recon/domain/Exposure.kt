@@ -15,7 +15,7 @@ data class TimelineEvent(val year: Int, val month: Int, val severity: Severity, 
 enum class SourceState { FOUND, CLEAN, SKIPPED, FAILED }
 
 /** One breach source's outcome for a scan, so a clean, skipped or failed source is visible instead of silently missing. */
-data class SourceCheck(val name: String, val state: SourceState, val summary: String, val findingId: String?)
+data class SourceCheck(val name: String, val state: SourceState, val summary: String, val findingId: String?, /** Everything this source found, so its row can list it. */ val findingIds: List<String> = emptyList())
 
 data class FixStep(val title: String, val detail: String, val urgent: Boolean, /** Findings this step is about (tapping the step lists them). */ val findingIds: List<String> = emptyList())
 
@@ -64,7 +64,7 @@ object Exposure {
                 hibpRows.any { it.id == "BREACH-hibp-nokey" } -> SourceCheck("Have I Been Pwned", SourceState.SKIPPED, "No API key set", null)
                 err != null -> SourceCheck("Have I Been Pwned", SourceState.FAILED, err.detail.lineSequence().first(), err.id)
                 breaches.isEmpty() -> SourceCheck("Have I Been Pwned", SourceState.CLEAN, "No breaches", null)
-                else -> SourceCheck("Have I Been Pwned", SourceState.FOUND, "${breaches.size} breach${if (breaches.size == 1) "" else "es"}", null)
+                else -> SourceCheck("Have I Been Pwned", SourceState.FOUND, "${breaches.size} breach${if (breaches.size == 1) "" else "es"}", null, breaches.map { it.id })
             }
         }
         val leak = b.filter { it.id.startsWith("BREACH-leakcheck") }
@@ -75,7 +75,7 @@ object Exposure {
             out += when {
                 err != null -> SourceCheck("LeakCheck", SourceState.FAILED, err.detail.lineSequence().first(), err.id)
                 main == null || main.severity == Severity.CLEAN -> SourceCheck("LeakCheck", SourceState.CLEAN, "No results" + if (keyed) "" else " (free endpoint)", main?.id)
-                else -> SourceCheck("LeakCheck", SourceState.FOUND, main.title.substringAfter("· ") + if (keyed) "" else " (free endpoint)", main.id)
+                else -> SourceCheck("LeakCheck", SourceState.FOUND, main.title.substringAfter("· ") + if (keyed) "" else " (free endpoint)", main.id, leak.filter { !it.id.endsWith("-error") && it.severity != Severity.CLEAN }.map { it.id })
             }
         }
         return out
