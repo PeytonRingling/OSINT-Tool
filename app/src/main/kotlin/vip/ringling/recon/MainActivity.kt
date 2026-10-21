@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
             "vip.ringling.recon.SCAN_CLIPBOARD" -> { scanClipboardOnFocus = true; null }
             else -> null
         }
-        query?.let(vm::requestSearch)
+        if (query != null && intent.action != Intent.ACTION_VIEW && vip.ringling.recon.domain.IncomingText.isLink(query)) vm.requestLink(query) else query?.let(vm::requestSearch)
         if (query != null || intent.action == "vip.ringling.recon.SCAN_CLIPBOARD") setIntent(Intent(this, MainActivity::class.java))
     }
 }

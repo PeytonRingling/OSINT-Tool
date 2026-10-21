@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en"><head><title>Idaho State Police - SOR Map Search Results</title></head>
+<body>
+<div style="font-weight:bold;">Found 2 registrant addresses within a 3 mile radius of the search address.</div>
+<div style="font-weight:bold;float:left;">Search address:<br /><div>100 FICTION AVE<br />BOISE&#160;IDAHO&#160;</div></div>
+<script type="text/javascript">
+            function initialize() {
+                let map = new google.maps.Map(document.getElementById("map"), {center: new google.maps.LatLng(43.6150000, -116.2020000, true)});
+                let marker = new google.maps.Marker({
+                    position: new google.maps.LatLng(43.6150000, -116.2020000, true),
+                    icon: image,
+                    map: map
+                });
+                contentStringArray[0] = "<div style='line-height:1.25em;font-size:1em;color:black;height:16em;'>" +
+                    "SAMPLE, ALEX Q<br />" +
+                    "200 EXAMPLE ST<br />" +
+                    "BOISE 83702<br />" +
+                    "STATE OFFENSE CODE: 18-0000<br />" +
+                    "STATE OFFENSE LITERAL: FICTIONAL OFFENSE ONE<br />" +
+                    " <img src='../../sorFiles/photos/thumbs/FAKE_90001_01-02-2024.jpg' style='height:75px;'><br />" +
+                    " Distance from subject's address to search address: 0.552 miles <br />" +
+                    " <a href='../SOR?id=" + 90001 +
+                        "&amp;sz=" + 400 +
+                        "'>Complete details about this registrant</a><br /></div>";
+
+                // Adult
+                imageArray[0] = new google.maps.MarkerImage("../img/red-dot.png", null, null, null, null);
+
+                markers[0] = new google.maps.Marker({
+                    position: new google.maps.LatLng(43.6200000, -116.2100000, true),
+                    icon: imageArray[0],
+                    map: map
+                });
+                html[1] = "<div style='line-height:1.25em;'><span style='font-weight:bold;'>Found 2 registrants:</span><br />";
+                registrants[1] = "<div style='line-height:1.25em;font-size:1em;color:black;height:16em;'>EXAMPLE, BEN<br />300 SAMPLE WAY<br />BOISE 83702-1234<br />STATE OFFENSE CODE: 18-0001<br />STATE OFFENSE LITERAL: FICTIONAL OFFENSE TWO<br /> <img src='../../sorFiles/photos/thumbs/FAKE_90002_01-02-2024.jpg' style='height:75px;'><br /> Distance from subject's address to search address: 1.250 miles <br /> <a href='../SOR?id=" + 90002 +"&amp;sz=" + 400 +"'>Complete details about this registrant</a><br /><a href='javascript:openList(1)'> back to Registrant List</a></div>";
+                html[1] += "<a href='javascript:openRegistrant(1,1)'>EXAMPLE, BEN</a> ";
+                registrants[2] = "<div style='line-height:1.25em;font-size:1em;color:black;height:16em;'>THIRD, PERSON C<br />300 SAMPLE WAY<br />BOISE 83702-1234<br />STATE OFFENSE CODE: 18-0002<br />STATE OFFENSE LITERAL: FICTIONAL OFFENSE THREE<br /> Distance from subject's address to search address: 1.250 miles <br /> <a href='../SOR?id=" + 90003 +"&amp;sz=" + 400 +"'>Complete details about this registrant</a><br /></div>";
+                html[1] += "</div>";
+
+                markers[1] = new google.maps.Marker({
+                    position: new google.maps.LatLng(43.6300000, -116.2300000, true),
+                    icon: imageArray[1],
+                    map: map
+                });
+            }
+</script></body></html>

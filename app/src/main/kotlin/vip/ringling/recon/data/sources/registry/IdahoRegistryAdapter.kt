@@ -55,6 +55,8 @@ class IdahoRegistryAdapter @Inject constructor(
     /** Bounds for very large searches (e.g. a whole county). A typical ZIP is well under both. */
     internal var maxPagesPerDatabase = 20
     internal var maxEnriched = 200
+    /** A 5-mile search in a city can list hundreds of registrants; show the nearest this many. */
+    internal var maxMapRecords = 300
 
     private class Listing(val label: String, val rows: List<IdahoRow>, val total: Int, val pagesMissed: Int, val pageCapped: Boolean)
 
@@ -121,6 +123,26 @@ class IdahoRegistryAdapter @Inject constructor(
         return parseResults(html) to parsePagerTemplate(html)
     }
 
+    override fun searchAddress(query: vip.ringling.recon.domain.AddressQuery): Flow<RegistryEvent> = channelFlow {
+        val form = FormBody.Builder().add("adr", query.street).add("cty", query.city).add("sta", "IDAHO").add("rad", query.miles.toString()).add("sz", "400").build()
+        val html = http.execute(Request.Builder().url("${endpoints.idahoSor}/jsp/map_search_result.jsp").post(form).build()) { r ->
+            if (r.code != 200) throw HttpException(r.code, "Idaho registry returned HTTP ${r.code}")
+            r.body.string()
+        }
+        if (html.contains("Unable to display a map for the requested address", ignoreCase = true)) throw AdapterUnavailable("The registry couldn't map that address. Check the street number, name and city.")
+        val all = parseMapSearch(html).sortedBy { it.miles ?: Double.MAX_VALUE }
+        val records = all.take(maxMapRecords)
+        send(RegistryEvent.Header(all.size, records.size, capped = records.size < all.size, searchUrl = "${endpoints.idahoSor}/map_search.html"))
+        coroutineScope {
+            records.forEachIndexed { i, rec ->
+                launch {
+                    val detail = if (i < maxEnriched) optional { limiter.run { fetch(rec.href) { parseDetail(it) } } } else null
+                    send(RegistryEvent.Entry(toEntry(rec.toRow(), detail, rec.geo, rec.label, miles = rec.miles, listedOffense = rec.offense)))
+                }
+            }
+        }
+    }
+
     private suspend fun <T> optional(block: suspend () -> T): T? = try {
         block()
     } catch (e: CancellationException) {
@@ -139,7 +161,7 @@ class IdahoRegistryAdapter @Inject constructor(
         return parse(html)
     }
 
-    internal fun toEntry(row: IdahoRow, d: IdahoDetail?, geo: GeoPoint?, label: String): RegistryEntry {
+    internal fun toEntry(row: IdahoRow, d: IdahoDetail?, geo: GeoPoint?, label: String, miles: Double? = null, listedOffense: String? = null): RegistryEntry {
         val status = (d?.regStatus ?: row.status).takeIf { it.isNotBlank() }
         val nonCompliant = status?.contains("NON", ignoreCase = true) == true
         val dates = d?.offenses?.map { it.date }?.filter { it.isNotBlank() }?.distinct().orEmpty()
@@ -152,9 +174,10 @@ class IdahoRegistryAdapter @Inject constructor(
         val place = listOf(row.address, row.city, row.county.takeIf { it.isNotBlank() }?.let { "$it County" }, row.zip).filter { !it.isNullOrBlank() }.joinToString(", ")
         val lines = buildList {
             add(place)
+            miles?.let { add("%.2f mi from the searched address".format(it)) }
             add(listOfNotNull(status?.let { "Status: $it" }, d?.lastRegistered?.takeIf { it.isNotBlank() }?.let { "Last registered: $it" }).joinToString(" · "))
             when {
-                d == null -> add("Offense details unavailable (open the official record).")
+                d == null -> add(listedOffense?.let { "Offense (as listed): $it" } ?: "Offense details unavailable (open the official record).")
                 d.offenses.isEmpty() -> add("No offenses listed.")
                 else -> {
                     add("Offenses (${d.offenses.size}):")
@@ -176,10 +199,58 @@ class IdahoRegistryAdapter @Inject constructor(
             imageLargeUrl = abs(d?.photoHref ?: row.photoHref),
             tags = tags,
             hotTags = setOf("Non-compliant", "Multiple convictions"),
+            miles = miles,
         )
     }
 
     companion object {
+        /** One registrant on the registry's map-search page. [href] is relative to /sor_id/. */
+        data class MapRecord(val id: String, val href: String, val name: String, val address: String, val city: String, val zip: String, val offense: String?, val photoHref: String?, val miles: Double?, val geo: GeoPoint?, val label: String) {
+            fun toRow() = IdahoRow(id, href, name, "", address, city, "", zip, "", photoHref)
+        }
+
+        private val mapToken = Regex(
+            """(?s)(?:(?:contentStringArray|registrants)\[\d+]\s*=\s*"(?<rec>.*?)";)|(?:markers\[\d+]\s*=\s*new google\.maps\.Marker\(\{\s*position:\s*new google\.maps\.LatLng\(\s*(?<lat>-?\d+\.\d+)\s*,\s*(?<lng>-?\d+\.\d+))|(?://\s*(?<kind>Adult|Juvenile))""",
+        )
+
+        /**
+         * The map-search page embeds every registrant as a JS string (name, address, city/ZIP, offense, thumbnail, distance, detail link),
+         * followed by the marker that places it; registrants at one address share a marker. Strings are rebuilt (`" + 123 + "` joins) and read
+         * as HTML. Only what the page itself lists is read; date of birth and descriptions are not on it.
+         */
+        fun parseMapSearch(html: String): List<MapRecord> {
+            val out = mutableListOf<MapRecord>(); val pending = mutableListOf<MapRecord>(); var kind = "Adult"
+            for (m in mapToken.findAll(html)) {
+                val rec = m.groups["rec"]?.value
+                when {
+                    rec != null -> parseMapRecord(rec, kind)?.let { pending += it }
+                    m.groups["lat"] != null -> {
+                        val lat = m.groups["lat"]!!.value.toDouble(); val lng = m.groups["lng"]!!.value.toDouble()
+                        val geo = if (lat in -90.0..90.0 && lng in -180.0..180.0 && !(lat == 0.0 && lng == 0.0)) GeoPoint(lat, lng) else null
+                        pending.forEach { out += it.copy(geo = geo) }; pending.clear(); kind = "Adult"
+                    }
+                    m.groups["kind"] != null -> kind = m.groups["kind"]!!.value
+                }
+            }
+            out += pending
+            return out.distinctBy { it.id }
+        }
+
+        private fun parseMapRecord(raw: String, label: String): MapRecord? {
+            val joined = raw.replace(Regex("\"\\s*\\+\\s*(\\d+)\\s*\\+\\s*\""), "$1").replace(Regex("\"\\s*\\+\\s*\""), "")
+            val id = Regex("""SOR\?id=(\d+)""").find(joined)?.groupValues?.get(1) ?: return null
+            val lines = joined.split(Regex("<br\\s*/?>")).map { clean(Jsoup.parse(it).text()) }
+            fun after(prefix: String) = lines.firstOrNull { it.startsWith(prefix) }?.removePrefix(prefix)?.trim()
+            val name = lines.getOrNull(0).orEmpty(); val address = lines.getOrNull(1).orEmpty(); val cityZip = lines.getOrNull(2).orEmpty()
+            val zip = Regex("""\b(\d{5}(?:-\d{4})?)\s*$""").find(cityZip)?.groupValues?.get(1).orEmpty()
+            val city = cityZip.removeSuffix(zip).trim().trimEnd(',').replace(Regex("\\s+(ID|IDAHO)$"), "").trim()
+            val code = after("STATE OFFENSE CODE:"); val literal = after("STATE OFFENSE LITERAL:")
+            val photo = Regex("""src=['"]([^'"]*photos/[^'"]+)['"]""").find(joined)?.groupValues?.get(1)?.replace("../../", "../")
+            val miles = Regex("""([\d.]+)\s*miles""").find(joined)?.groupValues?.get(1)?.toDoubleOrNull()
+            if (name.isBlank()) return null
+            return MapRecord(id, "SOR?id=$id&sz=400", name, address, city, zip, listOfNotNull(code, literal).joinToString(" – ").ifBlank { null }, photo, miles, null, label)
+        }
+
         // Seen live: "60 matches found in 4 pages.", "4 matches found.", "1 match.", "0 matches found".
         private val matchRe = Regex("""(\d+)\s+match(?:es)?(?:\s+found)?(?:\s+in\s+(\d+)\s+pages?)?""", RegexOption.IGNORE_CASE)
         private val latLngRe = Regex("""google\.maps\.LatLng\(\s*(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)\s*\)""")

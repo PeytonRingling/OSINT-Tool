@@ -52,6 +52,9 @@ class MainViewModel @Inject constructor(
     val update: StateFlow<UpdateState> = updates.state
     fun checkForUpdateQuietly() = updates.checkQuietly()
     fun requestSearch(query: String) = controller.requestSearch(query)
+    val pendingLink = controller.pendingLink
+    fun requestLink(url: String) = controller.requestLink(url)
+    fun consumeLink() = controller.consumeLink()
     fun runPaid(f: Finding) = controller.runPaid(f)
     val batch: StateFlow<vip.ringling.recon.data.BatchState> = controller.batch
     fun rescanAll(inputs: List<vip.ringling.recon.domain.ScanInput>) = controller.rescanAll(inputs)
@@ -79,6 +82,8 @@ class DetailViewModel @Inject constructor(
     private val id: String = checkNotNull(handle["id"])
     val handled: StateFlow<Set<String>> = handledRepo.handled.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
     fun setHandled(f: Finding, on: Boolean) { viewModelScope.launch { handledRepo.set(f, on) } }
+    val doneSteps: StateFlow<Set<String>> = handledRepo.doneSteps.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
+    fun setStep(f: Finding, index: Int, done: Boolean, total: Int) { viewModelScope.launch { handledRepo.setStep(f, index, done, total) } }
     val finding: StateFlow<Finding?> = combine(controller.session, history.records) { s, recs ->
         s?.findings?.firstOrNull { it.id == id }
             ?: recs.firstNotNullOfOrNull { r -> r.findings.firstOrNull { it.id == id } }

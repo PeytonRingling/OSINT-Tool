@@ -27,6 +27,8 @@ data class RegistryEntry(
     val imageLargeUrl: String? = null,
     val tags: List<String> = emptyList(),
     val hotTags: Set<String> = emptySet(),
+    /** Distance from the searched address (address searches only), used for ordering. */
+    val miles: Double? = null,
 )
 
 /**
@@ -51,13 +53,15 @@ interface RegistryAdapter {
     val stateName: String
     fun handlesZip(zip: String): Boolean
     fun search(query: RegistryQuery): Flow<RegistryEvent>
+    /** Registrants around one street address, via the registry's own map search. Null when the state has no such search. */
+    fun searchAddress(query: vip.ringling.recon.domain.AddressQuery): Flow<RegistryEvent>? = null
 }
 
 class RegistrySource @Inject constructor(private val adapters: Set<@JvmSuppressWildcards RegistryAdapter>) : OsintSource {
     override val id = ModuleId.REGISTRY
-    override val supportedInputTypes = setOf(InputType.ZIP)
+    override val supportedInputTypes = setOf(InputType.ZIP, InputType.ADDRESS)
 
-    override suspend fun run(input: ScanInput): Flow<Finding> = flow {
+    override suspend fun run(input: ScanInput): Flow<Finding> = if (input.type == InputType.ADDRESS) runAddress(input) else flow {
         val zip = input.raw.take(5)
         val adapter = adapters.firstOrNull { it.handlesZip(zip) }
         if (adapter == null) {
@@ -79,6 +83,48 @@ class RegistrySource @Inject constructor(private val adapters: Set<@JvmSuppressW
                                 title = "${ev.totalMatches} match${if (ev.totalMatches == 1) "" else "es"} in $zip",
                                 detail = (if (ev.capped) "Showing ${ev.listed} of ${ev.totalMatches}; open the official ${adapter.stateName} registry for the rest. " else "") +
                                     "Matches are by location only. The registry warns that records may not relate to the person you have in mind; verify before relying on any of this.",
+                                severity = Severity.INFO, url = ev.searchUrl,
+                            ),
+                        )
+                    }
+                }
+                is RegistryEvent.Entry -> {
+                    val e = ev.entry
+                    emit(
+                        Finding(
+                            id = "REGISTRY-${adapter.stateCode}-${e.key}", module = ModuleId.REGISTRY, title = e.name, detail = e.summary,
+                            severity = e.severity, url = e.sourceUrl, raw = "", confidence = Confidence.HIGH,
+                            geo = e.geo, imageUrl = e.imageUrl, imageLargeUrl = e.imageLargeUrl, tags = e.tags, hotTags = e.hotTags,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
+    /** Address search: the registry's own "map search" for the street address typed by the user, live and unstored. */
+    private fun runAddress(input: ScanInput): Flow<Finding> = flow {
+        val q = vip.ringling.recon.domain.AddressQuery.parse(input.raw)
+        val adapter = adapters.firstOrNull { it.stateCode == "ID" }
+        val events = if (q == null || adapter == null) null else adapter.searchAddress(q)
+        if (q == null || adapter == null || events == null) {
+            emit(Finding("REGISTRY-nostate", ModuleId.REGISTRY, "Address search unavailable", "Address search needs a street address and an Idaho city, and is currently available for Idaho only.", Severity.INFO))
+            return@flow
+        }
+        events.collect { ev ->
+            when (ev) {
+                is RegistryEvent.Header -> {
+                    ev.notes.forEachIndexed { i, n -> emit(Finding("REGISTRY-note-$i", ModuleId.REGISTRY, "Part of the registry could not be searched", n, Severity.INFO)) }
+                    val where = "${q.miles} mile${if (q.miles == 1) "" else "s"} of ${q.street}, ${q.city}"
+                    if (ev.totalMatches == 0 && ev.listed == 0) {
+                        emit(Finding("REGISTRY-none", ModuleId.REGISTRY, "No registrants within $where", "The ${adapter.stateName} registry lists no registrant addresses in that radius.", Severity.CLEAN, ev.searchUrl))
+                    } else {
+                        emit(
+                            Finding(
+                                id = "REGISTRY-summary", module = ModuleId.REGISTRY,
+                                title = "${ev.totalMatches} registrant${if (ev.totalMatches == 1) "" else "s"} within $where",
+                                detail = (if (ev.capped) "Showing ${ev.listed} of ${ev.totalMatches}; open the official ${adapter.stateName} registry for the rest. " else "") +
+                                    "Distances are from the address you typed, as mapped by the registry. The registry warns that its map locations can be approximate and that records may not relate to the person you have in mind; verify before relying on any of this.",
                                 severity = Severity.INFO, url = ev.searchUrl,
                             ),
                         )

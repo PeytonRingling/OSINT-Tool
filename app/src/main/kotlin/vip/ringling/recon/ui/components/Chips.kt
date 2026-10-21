@@ -25,6 +25,7 @@ import androidx.compose.material.icons.outlined.Language
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Badge
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Pin
 import androidx.compose.material.icons.outlined.Phone
 import androidx.compose.material.icons.outlined.Warning
@@ -68,6 +69,7 @@ fun InputType.icon(): ImageVector = when (this) {
     InputType.IP -> Icons.Outlined.Router
     InputType.WALLET -> Icons.Outlined.CurrencyBitcoin
     InputType.PERSON -> Icons.Outlined.Person
+    InputType.ADDRESS -> Icons.Outlined.Home
 }
 
 @Composable

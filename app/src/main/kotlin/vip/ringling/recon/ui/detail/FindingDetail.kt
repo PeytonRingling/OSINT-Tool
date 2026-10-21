@@ -66,6 +66,8 @@ data class DetailActions(
     val onPivot: (String) -> Unit = {},
     val onRunPaid: (Finding) -> Unit = {},
     val onHandled: (Finding, Boolean) -> Unit = { _, _ -> },
+    /** Tick / untick step [index] of [total] in the finding's "What to do" checklist. */
+    val onStep: (Finding, Int, Boolean, Int) -> Unit = { _, _, _, _ -> },
     val onEvidence: (Finding) -> Unit = {},
 )
 
@@ -84,6 +86,7 @@ fun FindingDetail(
     onBack: (() -> Unit)? = null,
     contentPadding: PaddingValues = PaddingValues(),
     handled: Boolean = false,
+    doneSteps: Set<String> = emptySet(),
 ) {
     val cs = MaterialTheme.colorScheme
     val isBreach = finding.isBreachRecord()
@@ -147,7 +150,7 @@ fun FindingDetail(
                 }
             }
         }
-        if (isBreach) breachSections(finding, actions) else item {
+        if (isBreach) breachSections(finding, actions, doneSteps) else item {
             DetailText(finding.detail, Modifier.padding(horizontal = 8.dp))
         }
         if (finding.pivots.isNotEmpty()) item { PivotsCard(finding.pivots, actions.onPivot) }

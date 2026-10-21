@@ -4,6 +4,9 @@ package vip.ringling.recon.domain
 object IncomingText {
     fun clean(text: String?): String? = text?.lineSequence()?.firstOrNull { it.isNotBlank() }?.trim()?.take(200)?.takeIf { it.isNotEmpty() }
 
+    /** A shared web link (http/https, no spaces) goes to the Lab's link inspector instead of being searched. */
+    fun isLink(text: String?): Boolean = text != null && Regex("""(?i)^https?://\S+$""").matches(text.trim())
+
     /** (Android already percent-decodes the scheme-specific part.) `mailto:ann@b.com?subject=x` → `ann@b.com`; `tel:+1 (208) 555-0100` → `+1 (208) 555-0100`. */
     fun fromUri(scheme: String?, schemeSpecificPart: String?): String? {
         val ssp = schemeSpecificPart ?: return null

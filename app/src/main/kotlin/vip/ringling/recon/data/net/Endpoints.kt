@@ -6,6 +6,8 @@ data class Endpoints(
     val leakCheckApi: String = "https://leakcheck.io/api/v2",
     val leakCheckPublic: String = "https://leakcheck.io/api/public",
     val doh: String = "https://cloudflare-dns.com/dns-query",
+    /** Cloudflare's malware-blocking resolver: answers 0.0.0.0 for domains it knows to be malicious. */
+    val dohSecurity: String = "https://security.cloudflare-dns.com/dns-query",
     val crtSh: String = "https://crt.sh",
     val rdap: String = "https://rdap.org",
     val spotify: String = "https://spclient.wg.spotify.com",

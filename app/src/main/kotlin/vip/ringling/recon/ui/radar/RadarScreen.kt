@@ -33,7 +33,7 @@ import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Badge
 import androidx.compose.material.icons.outlined.ContentPaste
-import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -74,7 +74,7 @@ data class RadarActions(
     val onLoadout: () -> Unit = {},
     val onPhoto: () -> Unit = {},
     val onNewCase: () -> Unit = {},
-    val onPassword: () -> Unit = {},
+    val onAddress: () -> Unit = {},
     val onPerson: () -> Unit = {},
 )
 
@@ -198,7 +198,7 @@ private fun ActionButtons(actions: RadarActions) {
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
         SignalButton("Name search", actions.onPerson, Modifier.weight(1f), icon = Icons.Outlined.Badge, mono = true)
-        SignalButton("Password", actions.onPassword, Modifier.weight(1f), icon = Icons.Outlined.Lock, mono = true)
+        SignalButton("Address search", actions.onAddress, Modifier.weight(1f), icon = Icons.Outlined.Home, mono = true)
     }
 }
 

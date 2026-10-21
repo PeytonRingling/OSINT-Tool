@@ -334,7 +334,7 @@ fun AreaScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modifie
                 Row(
                     Modifier.height(48.dp).clip(RoundedCornerShape(10.dp)).background(sig.ground.copy(alpha = 0.78f)).border(1.dp, sig.line, RoundedCornerShape(10.dp)).padding(horizontal = 14.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) { SignalLabel("ZIP"); Text(state.input?.raw.orEmpty(), color = sig.text, style = ReconType.value.copy(fontSize = 14.sp)) }
+                ) { SignalLabel(if (state.input?.type == vip.ringling.recon.domain.InputType.ADDRESS) "Address" else "ZIP"); Text(state.input?.raw.orEmpty(), color = sig.text, style = ReconType.value.copy(fontSize = 14.sp)) }
                 Box(Modifier.weight(1f))
                 GlassButton(Icons.Rounded.BookmarkAdd, "Pin to case", actions.onPin)
             }
@@ -438,7 +438,7 @@ fun AreaSheetList(state: ResultsUiState, actions: ResultsActions, records: List<
             }
             extras.filter { it.id != "REGISTRY-summary" }.forEach { n -> item(key = n.id) { RegistryNoteRow(n) } }
             items(sorted, key = { it.id }) { r -> RegistryRow(r, me, state.selectedId == r.id, onOpen = { actions.onOpenFinding(r) }) { actions.onFinding(r) } }
-            if (records.isEmpty() && !state.running) item { Text("No records for this ZIP.", color = sig.safeText, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 16.dp)) }
+            if (records.isEmpty() && !state.running) item { Text(if (state.input?.type == vip.ringling.recon.domain.InputType.ADDRESS) "No registrants near this address." else "No records for this ZIP.", color = sig.safeText, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(vertical = 16.dp)) }
         }
     }
 }

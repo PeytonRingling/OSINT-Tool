@@ -49,6 +49,7 @@ private const val LABELLED = 3
 /** Text shown under a blip's value. */
 fun blipStatus(t: RadarTarget): String = when {
     t.input.type == InputType.PERSON -> if (t.records == null) "NAME SEARCH" else if (t.records == 0) "NO MATCHES" else "${t.records} MATCHES"
+    t.input.type == InputType.ADDRESS -> if (t.records == null) "ADDRESS" else if (t.records == 0) "CLEAN" else "${t.records} NEARBY"
     t.isArea -> if (t.records == null) "AREA SCAN" else if (t.records == 0) "CLEAN" else "${t.records} RECORDS"
     t.clean -> "CLEAN"
     else -> "RISK ${t.risk}"
@@ -56,6 +57,7 @@ fun blipStatus(t: RadarTarget): String = when {
 
 fun blipDescription(t: RadarTarget): String = when {
     t.input.type == InputType.PERSON -> "${t.input.raw}, name search, ${t.records ?: 0} matches"
+    t.input.type == InputType.ADDRESS -> "${t.input.raw}, address search, ${t.records ?: 0} records"
     t.isArea -> "ZIP ${t.input.raw}, ${if (t.records == null) "area scan" else if (t.records == 0) "clean" else "${t.records} records"}"
     t.clean -> "${t.input.raw}, clean"
     else -> "${t.input.raw}, risk ${t.risk}"

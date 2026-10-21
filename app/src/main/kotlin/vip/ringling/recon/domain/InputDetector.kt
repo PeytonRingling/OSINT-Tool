@@ -40,6 +40,7 @@ object InputDetector {
             InputType.IP -> s.lowercase()
             InputType.WALLET -> s
             InputType.PERSON -> s.replace(Regex("\\s+"), " ")
+            InputType.ADDRESS -> s.replace(Regex("\\s+"), " ")
         }
     }
 }

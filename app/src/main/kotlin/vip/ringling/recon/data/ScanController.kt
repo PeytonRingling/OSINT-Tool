@@ -74,6 +74,12 @@ class ScanController @Inject constructor(
     fun requestSearch(query: String) { _pendingQuery.value = query }
     fun consumePending() { _pendingQuery.value = null }
 
+    private val _pendingLink = MutableStateFlow<String?>(null)
+    /** A web link shared into Recon: the Lab's link inspector picks it up (it is inspected, never opened). */
+    val pendingLink: StateFlow<String?> = _pendingLink.asStateFlow()
+    fun requestLink(url: String) { _pendingLink.value = url }
+    fun consumeLink() { _pendingLink.value = null }
+
     private var batchJob: Job? = null
     private val _batch = MutableStateFlow(BatchState())
     /** Progress and per-target diff of a "Re-scan all" run (background; the main scan session is untouched). */

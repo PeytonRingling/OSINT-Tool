@@ -162,5 +162,6 @@ object MockData {
         InputType.IP -> setOf(ModuleId.NETWORK)
         InputType.WALLET -> setOf(ModuleId.CRYPTO)
         InputType.PERSON -> setOf(ModuleId.PEOPLE)
+        InputType.ADDRESS -> setOf(ModuleId.REGISTRY)
     }
 }

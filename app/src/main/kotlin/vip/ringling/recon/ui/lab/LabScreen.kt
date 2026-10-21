@@ -54,10 +54,12 @@ private val tools = listOf("Headers", "Message", "Link", "QR", "Decode", "Passwo
 
 /** The Lab tab: small one-shot tools that answer "is this message / link / password safe?" without creating a scan. */
 @Composable
-fun LabScreen(vm: LabViewModel, onPivot: (String) -> Unit, modifier: Modifier = Modifier, contentPadding: PaddingValues = PaddingValues()) {
+fun LabScreen(vm: LabViewModel, onPivot: (String) -> Unit, modifier: Modifier = Modifier, incomingLink: String? = null, onIncomingUsed: () -> Unit = {}, contentPadding: PaddingValues = PaddingValues()) {
     val sig = ReconTheme.signal
     var tool by rememberSaveable { mutableStateOf(0) }
     var prefill by remember { mutableStateOf<String?>(null) }
+    // A link shared into Recon from another app is inspected here.
+    androidx.compose.runtime.LaunchedEffect(incomingLink) { if (incomingLink != null) { prefill = incomingLink; tool = 2; onIncomingUsed() } }
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = contentPadding.calculateTopPadding() + 8.dp, bottom = contentPadding.calculateBottomPadding() + 24.dp, start = 16.dp, end = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -148,11 +150,19 @@ private fun LinkTool(vm: LabViewModel, onPivot: (String) -> Unit, prefill: Strin
     var url by rememberSaveable { mutableStateOf("") }
     var busy by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<TraceResult?>(null) }
+    var domainFlags by remember { mutableStateOf<List<Flag>?>(null) }
+    var checking by remember { mutableStateOf(false) }
+    fun checkDomain(target: String) { LinkAnalysis.host(LinkTracerNormalize(target))?.let { h -> checking = true; scope.launch { domainFlags = vm.domainCheck(h); checking = false } } }
     // A link handed over from the QR or message tool is followed straight away.
-    androidx.compose.runtime.LaunchedEffect(prefill) { if (prefill != null) { url = prefill; onPrefillUsed(); busy = true; result = vm.trace(prefill); busy = false } }
+    androidx.compose.runtime.LaunchedEffect(prefill) { if (prefill != null) { url = prefill; onPrefillUsed(); busy = true; domainFlags = null; result = vm.trace(prefill); busy = false; result?.chain?.lastOrNull()?.let { checkDomain(it) } } }
     Text("Follows the link's redirects to show where it really ends up. Recon contacts the link (through your Tor/proxy setting if on) but never loads the page.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
     SignalTextField(url, { url = it; result = null }, "Paste a link", description = "Link to inspect", keyboard = androidx.compose.ui.text.input.KeyboardType.Uri)
-    SignalButton(if (busy) "Following…" else "Follow link", { busy = true; scope.launch { result = vm.trace(url); busy = false } }, Modifier.fillMaxWidth(), filled = true, enabled = url.isNotBlank() && !busy)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        SignalButton("Check domain only", { checkDomain(url) }, Modifier.weight(1f), enabled = url.isNotBlank() && !checking, mono = true)
+        SignalButton(if (busy) "Following…" else "Follow link", { busy = true; domainFlags = null; scope.launch { result = vm.trace(url); busy = false; result?.chain?.lastOrNull()?.let { checkDomain(it) } } }, Modifier.weight(1f), filled = true, enabled = url.isNotBlank() && !busy)
+    }
+    Text("\"Check domain only\" never contacts the site: it asks a DNS block list and the domain registry (RDAP) instead.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+    domainFlags?.let { fl -> HairPanel(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { SignalLabel("Domain check · no contact"); fl.sortedBy { -it.severity.ordinal }.forEach { FlagRow(it) } } } }
     result?.let { r ->
         val flags = LinkAnalysis.analyze(r.chain, failed = r.error != null && r.hops.isNotEmpty())
         r.error?.takeIf { r.hops.isEmpty() }?.let { Text(it, color = sig.alertText, style = MaterialTheme.typography.bodyMedium) }
@@ -277,3 +287,5 @@ private fun DecodeTool() {
     if (raw.isNotBlank() && results.isEmpty()) Text("Nothing recognisable. It may be encrypted or hashed, which can't be reversed.", color = sig.muted, style = MaterialTheme.typography.bodyMedium)
     results.forEach { d -> HairPanel(Modifier.fillMaxWidth()) { Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) { SignalLabel(d.label, small = true); Text(d.value, color = sig.text, style = ReconType.value.copy(fontSize = 12.sp)) } } }
 }
+
+private fun LinkTracerNormalize(raw: String) = vip.ringling.recon.data.lab.LinkTracer.normalize(raw) ?: raw

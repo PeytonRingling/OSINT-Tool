@@ -19,6 +19,21 @@ class HandledRepository @Inject constructor(@ApplicationContext private val cont
     private val key = stringSetPreferencesKey("handled")
     val handled: Flow<Set<String>> = context.handledStore.data.map { it[key] ?: emptySet() }
 
+    private val stepsKey = stringSetPreferencesKey("steps")
+    /** Ticked "What to do" steps, as "<finding key>:<step index>". */
+    val doneSteps: Flow<Set<String>> = context.handledStore.data.map { it[stepsKey] ?: emptySet() }
+
+    /** Ticks or unticks one step of a finding's checklist; finishing the last step marks the finding handled, unticking one un-marks it. */
+    suspend fun setStep(f: Finding, index: Int, done: Boolean, total: Int) {
+        val fk = keyOf(f)
+        context.handledStore.edit { p ->
+            val steps = (p[stepsKey] ?: emptySet()).let { if (done) it + "$fk:$index" else it - "$fk:$index" }
+            p[stepsKey] = steps
+            val all = (0 until total).all { "$fk:$it" in steps }
+            p[key] = (p[key] ?: emptySet()).let { if (all && total > 0) it + fk else it - fk }
+        }
+    }
+
     suspend fun clear() { context.handledStore.edit { it.clear() } }
 
     suspend fun set(f: Finding, on: Boolean) {

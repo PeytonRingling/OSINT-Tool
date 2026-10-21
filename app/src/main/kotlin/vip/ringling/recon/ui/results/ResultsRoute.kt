@@ -52,7 +52,7 @@ fun ResultsRoute(
     val tabletop = vip.ringling.recon.ui.signal.LocalTabletop.current
     when {
         st.input?.type == InputType.PERSON -> PersonScreen(st, actions, contentPadding = pad)
-        st.input?.type == InputType.ZIP -> AreaScreen(st, actions, contentPadding = pad, split = wide && !tabletop)
+        st.input?.type == InputType.ZIP || st.input?.type == InputType.ADDRESS -> AreaScreen(st, actions, contentPadding = pad, split = wide && !tabletop)
         wide && tabletop -> androidx.compose.foundation.layout.Column(Modifier.fillMaxSize()) {
             ExposureScreen(st, actions, Modifier.weight(1f), pad, showFindingsButton = false)
             FindingsList(st, actions, Modifier.weight(1f), PaddingValues(bottom = pad.calculateBottomPadding()), showHeader = false, compact = true)

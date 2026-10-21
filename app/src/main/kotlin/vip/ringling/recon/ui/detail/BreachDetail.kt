@@ -49,7 +49,7 @@ fun Finding.breachStory(): String = detail.lines().drop(1).filterNot { it.starts
  * Readable breach page: headline numbers, WHAT LEAKED (every data class with a one-line meaning, risky ones in red),
  * WHAT TO DO as numbered steps, the story, then the reference table. Everything comes from the finding; no extra requests.
  */
-fun LazyListScope.breachSections(f: Finding, actions: DetailActions) {
+fun LazyListScope.breachSections(f: Finding, actions: DetailActions, doneSteps: Set<String> = emptySet()) {
     item(key = "breach-stats") {
         BracketPanel(Modifier.fillMaxWidth()) {
             Row(Modifier.fillMaxWidth().padding(vertical = 14.dp, horizontal = 8.dp)) {
@@ -84,16 +84,27 @@ fun LazyListScope.breachSections(f: Finding, actions: DetailActions) {
     }
     item(key = "breach-todo") {
         val steps = BreachAdvice.forClasses(f.tags)
-        Section("What to do", "${steps.size} step${if (steps.size == 1) "" else "s"}") {
+        val fk = vip.ringling.recon.data.HandledRepository.keyOf(f)
+        val done = steps.indices.count { "$fk:$it" in doneSteps }
+        Section("What to do", "$done of ${steps.size} done") {
             steps.forEachIndexed { i, s ->
                 if (i > 0) Divider()
-                Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Box(Modifier.size(24.dp).clip(RoundedCornerShape(6.dp)).background(if (i == 0 && f.hotTags.isNotEmpty()) ReconTheme.signal.alert else ReconTheme.signal.ledOff), contentAlignment = Alignment.Center) {
-                        Text("${i + 1}", color = if (i == 0 && f.hotTags.isNotEmpty()) androidx.compose.ui.graphics.Color(0xFF1A0804) else ReconTheme.signal.text, style = ReconType.value.copy(fontSize = 11.sp))
+                val ticked = "$fk:$i" in doneSteps
+                Row(
+                    Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(role = androidx.compose.ui.semantics.Role.Checkbox, onClickLabel = if (ticked) "Mark step not done" else "Mark step done") { actions.onStep(f, i, !ticked, steps.size) }.padding(vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    Box(
+                        Modifier.size(24.dp).clip(RoundedCornerShape(6.dp)).background(if (ticked) ReconTheme.signal.signal else if (i == 0 && f.hotTags.isNotEmpty()) ReconTheme.signal.alert else ReconTheme.signal.ledOff),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(if (ticked) "✓" else "${i + 1}", color = if (ticked) ReconTheme.signal.onSignal else if (i == 0 && f.hotTags.isNotEmpty()) androidx.compose.ui.graphics.Color(0xFF1A0804) else ReconTheme.signal.text, style = ReconType.value.copy(fontSize = 11.sp))
                     }
-                    Text(s, Modifier.weight(1f), color = ReconTheme.signal.text, style = MaterialTheme.typography.bodyMedium)
+                    Text(s, Modifier.weight(1f), color = if (ticked) ReconTheme.signal.muted else ReconTheme.signal.text, style = MaterialTheme.typography.bodyMedium)
                 }
             }
+            f.fact("Website")?.takeIf { it.contains('.') }?.let { d -> Text("Open $d to change the password and review the account.", Modifier.clickable { actions.onOpenUrl("https://$d") }.heightIn(min = 48.dp).padding(top = 8.dp), color = ReconTheme.signal.signal, style = MaterialTheme.typography.bodySmall) }
+            if (done == steps.size && steps.isNotEmpty()) Text("All steps done: this breach is marked handled and no longer counts in your checkup.", color = ReconTheme.signal.safeText, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 6.dp))
         }
     }
     f.breachStory().takeIf { it.isNotBlank() }?.let { story ->

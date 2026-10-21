@@ -103,6 +103,9 @@ fun ReconApp() {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val main: MainViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
+    // A link shared into Recon opens the Lab's link inspector.
+    val sharedLink by main.pendingLink.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(sharedLink) { if (sharedLink != null) nav.goTab(Tab.LAB) }
     val actions = rememberReconActions(snackbar, onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) }, onRunPaid = main::runPaid)
     val updateState by main.update.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) { main.checkForUpdateQuietly() }
@@ -185,7 +188,8 @@ fun ReconApp() {
                         )
                     }
                     composable(Tab.LAB.route) {
-                        vip.ringling.recon.ui.lab.LabScreen(hiltViewModel(), onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) }, contentPadding = pad)
+                        val incoming by main.pendingLink.collectAsStateWithLifecycle()
+                        vip.ringling.recon.ui.lab.LabScreen(hiltViewModel(), onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) }, incomingLink = incoming, onIncomingUsed = main::consumeLink, contentPadding = pad)
                     }
                     composable(Tab.SETTINGS.route) {
                         val vm: SettingsViewModel = hiltViewModel()
@@ -233,9 +237,10 @@ fun ReconApp() {
                         val vm: DetailViewModel = hiltViewModel()
                         val f by vm.finding.collectAsStateWithLifecycle()
                         val handledSet by vm.handled.collectAsStateWithLifecycle()
+                        val doneSteps by vm.doneSteps.collectAsStateWithLifecycle()
                         CompositionLocalProvider(LocalSharedScopes provides SharedScopes(this@SharedTransitionLayout, this)) {
                             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
-                                f?.let { FindingDetail(it, actions.detail.copy(onHandled = vm::setHandled), onBack = { nav.popBackStack() }, contentPadding = pad, handled = vip.ringling.recon.data.HandledRepository.keyOf(it) in handledSet) }
+                                f?.let { FindingDetail(it, actions.detail.copy(onHandled = vm::setHandled, onStep = vm::setStep), onBack = { nav.popBackStack() }, contentPadding = pad, handled = vip.ringling.recon.data.HandledRepository.keyOf(it) in handledSet, doneSteps = doneSteps) }
                             }
                         }
                     }
@@ -306,14 +311,14 @@ private fun RadarRoute(nav: NavHostController, expanded: Boolean, pad: PaddingVa
     val st by vm.state.collectAsStateWithLifecycle()
     var showPerson by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
     if (showPerson) vip.ringling.recon.ui.radar.PersonSearchDialog(onSearch = { showPerson = false; vm.searchPerson(it) }, onDismiss = { showPerson = false })
-    var showPassword by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
-    if (showPassword) vip.ringling.recon.ui.radar.PasswordCheckDialog(vm::passwordCount) { showPassword = false }
+    var showAddress by androidx.compose.runtime.saveable.rememberSaveable { androidx.compose.runtime.mutableStateOf(false) }
+    if (showAddress) vip.ringling.recon.ui.radar.AddressSearchDialog(onSearch = { q -> showAddress = false; vm.searchAddress(q) }, onDismiss = { showAddress = false })
     val pickPhoto = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri -> uri?.let { vm.analyzePhoto(it.toString()) } }
     vip.ringling.recon.ui.radar.RadarScreen(
         st,
         vip.ringling.recon.ui.radar.RadarActions(
             onQuery = vm::onQueryChange, onSubmit = vm::submit, onTarget = vm::open, onLoadout = onLoadout,
-            onPhoto = { pickPhoto.launch("image/*") }, onNewCase = { main.requestNewCase(); nav.goTab(Tab.CASES) }, onPassword = { showPassword = true }, onPerson = { showPerson = true },
+            onPhoto = { pickPhoto.launch("image/*") }, onNewCase = { main.requestNewCase(); nav.goTab(Tab.CASES) }, onAddress = { showAddress = true }, onPerson = { showPerson = true },
         ),
         contentPadding = pad, wide = expanded,
     )

@@ -93,3 +93,21 @@ object Geo {
         return max(0, lo)..min(max - 1, hi)
     }
 }
+
+/** An address search around one street address: kept in [ScanInput.raw] as "700 W JEFFERSON ST, BOISE (3 mi)" so it can be shown, re-run and listed like any other target. */
+data class AddressQuery(val street: String, val city: String, val miles: Int) {
+    val raw: String get() = "$street, $city ($miles mi)"
+
+    companion object {
+        val RADII = listOf(1, 3, 5)
+
+        fun of(street: String, city: String, miles: Int): AddressQuery? {
+            val s = street.trim().replace(Regex("\\s+"), " ").replace(",", ""); val c = city.trim().replace(Regex("\\s+"), " ").replace(",", "").uppercase()
+            if (s.length < 5 || s.none { it.isDigit() } || s.none { it.isLetter() } || c.length < 2 || miles !in RADII) return null
+            return AddressQuery(s.uppercase(), c, miles)
+        }
+
+        fun parse(raw: String): AddressQuery? =
+            Regex("""^(.+),\s*([^,]+?)\s*\((\d)\s*mi\)$""").find(raw.trim())?.let { m -> of(m.groupValues[1], m.groupValues[2], m.groupValues[3].toInt()) }
+    }
+}

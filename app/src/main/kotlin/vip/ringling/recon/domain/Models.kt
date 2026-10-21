@@ -14,10 +14,12 @@ enum class InputType(val label: String) {
     IP("IP"),
     WALLET("Wallet"),
     /** Never auto-detected (names look like anything): the user picks "Name search". Live lookup; findings are never stored. */
-    PERSON("Person");
+    PERSON("Person"),
+    /** Never auto-detected: "Address search" on the Radar. Offender-registry map search around a street address (see [AddressQuery]). */
+    ADDRESS("Address");
 
     /** Live lookups that show a neutral result count instead of a risk score, and whose findings are never stored. */
-    val countsOnly: Boolean get() = this == ZIP || this == PERSON
+    val countsOnly: Boolean get() = this == ZIP || this == PERSON || this == ADDRESS
 }
 
 @Serializable
