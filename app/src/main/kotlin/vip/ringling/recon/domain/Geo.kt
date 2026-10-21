@@ -111,3 +111,12 @@ data class AddressQuery(val street: String, val city: String, val miles: Int) {
             Regex("""^(.+),\s*([^,]+?)\s*\((\d)\s*mi\)$""").find(raw.trim())?.let { m -> of(m.groupValues[1], m.groupValues[2], m.groupValues[3].toInt()) }
     }
 }
+
+/** Offenses of a registry record as shown in its detail ("• 18-1506 – …" lines, or the single "Offense (as listed): …" line of an address search), for the map preview cards. */
+fun Finding.offenseLines(): List<String> = detail.lines().mapNotNull { l ->
+    when {
+        l.startsWith("• ") -> l.removePrefix("• ").trim()
+        l.startsWith("Offense (as listed): ") -> l.removePrefix("Offense (as listed): ").trim()
+        else -> null
+    }
+}.filter { it.isNotBlank() }

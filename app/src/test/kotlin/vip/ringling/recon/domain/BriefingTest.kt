@@ -23,3 +23,13 @@ class BriefingTest {
         assertEquals(null, clean.firstStep)
     }
 }
+
+class OffenseLinesTest {
+    @Test fun readsOffensesFromDetailAndAddressSearchLines() {
+        val full = Finding("r", ModuleId.REGISTRY, "X", "1 A ST, BOISE\\nStatus: Compliant\\nOffenses (2):\\n• 18-1506 – FICTIONAL ONE – 2010\\n• 18-1507 – FICTIONAL TWO".replace("\\n", "\n"), Severity.INFO)
+        assertEquals(listOf("18-1506 – FICTIONAL ONE – 2010", "18-1507 – FICTIONAL TWO"), full.offenseLines())
+        val listed = Finding("r", ModuleId.REGISTRY, "X", "1 A ST\nOffense (as listed): 18-0000 – FICTIONAL", Severity.INFO)
+        assertEquals(listOf("18-0000 – FICTIONAL"), listed.offenseLines())
+        assertEquals(emptyList(), Finding("r", ModuleId.REGISTRY, "X", "No offenses listed.", Severity.INFO).offenseLines())
+    }
+}

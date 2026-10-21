@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import vip.ringling.recon.domain.Finding
+import vip.ringling.recon.domain.offenseLines
 import vip.ringling.recon.domain.neutral
 import vip.ringling.recon.domain.GeoPoint
 import vip.ringling.recon.ui.components.RemoteImage
@@ -65,7 +66,7 @@ fun FullscreenMapContent(
     val ltr = androidx.compose.ui.unit.LayoutDirection.Ltr
     val controlsPadding = androidx.compose.foundation.layout.PaddingValues(
         start = ins.calculateLeftPadding(ltr), top = ins.calculateTopPadding(), end = ins.calculateRightPadding(ltr),
-        bottom = ins.calculateBottomPadding() + if (selected != null) 140.dp else 0.dp,
+        bottom = ins.calculateBottomPadding() + if (selected != null) (140 + 40 * minOf(selected.offenseLines().size, 3)).dp else 0.dp,
     )
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         TileMap(
@@ -93,6 +94,9 @@ private fun SelectedCard(f: Finding, onOpen: () -> Unit) {
                 Text(f.title, style = MaterialTheme.typography.titleMedium, maxLines = 2)
                 Text(f.detail.lines().firstOrNull().orEmpty(), style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, maxLines = 2)
                 if (f.tags.isNotEmpty()) Text(f.tags.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
+                val offenses = f.offenseLines()
+                offenses.take(3).forEach { o -> Text("• $o", style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis) }
+                if (offenses.size > 3) Text("+ ${offenses.size - 3} more in Details", style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     if (!f.neutral) SeverityChip(f.severity)
                     distanceLabel(f)?.let { Text(it, style = MaterialTheme.typography.titleSmall, color = cs.primary) }

@@ -82,6 +82,7 @@ import vip.ringling.recon.ui.signal.textColor
 import vip.ringling.recon.ui.theme.ReconTheme
 import vip.ringling.recon.ui.theme.ReconType
 import kotlin.math.ceil
+import vip.ringling.recon.domain.offenseLines
 import vip.ringling.recon.domain.EntityGraph
 
 data class ResultsActions(
@@ -546,6 +547,9 @@ fun RecordPreview(f: Finding, me: GeoPoint?, onOpen: () -> Unit, onClose: () -> 
             androidx.compose.foundation.layout.FlowRow(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 f.tags.take(1).forEach { t -> StatusTag(t.removeSuffix(" registry"), if (t in f.hotTags) Tone.ALERT else Tone.INFO) }
             }
+            val offenses = f.offenseLines()
+            offenses.take(3).forEach { o -> Text("• $o", color = sig.text, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis) }
+            if (offenses.size > 3) Text("+ ${offenses.size - 3} more in Details", color = sig.muted, style = MaterialTheme.typography.bodySmall)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SignalButton("Details", onOpen, Modifier.heightIn(min = 48.dp), filled = true, mono = true)
                 dist?.let { Text(vip.ringling.recon.domain.Geo.formatDistance(it), color = sig.signal, style = ReconType.value.copy(fontSize = 12.sp), maxLines = 1, softWrap = false) }
