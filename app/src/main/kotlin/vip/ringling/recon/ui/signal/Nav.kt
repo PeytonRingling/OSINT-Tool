@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.FolderOpen
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Radar
+import androidx.compose.material.icons.outlined.Science
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -44,6 +45,7 @@ enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     HOME("home", "Radar", Icons.Outlined.Radar),
     CASES("cases", "Cases", Icons.Outlined.FolderOpen),
     HISTORY("history", "Log", Icons.Outlined.History),
+    LAB("lab", "Lab", Icons.Outlined.Science),
     SETTINGS("settings", "System", Icons.Outlined.Tune),
 }
 

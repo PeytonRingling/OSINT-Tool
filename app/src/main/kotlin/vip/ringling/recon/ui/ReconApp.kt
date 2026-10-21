@@ -184,6 +184,9 @@ fun ReconApp() {
                             contentPadding = pad,
                         )
                     }
+                    composable(Tab.LAB.route) {
+                        vip.ringling.recon.ui.lab.LabScreen(hiltViewModel(), onPivot = { q -> main.requestSearch(q); nav.goTab(Tab.HOME) }, contentPadding = pad)
+                    }
                     composable(Tab.SETTINGS.route) {
                         val vm: SettingsViewModel = hiltViewModel()
                         val st by vm.state.collectAsStateWithLifecycle()
