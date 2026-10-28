@@ -55,8 +55,9 @@ class LinkIntel(private val http: Http, private val doh: DohClient, private val 
     }
 
     companion object {
-        /** Last two labels (good enough for .com/.org; a multi-part suffix like .co.uk may look up the suffix, which then reports no date). */
-        fun registrable(host: String) = host.split('.').takeLast(2).joinToString(".")
+        /** The registered domain ("login.example.co.uk" → "example.co.uk"), using the same two-part suffix list as the look-alike check. */
+        fun registrable(host: String): String =
+            vip.ringling.recon.data.sources.domain.LookalikeGenerator.split(host)?.let { (name, suffix) -> "$name.$suffix" } ?: host.split('.').takeLast(2).joinToString(".")
 
         fun registrationDate(rdapJson: String): Instant? = runCatching {
             ((Json.parseToJsonElement(rdapJson).jsonObject["events"] as? JsonArray).orEmpty()).firstNotNullOfOrNull { e ->

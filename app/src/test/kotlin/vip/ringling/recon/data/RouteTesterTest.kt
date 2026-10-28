@@ -12,6 +12,7 @@ import vip.ringling.recon.data.net.RouteResult
 import vip.ringling.recon.data.net.RouteTester
 
 class RouteTesterTest {
+    init { directNetworkForTests() }
     private fun server(body: String, code: Int = 200) = MockWebServer().apply { enqueue(MockResponse().setResponseCode(code).setBody(body)); start() }
 
     @Test fun recognisesATorExit() = runTest {

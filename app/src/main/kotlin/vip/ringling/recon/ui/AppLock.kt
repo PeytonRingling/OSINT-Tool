@@ -21,6 +21,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 
 /** Device-credential gate using the framework BiometricPrompt (no extra dependency). Fails open only if the device has no screen lock at all. */
@@ -42,6 +45,25 @@ object AppLockPrompt {
             override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult?) = onSuccess()
             override fun onAuthenticationError(errorCode: Int, errString: CharSequence?) = onFail()
         })
+    }
+}
+
+/**
+ * Shows [content] and, while [locked], covers it with [lockScreen]. The cover takes every touch (only its own buttons react) and the content is
+ * removed from the accessibility tree, so nothing behind the lock can be tapped blind or read by a screen reader. The content stays composed,
+ * so unlocking returns to exactly where the user was.
+ */
+@Composable
+fun LockGate(locked: Boolean, lockScreen: @Composable () -> Unit, content: @Composable () -> Unit) {
+    Box {
+        Box(if (locked) Modifier.clearAndSetSemantics { } else Modifier) { content() }
+        if (locked) {
+            Box(
+                Modifier.fillMaxSize().pointerInput(Unit) {
+                    awaitPointerEventScope { while (true) awaitPointerEvent(PointerEventPass.Main).changes.forEach { it.consume() } }
+                },
+            ) { lockScreen() }
+        }
     }
 }
 

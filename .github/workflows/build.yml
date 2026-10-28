@@ -35,9 +35,26 @@ jobs:
       - name: Unit tests
         run: ./gradlew testDebugUnitTest --console=plain
 
-      # Signed with the committed throwaway keystore (ci/debug.keystore) so every build
-      # shares one signature and installs over the previous one. No secrets involved.
+      # Signed with the private release key kept in repository secrets (README, "Release signing").
+      # No secrets, no release: there is deliberately no fallback key.
+      - name: Load release key
+        env:
+          RELEASE_KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          for v in RELEASE_KEYSTORE_B64 RELEASE_KEYSTORE_PASSWORD RELEASE_KEY_ALIAS RELEASE_KEY_PASSWORD; do
+            if [ -z "${!v}" ]; then echo "::error::Secret $v is not set; refusing to build an unsigned or debug-signed release."; exit 1; fi
+          done
+          echo "$RELEASE_KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
       - name: Build release APK
+        env:
+          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
         run: ./gradlew assembleRelease --console=plain
 
       - name: Name the APK

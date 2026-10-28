@@ -42,7 +42,7 @@ class BreachSourceTest {
 
             val hibpReq = router.seen.first { it.path!!.startsWith("/hibp/breachedaccount/a%40b.com") }
             assertEquals("hk", hibpReq.getHeader("hibp-api-key"))
-            assertNotNull(hibpReq.getHeader("User-Agent")).let { assertTrue(it.startsWith("Recon-Android")) }
+            assertNotNull(hibpReq.getHeader("User-Agent")).let { assertTrue(it.startsWith("Recon-Android") && "github" !in it, it) }
             assertEquals("lk", router.seen.first { it.path!!.startsWith("/lc/v2/") }.getHeader("X-API-Key"))
         }
     }

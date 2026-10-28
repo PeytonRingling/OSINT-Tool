@@ -69,6 +69,8 @@ class HibpClient(
         while (true) {
             val req = Request.Builder().url(baseUrl + path)
                 .header("hibp-api-key", apiKey)
+                // HIBP asks API clients to identify themselves (it is the service, not a target). Nothing names the user or the repo.
+                .header("User-Agent", "Recon-Android/0.2")
                 .header("Accept", "application/json")
                 .build()
             val result = http.execute(req) { r ->

@@ -18,6 +18,7 @@ import vip.ringling.recon.data.update.UpdateException
 import vip.ringling.recon.data.update.UpdateRepository
 
 class UpdateTest {
+    init { directNetworkForTests() }
     private val apk = ByteArray(300_000) { (it * 31).toByte() }
     private val sha = MessageDigest.getInstance("SHA-256").digest(apk).joinToString("") { "%02x".format(it) }
     private fun release(sha: String? = this.sha, size: Long = apk.size.toLong(), build: String = "build: 7") =

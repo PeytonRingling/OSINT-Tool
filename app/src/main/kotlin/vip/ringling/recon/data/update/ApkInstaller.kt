@@ -24,8 +24,8 @@ object InstallEvents {
 }
 
 /**
- * Installs a downloaded APK through PackageInstaller. Android only accepts it if it is signed with the same key as the
- * installed app, so a tampered file cannot replace Recon even if it slipped past the checksum.
+ * Installs a downloaded APK through PackageInstaller. [SigningCheck] has already confirmed it carries the installed app's signing
+ * certificate, and Android enforces the same rule again at install time.
  */
 @Singleton
 class ApkInstaller @Inject constructor(@ApplicationContext private val context: Context) {
