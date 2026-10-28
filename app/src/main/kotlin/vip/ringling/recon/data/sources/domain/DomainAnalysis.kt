@@ -150,6 +150,12 @@ object DomainAnalysis {
             expires?.let { add(if (daysLeft != null && daysLeft < 0) "EXPIRED $it" else "expires $it" + if (daysLeft != null && daysLeft < 30) " (${daysLeft}d)" else "") }
             if (status.isNotEmpty()) add("status: ${status.take(3).joinToString(", ")}")
         }
-        return f("rdap", "RDAP", bits.joinToString(" · ").ifEmpty { "Registration data is redacted." }, sev, "https://rdap.org/domain/$domain", body.take(4000))
+        val nameservers = (o["nameservers"] as? JsonArray).orEmpty().mapNotNull { (it as? JsonObject)?.get("ldhName")?.jsonPrimitive?.contentOrNull?.lowercase()?.trimEnd('.') }.distinct().sorted()
+        val facts = listOfNotNull(
+            registrar?.let { vip.ringling.recon.domain.Fact("Registrar", it) }, created?.let { vip.ringling.recon.domain.Fact("Created", it) },
+            expires?.let { vip.ringling.recon.domain.Fact("Expires", it) }, status.takeIf { it.isNotEmpty() }?.let { vip.ringling.recon.domain.Fact("Status", it.sorted().joinToString(", ")) },
+            nameservers.takeIf { it.isNotEmpty() }?.let { vip.ringling.recon.domain.Fact("Nameservers", it.joinToString(", ")) },
+        )
+        return f("rdap", "RDAP", bits.joinToString(" · ").ifEmpty { "Registration data is redacted." }, sev, "https://rdap.org/domain/$domain", body.take(4000)).copy(facts = facts)
     }
 }
