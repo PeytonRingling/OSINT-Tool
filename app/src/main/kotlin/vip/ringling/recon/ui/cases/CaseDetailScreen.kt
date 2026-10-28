@@ -71,6 +71,7 @@ data class CaseDetailActions(
     val onDeleteNote: (CaseNote) -> Unit = {},
     val onSaveMarkdown: () -> Unit = {},
     val onSavePdf: () -> Unit = {},
+    val onSaveEvidence: () -> Unit = {},
     val onShare: () -> Unit = {},
     val onRename: () -> Unit = {},
     val onDelete: () -> Unit = {},
@@ -152,6 +153,7 @@ fun CaseHeader(c: CaseView, actions: CaseDetailActions, modifier: Modifier = Mod
             DropdownMenu(exportMenu, { exportMenu = false }) {
                 DropdownMenuItem({ Text("Save Markdown") }, { exportMenu = false; actions.onSaveMarkdown() })
                 DropdownMenuItem({ Text("Save PDF") }, { exportMenu = false; actions.onSavePdf() })
+                DropdownMenuItem({ Text("Save evidence bundle (ZIP)") }, { exportMenu = false; actions.onSaveEvidence() })
                 DropdownMenuItem({ Text("Share") }, { exportMenu = false; actions.onShare() })
             }
         }
