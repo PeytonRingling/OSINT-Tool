@@ -1,5 +1,6 @@
 package vip.ringling.recon
 
+import androidx.core.content.edit
 import android.app.Application
 import coil3.ImageLoader
 import coil3.PlatformContext
@@ -28,6 +29,7 @@ class ReconApp : Application(), SingletonImageLoader.Factory {
 
     override fun onCreate() {
         super.onCreate()
+        getSharedPreferences("quota", MODE_PRIVATE).let { p -> vip.ringling.recon.data.net.QuotaMeter.shared.attach(p.getString("usage", null)) { v -> p.edit { putString("usage", v) } } }
         // Age-based deletion runs at every launch and whenever the setting changes; the daily case re-scan is (re)scheduled to match the setting.
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
             settingsRepo.settings.filter { it.loaded }.map { it.retentionDays to it.autoRescan }.distinctUntilChanged().collect { (days, rescan) ->

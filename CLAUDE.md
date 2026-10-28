@@ -234,3 +234,5 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
   is counted, never treated as "not found".
 - Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 200+ tests at last count.
 - Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.
+- **Quota meter** (`data/net/Quota.kt`): `QuotaInterceptor` in `buildHttpClient` counts requests to keyed hosts (`Metered`: HIBP, LeakCheck, Veriphone, Twilio, FEC, VirusTotal) per local day/month, last status, 429 time and `X-RateLimit-Remaining`; LeakCheck reports its body `quota`. Counts and codes only, saved in SharedPreferences `quota`. Shown under each saved key in System -> API keys.
+- **Name -> username permutations** (`Variants.fromName`): a PERSON search gets a DORKS "likely usernames" finding (pivots) plus name dorks, shown on `PersonScreen`; not counted as matches.
