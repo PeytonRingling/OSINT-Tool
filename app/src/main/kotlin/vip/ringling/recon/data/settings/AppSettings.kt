@@ -17,6 +17,8 @@ data class AppSettings(
     /** Re-scan every case target once a day in the background and notify only when something changed. */
     val autoRescan: Boolean = false,
     val onboarded: Boolean = false,
+    /** OPSEC mode (see [vip.ringling.recon.data.net.Opsec]): photos load only on tap, links open only in Tor Browser, no direct contact without a proxy. */
+    val opsec: Boolean = false,
     /** False until DataStore has delivered its first value, so first-run UI doesn't flash for existing users. */
     val loaded: Boolean = false,
 )

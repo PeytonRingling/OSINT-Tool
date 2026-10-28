@@ -29,6 +29,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     private val retentionKey = intPreferencesKey("retention_days")
     private val rescanKey = booleanPreferencesKey("auto_rescan")
     private val onboardedKey = booleanPreferencesKey("onboarded")
+    private val opsecKey = booleanPreferencesKey("opsec")
 
     val settings: Flow<AppSettings> = context.store.data.map { p ->
         AppSettings(
@@ -43,6 +44,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
             retentionDays = p[retentionKey] ?: 0,
             autoRescan = p[rescanKey] ?: false,
             onboarded = p[onboardedKey] ?: false,
+            opsec = p[opsecKey] ?: false,
             loaded = true,
         )
     }
@@ -57,6 +59,7 @@ class SettingsRepository @Inject constructor(@ApplicationContext private val con
     suspend fun setAppLock(on: Boolean) = context.store.edit { it[lockKey] = on }
     suspend fun setRetentionDays(d: Int) = context.store.edit { it[retentionKey] = d }
     suspend fun setAutoRescan(on: Boolean) = context.store.edit { it[rescanKey] = on }
+    suspend fun setOpsec(on: Boolean) = context.store.edit { it[opsecKey] = on }
     suspend fun setOnboarded(on: Boolean = true) = context.store.edit { it[onboardedKey] = on }
     /** Forget every setting (used by "Wipe everything"). */
     suspend fun reset() { context.store.edit { it.clear() } }

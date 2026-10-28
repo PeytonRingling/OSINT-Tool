@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import vip.ringling.recon.data.net.Opsec
 import vip.ringling.recon.data.net.ProxyState
 import vip.ringling.recon.data.settings.SettingsRepository
 import okhttp3.OkHttpClient
@@ -42,10 +43,10 @@ class ReconApp : Application(), SingletonImageLoader.Factory {
         }
         // Every request is held at a dead proxy (ProxyState.UNSET) until the saved setting is known. Read it now, before any activity or
         // worker in this process can send anything, then keep the global proxy in sync (Tor / custom SOCKS5 for every lookup).
-        runCatching { kotlinx.coroutines.runBlocking { settingsRepo.settings.first() } }.getOrNull()?.let { ProxyState.apply(it.proxyMode, it.proxyHost, it.proxyPort) }
+        runCatching { kotlinx.coroutines.runBlocking { settingsRepo.settings.first() } }.getOrNull()?.let { Opsec.on = it.opsec; ProxyState.apply(it.proxyMode, it.proxyHost, it.proxyPort) }
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
-            settingsRepo.settings.map { Triple(it.proxyMode, it.proxyHost, it.proxyPort) }.distinctUntilChanged()
-                .collect { (m, h, p) -> ProxyState.apply(m, h, p) }
+            settingsRepo.settings.map { Triple(it.proxyMode, it.proxyHost, it.proxyPort) to it.opsec }.distinctUntilChanged()
+                .collect { (proxy, opsec) -> Opsec.on = opsec; ProxyState.apply(proxy.first, proxy.second, proxy.third) }
         }
     }
 

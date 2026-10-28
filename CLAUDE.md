@@ -245,3 +245,7 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
   or the Lab's link box (`ScanController.prefill` is a StateFlow so a cold-start share isn't lost).
 - `DbKey.load` distinguishes Missing from Unreadable. Unreadable never deletes or replaces anything: that session uses an in-memory database.
   An encrypted file with no saved key is renamed `recon.db.unopenable-<ts>`, never deleted.
+- **OPSEC mode** (System → Privacy & network, `AppSettings.opsec`, mirrored to `data/net/Opsec`): no scan module contacts a target-controlled
+  host (they ask third-party services), so it governs the three paths that can: the Lab's link inspector (refused without Tor/proxy),
+  remote photos (`RemoteImage` waits for a tap via `LocalOpsecImages`), and opening links (`LinkOpener.openOrCopy`: Tor Browser only, else copied).
+  Map tiles (OSM/Esri) are third-party and unaffected.

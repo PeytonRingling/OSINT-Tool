@@ -25,6 +25,7 @@ class LinkTracer(private val http: Http, private val allowPrivate: Boolean) {
         val client = http.client.newBuilder().followRedirects(false).followSslRedirects(false)
             .dns(object : okhttp3.Dns { override fun lookup(hostname: String) = okhttp3.Dns.SYSTEM.lookup(hostname).also { l -> if (!allowPrivate && l.any { isPrivate(it) }) throw java.net.UnknownHostException("blocked: $hostname points at a private address") } }).build()
         val hops = mutableListOf<TraceHop>()
+        vip.ringling.recon.data.net.Opsec.blockReason()?.let { return@withContext TraceResult(emptyList(), it) }
         var url = normalize(start) ?: return@withContext TraceResult(emptyList(), "That doesn't look like a web link.")
         repeat(maxHops + 1) {
             if (!allowPrivate && blockedHost(URI(url).host)) { hops += TraceHop(url, null); return@withContext TraceResult(hops, "Refused: that address is on a private or local network, not the public internet.") }

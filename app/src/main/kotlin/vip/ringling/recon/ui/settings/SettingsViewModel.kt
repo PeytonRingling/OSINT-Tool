@@ -49,6 +49,7 @@ class SettingsViewModel @Inject constructor(
     fun setProxyHost(h: String) = viewModelScope.launch { repo.setProxyHost(h) }
     fun setProxyPort(p: Int) = viewModelScope.launch { repo.setProxyPort(p) }
     fun setAppLock(on: Boolean) = viewModelScope.launch { repo.setAppLock(on) }
+    fun setOpsec(on: Boolean) = viewModelScope.launch { repo.setOpsec(on) }
     fun setKey(id: ApiKeyId, v: String) = apiKeys.set(id, v)
     fun checkUpdate() = updates.check()
     fun installUpdate() = updates.downloadAndInstall()
