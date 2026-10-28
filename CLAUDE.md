@@ -29,8 +29,12 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 - Screenshots: Roborazzi on Robolectric (JVM). `./gradlew recordRoborazziDebug` writes PNGs to
   `docs/screenshots/` (committed for review): phone (411x914dp) and Pixel Fold unfolded
   (841x701dp), dark + light.
-- CI: `.github/workflows/build.yml` builds on every push to `main`, signs with the shared keystore,
-  and publishes to the rolling pre-release tagged `latest`.
+- CI: `.github/workflows/ci.yml` runs on every PR and non-main push (read-only token, no secrets): gitleaks over the history
+  (`.gitleaks.toml`), Gradle wrapper validation, `assembleDebug lintDebug testDebugUnitTest`. `build.yml` builds on every push
+  to `main`, signs with the release key from secrets, and publishes the rolling pre-release tagged `latest`. Every action is
+  pinned to a commit SHA (Dependabot bumps them weekly, `.github/dependabot.yml`).
+- Lint: existing warnings live in `app/lint-baseline.xml`; `warningsAsErrors` makes any new one fail. Regenerate only on purpose
+  (`./gradlew updateLintBaseline`) and review the diff.
 
 ## Design (top priority — must not look like a default template)
 - Dark-first, true-black AMOLED surfaces; optional Material You dynamic color toggle (off by default).
@@ -221,7 +225,6 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.
 - Registry mock data (screenshots only) uses clearly fictional placeholder records. Never commit real registry data.
 - Phase 1 stand-ins are replaced: Room history, Keystore-encrypted keys, real breach/identity/domain sources. `data/mock/MockData.kt` remains only for screenshot tests and previews.
-- Workflow `.github/workflows/build.yml` has not been run yet (no Actions access from the cloud session).
 - Keep `docs/screenshots/` in sync: re-run `./gradlew recordRoborazziDebug` after any UI change and commit the PNGs.
 
 ## Phase 2 status / gotchas

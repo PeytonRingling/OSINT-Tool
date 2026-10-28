@@ -9,6 +9,13 @@ plugins {
 
 android {
     namespace = "vip.ringling.recon"
+
+    // Existing warnings are recorded in lint-baseline.xml; any NEW warning fails the build (CI runs lintDebug on every PR).
+    lint {
+        baseline = file("lint-baseline.xml")
+        warningsAsErrors = true
+        abortOnError = true
+    }
     compileSdk = 37
 
     defaultConfig {

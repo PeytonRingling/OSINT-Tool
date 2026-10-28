@@ -20,6 +20,9 @@ export ANDROID_HOME=/path/to/android-sdk
 ./gradlew recordRoborazziDebug     # re-record docs/screenshots
 ```
 
+Pull requests run `.github/workflows/ci.yml`: a gitleaks secret scan, build, lint (any warning not in `app/lint-baseline.xml`
+fails) and the unit tests. Actions are pinned to commit SHAs, and Dependabot proposes updates weekly.
+
 Every push to `main` publishes `Recon.apk` to the rolling `latest` pre-release. The repo is public, so the in-app updater needs
 no token. It installs an update only if the APK is signed with the same certificate as the installed app.
 
