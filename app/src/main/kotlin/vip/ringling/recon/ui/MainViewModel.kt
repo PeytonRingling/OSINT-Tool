@@ -52,6 +52,8 @@ class MainViewModel @Inject constructor(
     val update: StateFlow<UpdateState> = updates.state
     fun checkForUpdateQuietly() = updates.checkQuietly()
     fun requestSearch(query: String) = controller.requestSearch(query)
+    val prefill = controller.prefill
+    fun requestPrefill(text: String) = controller.requestPrefill(text)
     val pendingLink = controller.pendingLink
     fun requestLink(url: String) = controller.requestLink(url)
     fun consumeLink() = controller.consumeLink()

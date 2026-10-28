@@ -338,7 +338,7 @@ private fun DataSection(state: SettingsUiState, a: SettingsActions) {
         Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 14.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f)) {
                 Text("Backup", color = sig.text, style = MaterialTheme.typography.titleSmall)
-                Text("Scans, cases and watchlist. Never keys or settings.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                Text("Scans, cases and watchlist. Never keys or settings. The file is NOT encrypted: keep it somewhere private.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
             }
             SignalButton("Export", a.onExportBackup, mono = true)
             SignalButton("Import", a.onImportBackup, mono = true)

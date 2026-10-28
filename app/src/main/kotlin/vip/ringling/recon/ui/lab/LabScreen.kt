@@ -60,8 +60,9 @@ fun LabScreen(vm: LabViewModel, onPivot: (String) -> Unit, modifier: Modifier = 
     val sig = ReconTheme.signal
     var tool by rememberSaveable { mutableStateOf(0) }
     var prefill by remember { mutableStateOf<String?>(null) }
+    var typed by remember { mutableStateOf<String?>(null) }     // a link from another app: shown in the box, but followed only when the user taps
     // A link shared into Recon from another app is inspected here.
-    androidx.compose.runtime.LaunchedEffect(incomingLink) { if (incomingLink != null) { prefill = incomingLink; tool = 2; onIncomingUsed() } }
+    androidx.compose.runtime.LaunchedEffect(incomingLink) { if (incomingLink != null) { typed = incomingLink; tool = 2; onIncomingUsed() } }
     Column(
         modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(top = contentPadding.calculateTopPadding() + 8.dp, bottom = contentPadding.calculateBottomPadding() + 24.dp, start = 16.dp, end = 16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -74,7 +75,7 @@ fun LabScreen(vm: LabViewModel, onPivot: (String) -> Unit, modifier: Modifier = 
         when (tool) {
             0 -> HeaderTool(onPivot)
             1 -> MessageTool { prefill = it; tool = 2 }
-            2 -> LinkTool(vm, onPivot, prefill) { prefill = null }
+            2 -> LinkTool(vm, onPivot, prefill, initialUrl = typed, onPrefillUsed = { prefill = null; typed = null })
             3 -> QrTool { prefill = it; tool = 2 }
             4 -> DecodeTool()
             else -> PasswordTool(vm)
@@ -146,10 +147,11 @@ private fun HeaderTool(onPivot: (String) -> Unit) {
 }
 
 @Composable
-private fun LinkTool(vm: LabViewModel, onPivot: (String) -> Unit, prefill: String? = null, onPrefillUsed: () -> Unit = {}) {
+private fun LinkTool(vm: LabViewModel, onPivot: (String) -> Unit, prefill: String? = null, initialUrl: String? = null, onPrefillUsed: () -> Unit = {}) {
     val sig = ReconTheme.signal
     val scope = rememberCoroutineScope()
     var url by rememberSaveable { mutableStateOf("") }
+    androidx.compose.runtime.LaunchedEffect(initialUrl) { if (initialUrl != null) { url = initialUrl; onPrefillUsed() } }
     var busy by remember { mutableStateOf(false) }
     var result by remember { mutableStateOf<TraceResult?>(null) }
     var domainFlags by remember { mutableStateOf<List<Flag>?>(null) }
@@ -222,7 +224,7 @@ private fun PasswordTool(vm: LabViewModel) {
     Text("Has this password appeared in a breach? It is hashed on this phone and only the first 5 characters of the hash are sent. Nothing is saved.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
     Box(Modifier.fillMaxWidth().heightIn(min = 52.dp).clip(RoundedCornerShape(10.dp)).background(sig.panel).border(1.dp, sig.signal.copy(alpha = 0.4f), RoundedCornerShape(10.dp)).padding(horizontal = 14.dp), contentAlignment = Alignment.CenterStart) {
         if (pw.isEmpty()) Text("Type a password to check", color = sig.muted, style = ReconType.value.copy(fontSize = 14.sp))
-        BasicTextField(pw, { pw = it; msg = null }, Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), textStyle = ReconType.value.copy(fontSize = 15.sp, color = sig.text), cursorBrush = SolidColor(sig.signal))
+        BasicTextField(pw, { pw = it; msg = null }, Modifier.fillMaxWidth(), singleLine = true, visualTransformation = PasswordVisualTransformation(), keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Password, autoCorrectEnabled = false), textStyle = ReconType.value.copy(fontSize = 15.sp, color = sig.text), cursorBrush = SolidColor(sig.signal))
     }
     SignalButton(if (busy) "Checking…" else "Check password", {
         busy = true

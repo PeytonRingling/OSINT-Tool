@@ -28,6 +28,8 @@ class LinkTracer(private val http: Http, private val allowPrivate: Boolean) {
         var url = normalize(start) ?: return@withContext TraceResult(emptyList(), "That doesn't look like a web link.")
         repeat(maxHops + 1) {
             if (!allowPrivate && blockedHost(URI(url).host)) { hops += TraceHop(url, null); return@withContext TraceResult(hops, "Refused: that address is on a private or local network, not the public internet.") }
+            // Recon connects over https only: an http hop is reported but not requested (it could be read or altered on the network).
+            if (!allowPrivate && url.startsWith("http://", ignoreCase = true)) { hops += TraceHop(url, null); return@withContext TraceResult(hops, "Not contacted: this address is unencrypted (http). Recon only connects over https, so what is there is unknown.") }
             val req = Request.Builder().url(url).header("User-Agent", BROWSER_USER_AGENT).header("Range", "bytes=0-0").build()
             val code: Int; val loc: String?
             try { client.newCall(req).await().use { r -> code = r.code; loc = r.header("Location") } }

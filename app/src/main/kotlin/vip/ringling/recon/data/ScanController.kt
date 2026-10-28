@@ -74,6 +74,11 @@ class ScanController @Inject constructor(
     fun requestSearch(query: String) { _pendingQuery.value = query }
     fun consumePending() { _pendingQuery.value = null }
 
+    private val _prefill = MutableSharedFlow<String>(extraBufferCapacity = 4, onBufferOverflow = kotlinx.coroutines.channels.BufferOverflow.DROP_OLDEST)
+    /** Text to put in the Radar's search box WITHOUT searching it (clipboard shortcut): anything another app can trigger must wait for the user to press go. */
+    val prefill: SharedFlow<String> = _prefill
+    fun requestPrefill(text: String) { _prefill.tryEmit(text) }
+
     private val _pendingLink = MutableStateFlow<String?>(null)
     /** A web link shared into Recon: the Lab's link inspector picks it up (it is inspected, never opened). */
     val pendingLink: StateFlow<String?> = _pendingLink.asStateFlow()

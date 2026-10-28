@@ -103,6 +103,8 @@ fun ReconApp() {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val main: MainViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
+    // The clipboard shortcut fills the search box on the Radar.
+    androidx.compose.runtime.LaunchedEffect(Unit) { main.prefill.collect { nav.goTab(Tab.HOME) } }
     // A link shared into Recon opens the Lab's link inspector.
     val sharedLink by main.pendingLink.collectAsStateWithLifecycle()
     androidx.compose.runtime.LaunchedEffect(sharedLink) { if (sharedLink != null) nav.goTab(Tab.LAB) }

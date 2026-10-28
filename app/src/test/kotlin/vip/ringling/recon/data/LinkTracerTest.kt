@@ -36,6 +36,11 @@ class LinkTracerTest {
         assertEquals(false, LinkTracer.blockedHost("example.com"))
     }
 
+    @Test fun neverConnectsOverPlainHttp() = runTest {
+        val r = LinkTracer(Http()).trace("http://example.com/login")
+        assertEquals(true, r.error!!.startsWith("Not contacted")); assertEquals(listOf(null), r.hops.map { it.code })
+    }
+
     @Test fun stopsAtTheHopLimitAndRejectsNonWebLinks() = runTest {
         val s = MockWebServer().apply { repeat(5) { enqueue(MockResponse().setResponseCode(302).setHeader("Location", "/loop")) }; start() }
         try { assertEquals("Stopped after 3 redirects.", LinkTracer(Http(), allowPrivate = true).trace(s.url("/loop").toString(), maxHops = 3).error) } finally { s.shutdown() }

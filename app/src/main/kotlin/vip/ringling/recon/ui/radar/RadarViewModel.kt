@@ -57,6 +57,7 @@ class RadarViewModel @Inject constructor(
 
     init {
         viewModelScope.launch { snapshots.backfill(history.records.first()) }
+        viewModelScope.launch { controller.prefill.collect { query.value = it } }
         viewModelScope.launch {
             controller.pendingQuery.collect { q ->
                 if (q != null) { controller.consumePending(); query.value = q; submit() }

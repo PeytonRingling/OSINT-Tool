@@ -61,7 +61,10 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
             detail = DetailActions(
                 onCopy = { f ->
                     val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    cm.setPrimaryClip(ClipData.newPlainText("Recon finding", Export.text(f)))
+                    cm.setPrimaryClip(ClipData.newPlainText("Recon finding", Export.text(f)).apply {
+                        // Keeps the text out of the clipboard preview and history on Android 13+.
+                        description.extras = android.os.PersistableBundle().apply { putBoolean("android.content.extra.IS_SENSITIVE", true) }
+                    })
                     scope.launch { snackbar.showSnackbar("Copied") }
                 },
                 onShare = { f ->

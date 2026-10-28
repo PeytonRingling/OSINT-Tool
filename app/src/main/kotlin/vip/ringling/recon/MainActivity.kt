@@ -82,11 +82,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        // Clipboard reads are only allowed while we have focus (Android 10+), so the launcher shortcut defers to here.
+        // Clipboard reads are only allowed while we have focus (Android 10+), so the launcher shortcut defers to here. Any app can fire this intent, so the clipboard is only PUT IN THE SEARCH BOX: nothing is sent anywhere until the user presses go.
         if (hasFocus && scanClipboardOnFocus) {
             scanClipboardOnFocus = false
             val cm = getSystemService(android.content.ClipboardManager::class.java)
-            vip.ringling.recon.domain.IncomingText.clean(cm?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString())?.let(vm::requestSearch)
+            vip.ringling.recon.domain.IncomingText.clean(cm?.primaryClip?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.coerceToText(this)?.toString())?.let(vm::requestPrefill)
         }
     }
 
