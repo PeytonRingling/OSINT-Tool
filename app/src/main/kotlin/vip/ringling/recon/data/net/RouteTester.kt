@@ -38,7 +38,7 @@ class RouteTester(private val http: Http, private val base: String, private val 
                 r.body.string()
             }
             val c = json.decodeFromString(TorCheck.serializer(), body)
-            return if (c.IsTor) RouteResult.Tor(c.IP) else RouteResult.Other(c.IP, ProxyState.proxy != null)
+            return if (c.IsTor) RouteResult.Tor(c.IP) else RouteResult.Other(c.IP, ProxyState.proxy != null && ProxyState.ready)
         } catch (e: Exception) { e }
         // The Tor check service failed (blocked, down, or the proxy dropped it). Try a plain IP echo so the user still learns something.
         return try {

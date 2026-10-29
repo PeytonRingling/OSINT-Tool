@@ -24,12 +24,12 @@ object InstallEvents {
 }
 
 /**
- * Installs a downloaded APK through PackageInstaller. Android only accepts it if it is signed with the same key as the
- * installed app, so a tampered file cannot replace Recon even if it slipped past the checksum.
+ * Installs a downloaded APK through PackageInstaller. [SigningCheck] has already refused an APK readably signed by another key, and
+ * Android enforces the same-signer rule again at install time.
  */
 @Singleton
-class ApkInstaller @Inject constructor(@ApplicationContext private val context: Context) {
-    fun canInstall() = context.packageManager.canRequestPackageInstalls()
+open class ApkInstaller @Inject constructor(@ApplicationContext private val context: Context) { // open: tests stand in for PackageInstaller
+    open fun canInstall() = context.packageManager.canRequestPackageInstalls()
 
     /** Opens the "Install unknown apps" screen for Recon; the user flips one switch and comes back. */
     fun openInstallPermissionSettings() {
@@ -38,7 +38,7 @@ class ApkInstaller @Inject constructor(@ApplicationContext private val context: 
         )
     }
 
-    fun install(apk: File) {
+    open fun install(apk: File) {
         val installer = context.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL).apply {
             setAppPackageName(context.packageName)

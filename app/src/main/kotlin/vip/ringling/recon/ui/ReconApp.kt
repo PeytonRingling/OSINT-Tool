@@ -91,7 +91,7 @@ fun ReconRoot(vm: MainViewModel = hiltViewModel()) {
             }
         }
         val me by vm.me.collectAsStateWithLifecycle()
-        CompositionLocalProvider(LocalUserLocation provides me, LocalMapLayer provides MapLayerState(settings.mapSatellite, vm::setMapSatellite)) {
+        CompositionLocalProvider(LocalUserLocation provides me, LocalMapLayer provides MapLayerState(settings.mapSatellite, vm::setMapSatellite), vip.ringling.recon.ui.components.LocalOpsecImages provides settings.opsec) {
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { ReconApp() }
         }
     }
@@ -103,8 +103,6 @@ fun ReconApp() {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val main: MainViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
-    // The clipboard shortcut fills the search box on the Radar.
-    androidx.compose.runtime.LaunchedEffect(Unit) { main.prefill.collect { nav.goTab(Tab.HOME) } }
     // A link shared into Recon opens the Lab's link inspector.
     val sharedLink by main.pendingLink.collectAsStateWithLifecycle()
     androidx.compose.runtime.LaunchedEffect(sharedLink) { if (sharedLink != null) nav.goTab(Tab.LAB) }
@@ -126,6 +124,9 @@ fun ReconApp() {
     val pinState by pinCases.state.collectAsStateWithLifecycle()
     val radarVm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
     val radarState by radarVm.state.collectAsStateWithLifecycle()
+    // Shared text, selected text, mailto:/tel: links and the clipboard shortcut fill the Radar's search box (never searched on their own).
+    val incomingText by main.prefill.collectAsStateWithLifecycle()
+    LaunchedEffect(incomingText) { incomingText?.let { radarVm.prefill(it); main.consumePrefill(); nav.goTab(Tab.HOME) } }
     LaunchedEffect(Unit) {
         radarVm.events.collect { e ->
             when (e) {
@@ -233,7 +234,7 @@ fun ReconApp() {
                             SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock,
                                 onExportBackup = { exportPass = true },
                                 onImportBackup = { picker.launch(arrayOf("application/json", "text/plain", "*/*")) },
-                                onTestRoute = vm::testRoute, onRetention = vm::setRetention, onAutoRescan = vm::setAutoRescan, onWipe = vm::wipeEverything),
+                                onTestRoute = vm::testRoute, onRetention = vm::setRetention, onAutoRescan = vm::setAutoRescan, onWipe = vm::wipeEverything, onOpsec = vm::setOpsec),
                             contentPadding = pad,
                         )
                     }

@@ -54,6 +54,7 @@ class MainViewModel @Inject constructor(
     fun requestSearch(query: String) = controller.requestSearch(query)
     val prefill = controller.prefill
     fun requestPrefill(text: String) = controller.requestPrefill(text)
+    fun consumePrefill() = controller.consumePrefill()
     val pendingLink = controller.pendingLink
     fun requestLink(url: String) = controller.requestLink(url)
     fun consumeLink() = controller.consumeLink()

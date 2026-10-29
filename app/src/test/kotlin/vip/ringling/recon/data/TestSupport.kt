@@ -27,7 +27,11 @@ class Router(private val routes: List<Pair<String, (RecordedRequest) -> MockResp
     }
 }
 
+/** Unit tests talk to MockWebServer directly; production holds traffic until the saved proxy setting is read (ProxyState.UNSET). */
+fun directNetworkForTests() = vip.ringling.recon.data.net.ProxyState.apply(vip.ringling.recon.data.net.ProxyMode.OFF, "", 0)
+
 fun server(vararg routes: Pair<String, (RecordedRequest) -> MockResponse>): Pair<MockWebServer, Router> {
+    directNetworkForTests()
     val router = Router(routes.toList())
     val s = MockWebServer().apply { dispatcher = router; start() }
     return s to router

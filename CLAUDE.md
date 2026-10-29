@@ -14,12 +14,13 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
   Settings at runtime (Keystore-backed encrypted storage, never plaintext, never logged, masked with
   reveal toggle). Test every module's parsing/error handling against saved fixtures + MockWebServer;
   the user does live checks on their phone.
-- The only committed secret-like file is `ci/debug.keystore` (throwaway, password `android`) so
-  every CI build has the same signature and installs over the previous one.
+- Release APKs are signed only with the private release key from GitHub Actions secrets (`RELEASE_KEYSTORE_B64`,
+  `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`). There is no fallback key: without them the
+  release build fails. Never commit a keystore. Debug builds use the standard local debug key.
 
 ## Environment / build
 - Cloud container, no emulator, no KVM. Android SDK at `/opt/android-sdk` (`local.properties` is
-  gitignored; set `ANDROID_HOME=/opt/android-sdk`). JDK 21, Gradle wrapper 9.8.1, AGP 9.4.1
+  gitignored; set `ANDROID_HOME=/opt/android-sdk`). JDK 21 is required (Robolectric's SDK 36/37 sandboxes refuse JDK 17), Gradle wrapper 9.8.1, AGP 9.4.1
   (built-in Kotlin — no `kotlin-android` plugin), Hilt 2.60.1, KSP.
 - Network allowlist needed: dl.google.com, maven.google.com, services.gradle.org,
   plugins.gradle.org, repo1.maven.org, fonts.google.com. `repo.maven.apache.org` often returns 429, so
@@ -28,8 +29,12 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 - Screenshots: Roborazzi on Robolectric (JVM). `./gradlew recordRoborazziDebug` writes PNGs to
   `docs/screenshots/` (committed for review): phone (411x914dp) and Pixel Fold unfolded
   (841x701dp), dark + light.
-- CI: `.github/workflows/build.yml` builds on every push to `main`, signs with the shared keystore,
-  and publishes to the rolling pre-release tagged `latest`.
+- CI: `.github/workflows/ci.yml` runs on every PR and non-main push (read-only token, no secrets): gitleaks over the history
+  (`.gitleaks.toml`), Gradle wrapper validation, `assembleDebug lintDebug testDebugUnitTest`. `build.yml` builds on every push
+  to `main`, signs with the release key from secrets, and publishes the rolling pre-release tagged `latest`. Every action is
+  pinned to a commit SHA (Dependabot bumps them weekly, `.github/dependabot.yml`).
+- Lint: existing warnings live in `app/lint-baseline.xml`; `warningsAsErrors` makes any new one fail. Regenerate only on purpose
+  (`./gradlew updateLintBaseline`) and review the diff.
 
 ## Design (top priority — must not look like a default template)
 - Dark-first, true-black AMOLED surfaces; optional Material You dynamic color toggle (off by default).
@@ -92,12 +97,12 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 
 ## In-app updates (added 2026-10-15)
 - Settings → Updates (+ a quiet launch-time check and snackbar when a token is set). Source = the rolling `latest` GitHub release.
-  While the repo is PRIVATE the user adds a fine-grained GitHub token (this repo, **Contents: read**) under Settings → API keys
-  (`ApiKeyId.GITHUB`, Keystore-encrypted like the others); if the repo is made public no token is needed (it's optional everywhere). Token only goes to api.github.com; OkHttp drops it on the storage redirect (tested).
+  The repo is public, so no token is needed. A fine-grained GitHub token (this repo, **Contents: read**) under Settings → API keys
+  (`ApiKeyId.GITHUB`, Keystore-encrypted like the others) is optional and only raises the rate limit. Token only goes to api.github.com; OkHttp drops it on the storage redirect (tested).
 - CI writes `build: <run number>` and `sha256: <hex>` lines into the release body; `versionCode` = `GITHUB_RUN_NUMBER` (local builds = 1).
   The app compares build vs `BuildConfig.VERSION_CODE`, downloads to `cacheDir/updates/Recon.apk`, verifies size + SHA-256 (bad file deleted),
-  installs via `PackageInstaller` (needs REQUEST_INSTALL_PACKAGES / "Install unknown apps" for Recon). Android itself enforces same-signature,
-  so the shared `ci/debug.keystore` must never change or updates stop installing.
+  then refuses the APK unless its signing certificate SHA-256 equals the installed app's (`SigningCheck`), and installs via `PackageInstaller`
+  (needs REQUEST_INSTALL_PACKAGES / "Install unknown apps" for Recon). The release key must never change or updates stop installing.
 - Code: `data/update/{UpdateRepository,ApkInstaller,UpdateManager}.kt`; tests `UpdateTest` (MockWebServer; release JSON fixture authored from GitHub docs).
 - Local/dev APKs have versionCode 1, so they can't update over a CI build; always install the release build first.
 
@@ -171,7 +176,7 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 - Radar and Log both read `scanSnapshot` (`RadarMath.targetsFromSnapshots`); `SnapshotRepository.backfill` adds any History row without a snapshot (runs at Radar/Log start). Radar draws the 12 newest, labels the 3 newest. Log: "Re-scan all" and Undo for Clear all (in-memory backup).
 - Re-scan all (`ScanController.rescanAll`, `ScanDiffs`): sequential background scans of non-ZIP/non-photo targets, saved like normal scans, `RescanSheet` shows score change + new titles. Also in a case's menu.
 - Handled: `HandledRepository.keyOf(f)` hash (NOT the finding id) is what the UI compares; "Mark as handled" on phone detail + wide pane; handled rows dim. The risk score is unchanged by it.
-- Watchlist accepts email (breach diff), username and domain (diff of scorable finding ids via `ScanRunner`; failed runs never alert). Adding one asks for POST_NOTIFICATIONS.
+- Watchlist accepts email (breach diff), username (`account:<site>` tokens, IDENTITY module only) and domain (`sub:` crt.sh subdomains, one `whois:` token from RDAP facts, one `wayback:` latest-capture token; DOMAIN module only). `WatchLogic.signatureFor` carries a failed/inconclusive category's known tokens forward, so outages neither alert nor move the baseline; pre-token baselines are re-recorded silently (`usableBaseline`). `WatchLogic.describe` writes the notification line. Adding one asks for POST_NOTIFICATIONS.
 - Password check (`PwnedPasswords`, k-anonymity, only a 5-char SHA-1 prefix leaves the phone, nothing stored). Evidence PDF (`Evidence`: timestamp + SHA-256 of the finding text; not for registry records). Backup export/import (`BackupManager`: scans, snapshots, cases, watchlist; never keys/settings; import merges).
 - Incoming: share sheet, text-selection menu (PROCESS_TEXT), `mailto:`/`tel:` links, launcher shortcut "Scan clipboard", Paste button on Radar (`IncomingText`).
 - Fold: `androidx.window` tabletop posture (`LocalTabletop`): results stack graph above findings. Unverified on a device.
@@ -220,7 +225,6 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
   (74-120: no commercial use / no phone or mailing lists; 18-8326 & 18-8413 anti-harassment). Still worth a read by a human.
 - Registry mock data (screenshots only) uses clearly fictional placeholder records. Never commit real registry data.
 - Phase 1 stand-ins are replaced: Room history, Keystore-encrypted keys, real breach/identity/domain sources. `data/mock/MockData.kt` remains only for screenshot tests and previews.
-- Workflow `.github/workflows/build.yml` has not been run yet (no Actions access from the cloud session).
 - Keep `docs/screenshots/` in sync: re-run `./gradlew recordRoborazziDebug` after any UI change and commit the PNGs.
 
 ## Phase 2 status / gotchas
@@ -234,6 +238,20 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
   is counted, never treated as "not found".
 - Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 200+ tests at last count.
 - Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.
+
+## Security hardening (added 2026-10-28)
+- Every request is held at a dead SOCKS port (`ProxyState.UNSET`) until the saved proxy setting is applied; `ReconApp.onCreate` reads it
+  synchronously before any activity or worker runs. Tests call `directNetworkForTests()`.
+- `USER_AGENT` is a common browser string (no tool name, no repo). HIBP alone gets `Recon-Android/0.2` (it asks clients to identify themselves).
+- `LockGate` covers the UI while locked: the cover takes every touch and the content is dropped from the accessibility tree.
+- Outside input (share, selected text, mailto:/tel:, clipboard shortcut) goes through `IncomingText.route` and only ever prefills the search box
+  or the Lab's link box (`ScanController.prefill` is a StateFlow so a cold-start share isn't lost).
+- `DbKey.load` distinguishes Missing from Unreadable. Unreadable never deletes or replaces anything: that session uses an in-memory database.
+  An encrypted file with no saved key is renamed `recon.db.unopenable-<ts>`, never deleted.
+- **OPSEC mode** (System → Privacy & network, `AppSettings.opsec`, mirrored to `data/net/Opsec`): no scan module contacts a target-controlled
+  host (they ask third-party services), so it governs the three paths that can: the Lab's link inspector (refused without Tor/proxy),
+  remote photos (`RemoteImage` waits for a tap via `LocalOpsecImages`), and opening links (`LinkOpener.openOrCopy`: Tor Browser only, else copied).
+  Map tiles (OSM/Esri) are third-party and unaffected.
 
 ## Encrypted backup + evidence bundle (added 2026-10-28)
 - Backups are always passphrase-encrypted (`BackupCrypto`: PBKDF2-HMAC-SHA256 600k + AES-256-GCM, header bound as AAD, `.recon` file).

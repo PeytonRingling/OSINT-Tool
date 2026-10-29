@@ -10,6 +10,7 @@ import vip.ringling.recon.data.net.Http
 import vip.ringling.recon.data.sources.breach.PwnedPasswords
 
 class PwnedPasswordsTest {
+    init { directNetworkForTests() }
     @Test fun sendsOnlyTheHashPrefixAndFindsTheSuffix() = runTest {
         val server = MockWebServer()
         server.enqueue(MockResponse().setBody("0018A45C4D1DEF81644B54AB7F969B88D65:0\r\n1E4C9B93F3F0682250B6CF8331B7EE68FD8:9545824\r\n011053FD0102E94D6AE2F8B83D76FAF94F6:1"))
