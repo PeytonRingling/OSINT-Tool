@@ -199,17 +199,40 @@ fun ReconApp() {
                         val st by vm.state.collectAsStateWithLifecycle()
                         val ctx = androidx.compose.ui.platform.LocalContext.current
                         val scope = androidx.compose.runtime.rememberCoroutineScope()
+                        // Backups are always encrypted with a passphrase; an older plaintext backup still imports without one.
+                        var exportPass by remember { androidx.compose.runtime.mutableStateOf(false) }
+                        var importText by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+                        var importError by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+                        fun importNow(text: String, pass: CharArray?) = scope.launch {
+                            val r = vm.importBackup(text, pass)
+                            val e = r.exceptionOrNull()
+                            if (e is vip.ringling.recon.data.BackupManager.PassphraseNeeded || e is vip.ringling.recon.data.BackupCrypto.WrongPassphrase) {
+                                importText = text; importError = if (pass == null) null else e.message
+                            } else {
+                                importText = null; importError = null
+                                snackbar.showSnackbar(r.fold({ "Imported ${it.scans} scans, ${it.cases} cases, ${it.watch} watched" }, { "Import failed: ${it.message}" }))
+                            }
+                        }
                         val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
                             if (uri != null) scope.launch {
                                 val text = runCatching { ctx.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() } }.getOrNull()
-                                val r = if (text == null) null else vm.importBackup(text)
-                                snackbar.showSnackbar(r?.fold({ "Imported ${it.scans} scans, ${it.cases} cases, ${it.watch} watched" }, { "Import failed: ${it.message}" }) ?: "Couldn't read that file")
+                                if (text == null) snackbar.showSnackbar("Couldn't read that file") else importNow(text, null)
                             }
+                        }
+                        if (exportPass) vip.ringling.recon.ui.settings.PassphraseDialog(
+                            "Encrypt backup", "Scans, cases, notes and the watchlist are encrypted with this passphrase. You'll need it to restore.", confirm = true,
+                            onDismiss = { exportPass = false },
+                        ) { pass -> exportPass = false; scope.launch { actions.saveFile("recon-backup-${java.time.LocalDate.now()}.recon", vm.encryptedBackup(pass).toByteArray()) } }
+                        importText?.let { text ->
+                            vip.ringling.recon.ui.settings.PassphraseDialog(
+                                "Open backup", "This backup is encrypted. Enter the passphrase it was saved with.", confirm = false, error = importError,
+                                onDismiss = { importText = null; importError = null },
+                            ) { pass -> importNow(text, pass) }
                         }
                         SettingsScreen(
                             st,
                             SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock,
-                                onExportBackup = { scope.launch { actions.saveFile("recon-backup-${java.time.LocalDate.now()}.json", vm.backupText().toByteArray()) } },
+                                onExportBackup = { exportPass = true },
                                 onImportBackup = { picker.launch(arrayOf("application/json", "text/plain", "*/*")) },
                                 onTestRoute = vm::testRoute, onRetention = vm::setRetention, onAutoRescan = vm::setAutoRescan, onWipe = vm::wipeEverything, onOpsec = vm::setOpsec),
                             contentPadding = pad,

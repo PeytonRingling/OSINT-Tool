@@ -252,3 +252,9 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
   host (they ask third-party services), so it governs the three paths that can: the Lab's link inspector (refused without Tor/proxy),
   remote photos (`RemoteImage` waits for a tap via `LocalOpsecImages`), and opening links (`LinkOpener.openOrCopy`: Tor Browser only, else copied).
   Map tiles (OSM/Esri) are third-party and unaffected.
+
+## Encrypted backup + evidence bundle (added 2026-10-28)
+- Backups are always passphrase-encrypted (`BackupCrypto`: PBKDF2-HMAC-SHA256 600k + AES-256-GCM, header bound as AAD, `.recon` file).
+  Import still reads old plaintext backups. There is no passphrase recovery.
+- Case → Export → "Save evidence bundle (ZIP)" (`EvidenceBundle`): report.md, latest stored scan per target as JSON (registry/people excluded),
+  manifest.json (capture times, SHA-256 per file) and `SHA256SUMS` (`sha256sum -c` compatible). `EvidenceBundle.verify` re-checks it.

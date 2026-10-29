@@ -36,8 +36,8 @@ class SettingsViewModel @Inject constructor(
     }
     fun wipeEverything() = viewModelScope.launch { guard.wipeEverything() }
     suspend fun testRoute() = route.test()
-    suspend fun backupText(): String = backup.export()
-    suspend fun importBackup(text: String) = backup.import(text)
+    suspend fun encryptedBackup(passphrase: CharArray): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { try { backup.exportEncrypted(passphrase) } finally { passphrase.fill(' ') } }
+    suspend fun importBackup(text: String, passphrase: CharArray? = null) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { try { backup.import(text, passphrase) } finally { passphrase?.fill(' ') } }
     val state: StateFlow<SettingsUiState> = combine(repo.settings, apiKeys.keys, history.records, updates.state) { s, k, h, u ->
         SettingsUiState(s, k, h.size, BuildConfig.VERSION_NAME, updates.installedBuild, u, vip.ringling.recon.data.db.DbEncryption.status)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())

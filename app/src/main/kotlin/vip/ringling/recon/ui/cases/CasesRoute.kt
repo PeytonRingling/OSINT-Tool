@@ -1,5 +1,6 @@
 package vip.ringling.recon.ui.cases
 
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -56,6 +57,7 @@ fun CaseDetailRoute(
     val c = st.case ?: return
     var dialog by rememberSaveable { mutableStateOf("") }
     val stamp = remember { java.time.LocalDate.now().toString() }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     fun report() = CaseReport.markdown(c.file, c.states, c.events, c.pivots, stamp)
     fun cover(): PdfWriter.Cover {
         val exposure = vip.ringling.recon.domain.CaseLogic.exposure(c.states)
@@ -86,6 +88,7 @@ fun CaseDetailRoute(
             onSaveMarkdown = { actions.saveFile("recon-case-${c.file.name.lowercase().replace(Regex("[^a-z0-9]+"), "-")}-$stamp.md", report().toByteArray()) },
             onSavePdf = { actions.saveFile("recon-case-${c.file.name.lowercase().replace(Regex("[^a-z0-9]+"), "-")}-$stamp.pdf", PdfWriter.fromMarkdown(report(), cover())) },
             onShare = { actions.shareText("Recon case report", report()) },
+            onSaveEvidence = { scope.launch { vm.evidenceZip(report())?.let { (name, zip) -> actions.saveFile(name, zip) } } },
             onRescan = { onRescan(c.file.targets.map { ScanInput(it.value, it.type) }) },
             onTags = { dialog = "tags" },
             onExpand = {

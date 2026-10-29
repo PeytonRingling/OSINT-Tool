@@ -29,7 +29,8 @@ data class ImportSummary(val scans: Int, val cases: Int, val watch: Int)
 /**
  * Local backup so a reinstall doesn't lose scans, cases and the watchlist. The file is written where the user chooses (system file picker).
  * It NEVER contains API keys, tokens or settings, and registry findings are not in it because they are never stored in the first place.
- * Import merges (same ids are overwritten, nothing is deleted).
+ * Exports are always passphrase-encrypted ([BackupCrypto]); import also reads older plaintext backups. Import merges (same ids are
+ * overwritten, nothing is deleted).
  */
 @Singleton
 class BackupManager @Inject constructor(
@@ -49,8 +50,15 @@ class BackupManager @Inject constructor(
         return json.encodeToString(BackupFile.serializer(), b)
     }
 
-    suspend fun import(text: String): Result<ImportSummary> = runCatching {
-        val b = json.decodeFromString(BackupFile.serializer(), text)
+    /** What Settings → Backup → Export writes: the backup sealed with [passphrase]. */
+    suspend fun exportEncrypted(passphrase: CharArray, now: Long = System.currentTimeMillis()): String = BackupCrypto.seal(export(now), passphrase)
+
+    class PassphraseNeeded : Exception("This backup is encrypted. Enter its passphrase.")
+
+    /** Imports a backup; an encrypted one needs [passphrase] (else fails with [PassphraseNeeded]). */
+    suspend fun import(text: String, passphrase: CharArray? = null): Result<ImportSummary> = runCatching {
+        val plain = if (BackupCrypto.isSealed(text)) BackupCrypto.open(text, passphrase ?: throw PassphraseNeeded()) else text
+        val b = json.decodeFromString(BackupFile.serializer(), plain)
         require(b.format == BackupFile.FORMAT) { "Not a Recon backup" }
         require(b.version == 1) { "Backup is from a newer version of Recon" }
         b.scans.forEach { scans.insert(ScanEntity(it.id, it.query, it.type, it.ts, it.findingsJson, it.scoreVersion)) }
