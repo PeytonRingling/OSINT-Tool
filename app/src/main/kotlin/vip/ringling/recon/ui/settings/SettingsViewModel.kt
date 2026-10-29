@@ -38,8 +38,11 @@ class SettingsViewModel @Inject constructor(
     suspend fun testRoute() = route.test()
     suspend fun encryptedBackup(passphrase: CharArray): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { try { backup.exportEncrypted(passphrase) } finally { passphrase.fill(' ') } }
     suspend fun importBackup(text: String, passphrase: CharArray? = null) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { try { backup.import(text, passphrase) } finally { passphrase?.fill(' ') } }
-    val state: StateFlow<SettingsUiState> = combine(repo.settings, apiKeys.keys, history.records, updates.state) { s, k, h, u ->
-        SettingsUiState(s, k, h.size, BuildConfig.VERSION_NAME, updates.installedBuild, u, vip.ringling.recon.data.db.DbEncryption.status)
+    private val meter = vip.ringling.recon.data.net.QuotaMeter.shared
+    val state: StateFlow<SettingsUiState> = combine(repo.settings, apiKeys.keys, history.records, updates.state, meter.usage) { s, k, h, u, q ->
+        val now = System.currentTimeMillis()
+        val quota = vip.ringling.recon.data.net.Metered.entries.associate { m -> m.key to meter.describe(m, q[m], now) + " · " + m.note }
+        SettingsUiState(s, k, h.size, BuildConfig.VERSION_NAME, updates.installedBuild, u, vip.ringling.recon.data.db.DbEncryption.status, quota)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     fun setTheme(m: ThemeMode) = viewModelScope.launch { repo.setTheme(m) }

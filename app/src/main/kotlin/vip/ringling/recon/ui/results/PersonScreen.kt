@@ -74,6 +74,9 @@ fun PersonScreen(state: ResultsUiState, actions: ResultsActions, modifier: Modif
             }
             portals?.let { p -> item(key = "portals") { FindingGroup("Official and public portals", "${p.links.size} links", listOf(p), state.handled, showSeverity = false, onOpen = actions.onFinding) } }
             state.findings.firstOrNull { it.id == "PEOPLE-finders" }?.let { p -> item(key = "finders") { FindingGroup("People-finder sites", "${p.links.size} links", listOf(p), state.handled, showSeverity = false, showTags = false, onOpen = actions.onFinding) } }
+            state.findings.filter { it.module == vip.ringling.recon.domain.ModuleId.DORKS }.takeIf { it.isNotEmpty() }?.let { d ->
+                item(key = "dorks") { FindingGroup("Search dorks and likely usernames", "${d.size}", d, state.handled, showSeverity = false, showTags = false, onOpen = actions.onFinding) }
+            }
             if (!state.running && state.findings.isEmpty()) item { Text("No sources answered. Check your connection.", color = sig.muted, style = MaterialTheme.typography.bodyMedium) }
         }
     }

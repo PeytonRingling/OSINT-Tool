@@ -61,7 +61,7 @@ class LeakCheckClient(private val http: Http, private val apiUrl: String, privat
             val q = URLEncoder.encode(query, "UTF-8")
             val kind = when (type) { InputType.EMAIL -> "email"; InputType.PHONE -> "phone"; else -> "username" }
             val req = Request.Builder().url("$apiUrl/query/$q?type=$kind").header("X-API-Key", apiKey).header("Accept", "application/json").build()
-            parseV2(fetch(req))
+            parseV2(fetch(req)).also { r -> r.quota?.let { vip.ringling.recon.data.net.QuotaMeter.shared.reportRemaining(vip.ringling.recon.data.net.Metered.LEAKCHECK, it) } }
         } else {
             // The public endpoint auto-detects the type; it rejects "+" so phones go digits-only.
             val q = URLEncoder.encode(if (type == InputType.PHONE) query.filter(Char::isDigit) else query, "UTF-8")

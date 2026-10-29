@@ -19,7 +19,7 @@ import vip.ringling.recon.domain.Severity
 /** Ready-made search operators ("dorks") for the input. Pure link generation: nothing is requested until the user taps one. */
 class DorkSource @Inject constructor() : OsintSource {
     override val id = ModuleId.DORKS
-    override val supportedInputTypes = setOf(InputType.EMAIL, InputType.USERNAME, InputType.PHONE, InputType.DOMAIN, InputType.IP, InputType.WALLET)
+    override val supportedInputTypes = setOf(InputType.EMAIL, InputType.USERNAME, InputType.PHONE, InputType.DOMAIN, InputType.IP, InputType.WALLET, InputType.PERSON)
 
     override suspend fun run(input: ScanInput): Flow<Finding> = flowOf(listOfNotNull(Dorks.finding(input), Variants.finding(input))).flatMapConcat { it.asFlow() }
 }
@@ -50,6 +50,7 @@ object Dorks {
             InputType.DOMAIN -> listOf("site:$r", "site:*.$r -www", "site:$r filetype:pdf", "site:$r (filetype:xls OR filetype:xlsx OR filetype:doc OR filetype:docx)", "site:$r intitle:\"index of\"", "site:$r inurl:admin OR inurl:login",
                 "\"@$r\" -site:$r", "site:pastebin.com \"$r\"", "site:github.com \"$r\"", "site:$r ext:env OR ext:sql OR ext:log OR ext:bak", "inurl:$r -site:$r")
             InputType.IP -> listOf("\"$r\"", "\"$r\" (abuse OR spam OR attack OR scan)", "site:pastebin.com \"$r\"", "ip:$r", "\"$r\" site:github.com")
+            InputType.PERSON -> listOf("\"$r\"", "site:linkedin.com/in \"$r\"", "\"$r\" (resume OR cv)", "\"$r\" site:github.com", "\"$r\" (obituary OR wedding OR alumni)")
             InputType.WALLET -> listOf("\"$r\"", "\"$r\" (scam OR fraud OR ransom OR phishing)", "site:reddit.com \"$r\"", "site:bitcointalk.org \"$r\"", "site:github.com \"$r\"", "site:pastebin.com \"$r\"")
             else -> emptyList()
         }
@@ -83,16 +84,35 @@ object Variants {
         return out.filter { it.length >= 3 && it != h }.take(max)
     }
 
+    /**
+     * Handles people commonly build from their name: "Jane Q. Doe" -> janedoe, jane.doe, jdoe, doejane, janed, … Middle initials are used once
+     * (janeqdoe, jqd). Letters only, lowercased, accents folded; at most [max].
+     */
+    fun fromName(raw: String, max: Int = 14): List<String> {
+        val parts = java.text.Normalizer.normalize(raw, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "").lowercase()
+            .split(Regex("[^a-z]+")).filter { it.isNotEmpty() }
+        if (parts.size < 2) return emptyList()
+        val first = parts.first(); val last = parts.last(); val mid = parts.drop(1).dropLast(1).firstOrNull()?.take(1)
+        val f = first.take(1); val l = last.take(1)
+        val out = LinkedHashSet<String>()
+        out += first + last; out += "$first.$last"; out += "${first}_$last"; out += f + last; out += "$f.$last"
+        out += last + first; out += "$last.$first"; out += last + f; out += first + l; out += "$first.$l"
+        if (mid != null) { out += first + mid + last; out += f + mid + last; out += f + mid + l }
+        out += first + last + "1"
+        return out.filter { it.length >= 3 }.take(max)
+    }
+
     fun finding(input: ScanInput): Finding? {
         val variants = when (input.type) {
+            InputType.PERSON -> fromName(input.raw)
             InputType.USERNAME -> handle(input.raw)
             InputType.EMAIL -> handle(input.raw.substringBefore('@')).map { it + "@" + input.raw.substringAfter('@') }
             else -> return null
         }
         if (variants.isEmpty()) return null
         return Finding(
-            "DORKS-variants", ModuleId.DORKS, "${variants.size} handle variants",
-            "Ways the same person might spell this ${if (input.type == InputType.EMAIL) "address" else "handle"} elsewhere. These are guesses, not matches: tap one to search it.",
+            "DORKS-variants", ModuleId.DORKS, if (input.type == InputType.PERSON) "${variants.size} likely usernames" else "${variants.size} handle variants",
+            if (input.type == InputType.PERSON) "Usernames people commonly build from this name. These are guesses, not matches: tap one to sweep it across sites." else "Ways the same person might spell this ${if (input.type == InputType.EMAIL) "address" else "handle"} elsewhere. These are guesses, not matches: tap one to search it.",
             Severity.INFO, confidence = Confidence.LOW, pivots = variants.map { Pivot(it, it) },
         )
     }

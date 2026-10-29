@@ -70,6 +70,8 @@ data class SettingsUiState(
     val installedBuild: Int = 1,
     val update: UpdateState = UpdateState.Idle,
     val dbStatus: vip.ringling.recon.data.db.DbStatus? = null,
+    /** Usage line per metered key ("3 today · 140 of 1,000 this month"), counted on this device. */
+    val quota: Map<ApiKeyId, String> = emptyMap(),
 ) {
     val keysSet: Int get() = ApiKeyId.entries.count { !keys[it].isNullOrBlank() }
 }
@@ -244,6 +246,7 @@ private fun KeysSection(state: SettingsUiState, a: SettingsActions, initiallyExp
                     Column(Modifier.weight(1f)) {
                         Text(id.label, color = sig.text, style = MaterialTheme.typography.titleSmall, maxLines = 1)
                         Text(id.hint.substringBefore(".").substringBefore(":").take(60), color = sig.muted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        state.quota[id]?.takeIf { set }?.let { Text(it, color = if ("near the free limit" in it || "rate-limited" in it) sig.alertText else sig.muted, style = MaterialTheme.typography.bodySmall) }
                     }
                     StatusTag(if (set) "Saved" else "Not set", if (set) Tone.SAFE else Tone.MUTED)
                 }
@@ -252,7 +255,7 @@ private fun KeysSection(state: SettingsUiState, a: SettingsActions, initiallyExp
         }
         Divider()
         Text(
-            "Keys are entered here at runtime. They are encrypted with a hardware-backed Android Keystore key, never logged, and never leave this device except in requests to the service they belong to.",
+            "Usage counts are kept on this device only (counts and status codes, never queries) and are a guide: the service's own dashboard is authoritative. Keys are entered here at runtime. They are encrypted with a hardware-backed Android Keystore key, never logged, and never leave this device except in requests to the service they belong to.",
             color = sig.muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(14.dp),
         )
     }

@@ -12,13 +12,14 @@ import okhttp3.Response
 import java.util.concurrent.TimeUnit
 
 
-fun buildHttpClient(): OkHttpClient = OkHttpClient.Builder()
+fun buildHttpClient(meter: QuotaMeter = QuotaMeter.shared): OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(10, TimeUnit.SECONDS)
     .readTimeout(20, TimeUnit.SECONDS)
     .callTimeout(40, TimeUnit.SECONDS)
     .followRedirects(true)
     .proxySelector(ProxyState.selector)
-    // Deliberately no logging interceptor: request headers carry API keys.
+    // Deliberately no logging interceptor: request headers carry API keys. The quota meter keeps only counts and status codes.
+    .addInterceptor(QuotaInterceptor(meter))
     .build()
 
 /** Suspends until the response headers arrive; cancelling the coroutine cancels the call. */
