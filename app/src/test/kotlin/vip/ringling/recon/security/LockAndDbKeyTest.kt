@@ -65,8 +65,9 @@ class LockGateTest {
     }
 }
 
+// A plain Application: ReconApp's onCreate opens the real database in the background, which races these file assertions.
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [36])
+@Config(sdk = [36], application = android.app.Application::class)
 class DbKeyTest {
     private val context: Context get() = RuntimeEnvironment.getApplication()
     private fun prefs() = context.getSharedPreferences("recon_db", Context.MODE_PRIVATE)
