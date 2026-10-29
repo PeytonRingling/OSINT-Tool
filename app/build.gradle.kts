@@ -9,6 +9,13 @@ plugins {
 
 android {
     namespace = "vip.ringling.recon"
+
+    // Existing warnings are recorded in lint-baseline.xml; any NEW warning fails the build (CI runs lintDebug on every PR).
+    lint {
+        baseline = file("lint-baseline.xml")
+        warningsAsErrors = true
+        abortOnError = true
+    }
     compileSdk = 37
 
     defaultConfig {
@@ -22,24 +29,26 @@ android {
         buildConfigField("String", "UPDATE_REPO", "\"${System.getenv("GITHUB_REPOSITORY") ?: ""}\"")
     }
 
+    // Release builds are signed only with the private release key from CI secrets (see README, "Release signing"). There is no fallback:
+    // without all four values a release build fails. Debug builds use the standard local debug key.
+    val releaseKeystore = System.getenv("RELEASE_KEYSTORE_FILE")?.takeIf { it.isNotBlank() }
+    val releaseSecrets = listOf("RELEASE_KEYSTORE_PASSWORD", "RELEASE_KEY_ALIAS", "RELEASE_KEY_PASSWORD").associateWith { System.getenv(it)?.takeIf { v -> v.isNotEmpty() } }
+    val canSignRelease = releaseKeystore != null && file(releaseKeystore).isFile && releaseSecrets.values.all { it != null }
     signingConfigs {
-        // Throwaway keystore, committed on purpose: private sideloaded app, and a stable
-        // signature lets every CI build install over the previous one. No secrets involved.
-        create("shared") {
-            storeFile = rootProject.file("ci/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+        if (canSignRelease) create("release") {
+            storeFile = file(releaseKeystore!!)
+            storePassword = releaseSecrets.getValue("RELEASE_KEYSTORE_PASSWORD")
+            keyAlias = releaseSecrets.getValue("RELEASE_KEY_ALIAS")
+            keyPassword = releaseSecrets.getValue("RELEASE_KEY_PASSWORD")
         }
     }
 
     buildTypes {
-        debug { signingConfig = signingConfigs.getByName("shared") }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            signingConfig = signingConfigs.getByName("shared")
+            signingConfig = if (canSignRelease) signingConfigs.getByName("release") else null
         }
     }
 
@@ -133,3 +142,12 @@ dependencies {
 roborazzi {
     outputDir.set(rootProject.layout.projectDirectory.dir("docs/screenshots"))
 }
+
+// A release APK without the release key would be unsigned (or, worse, signed with something else): stop instead.
+tasks.configureEach {
+    if (name.startsWith("package") && name.endsWith("Release")) doFirst {
+        val missing = listOf("RELEASE_KEYSTORE_FILE", "RELEASE_KEYSTORE_PASSWORD", "RELEASE_KEY_ALIAS", "RELEASE_KEY_PASSWORD").filter { System.getenv(it).isNullOrEmpty() }
+        if (missing.isNotEmpty() || !file(System.getenv("RELEASE_KEYSTORE_FILE")).isFile) throw GradleException("Release signing is not configured (missing: ${missing.ifEmpty { listOf("RELEASE_KEYSTORE_FILE (not a file)") }.joinToString()}). See README, Release signing.")
+    }
+}
+

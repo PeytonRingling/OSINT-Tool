@@ -36,8 +36,8 @@ class SettingsViewModel @Inject constructor(
     }
     fun wipeEverything() = viewModelScope.launch { guard.wipeEverything() }
     suspend fun testRoute() = route.test()
-    suspend fun backupText(): String = backup.export()
-    suspend fun importBackup(text: String) = backup.import(text)
+    suspend fun encryptedBackup(passphrase: CharArray): String = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { try { backup.exportEncrypted(passphrase) } finally { passphrase.fill(' ') } }
+    suspend fun importBackup(text: String, passphrase: CharArray? = null) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Default) { try { backup.import(text, passphrase) } finally { passphrase?.fill(' ') } }
     private val meter = vip.ringling.recon.data.net.QuotaMeter.shared
     val state: StateFlow<SettingsUiState> = combine(repo.settings, apiKeys.keys, history.records, updates.state, meter.usage) { s, k, h, u, q ->
         val now = System.currentTimeMillis()
@@ -52,6 +52,7 @@ class SettingsViewModel @Inject constructor(
     fun setProxyHost(h: String) = viewModelScope.launch { repo.setProxyHost(h) }
     fun setProxyPort(p: Int) = viewModelScope.launch { repo.setProxyPort(p) }
     fun setAppLock(on: Boolean) = viewModelScope.launch { repo.setAppLock(on) }
+    fun setOpsec(on: Boolean) = viewModelScope.launch { repo.setOpsec(on) }
     fun setKey(id: ApiKeyId, v: String) = apiKeys.set(id, v)
     fun checkUpdate() = updates.check()
     fun installUpdate() = updates.downloadAndInstall()

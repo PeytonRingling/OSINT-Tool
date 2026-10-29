@@ -37,6 +37,33 @@ object LinkOpener {
         return runCatching { host.startActivity(tag(Intent.createChooser(Intent(Intent.ACTION_VIEW, uri), "Open with"))) }.isSuccess
     }
 
+    const val TOR_BROWSER = "org.torproject.torbrowser"
+
+    enum class Route { BROWSER, TOR_BROWSER, COPY }
+
+    /** Browsers and Custom Tabs don't use Recon's proxy, so in OPSEC mode a link opens only in Tor Browser, or is copied. */
+    fun route(opsec: Boolean, torBrowserInstalled: Boolean): Route = when {
+        !opsec -> Route.BROWSER
+        torBrowserInstalled -> Route.TOR_BROWSER
+        else -> Route.COPY
+    }
+
+    private fun hasTorBrowser(context: Context) = runCatching { context.packageManager.getPackageInfo(TOR_BROWSER, 0) }.isSuccess
+
+    /** Opens [raw] the way OPSEC mode allows. Returns what to tell the user when the link was copied instead of opened, or null. */
+    fun openOrCopy(context: Context, raw: String, opsec: Boolean = vip.ringling.recon.data.net.Opsec.on): String? {
+        when (route(opsec, hasTorBrowser(context))) {
+            Route.BROWSER -> if (open(context, raw)) return null
+            Route.TOR_BROWSER -> {
+                val uri = normalize(raw)?.toUri()
+                if (uri != null && runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, uri).setPackage(TOR_BROWSER).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }.isSuccess) return null
+            }
+            Route.COPY -> { copy(context, raw); return "OPSEC mode: link copied, not opened (your browser doesn't go through Tor). Paste it into Tor Browser." }
+        }
+        copy(context, raw)
+        return "Couldn't open that link. It was copied instead."
+    }
+
     fun copy(context: Context, text: String) {
         runCatching { context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Link", text)) }
     }

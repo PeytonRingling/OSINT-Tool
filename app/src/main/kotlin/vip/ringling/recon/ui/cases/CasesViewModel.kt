@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import vip.ringling.recon.data.CaseFileRepository
 import vip.ringling.recon.data.HistoryRepository
@@ -95,9 +96,17 @@ class CaseDetailViewModel @Inject constructor(
     handle: SavedStateHandle,
     private val repo: CaseFileRepository,
     snapshots: SnapshotRepository,
-    history: HistoryRepository,
+    private val history: HistoryRepository,
 ) : ViewModel() {
     val caseId: String = checkNotNull(handle["id"])
+
+    /** The case's evidence ZIP: [report] plus the latest stored scan of every target (see [vip.ringling.recon.domain.EvidenceBundle]). */
+    suspend fun evidenceZip(report: String, now: Long = System.currentTimeMillis()): Pair<String, ByteArray>? {
+        val file = repo.cases.first().firstOrNull { it.id == caseId } ?: return null
+        val records = history.records.first()
+        val latest = file.targets.mapNotNull { t -> records.filter { it.input.type == t.type && it.input.raw == t.value }.maxByOrNull { it.timestampMillis } }
+        return vip.ringling.recon.domain.EvidenceBundle.fileName(file.name, now) to vip.ringling.recon.domain.EvidenceBundle.build(file.name, report, latest, now)
+    }
     private val tab = MutableStateFlow(CaseTab.TARGETS)
 
     val state: StateFlow<CaseDetailUiState> = combine(repo.cases, snapshots.snapshots, history.records, tab) { cases, snaps, records, t ->

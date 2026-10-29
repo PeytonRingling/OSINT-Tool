@@ -94,6 +94,7 @@ data class SettingsActions(
     val onRetention: (Int) -> Unit = {},
     val onAutoRescan: (Boolean) -> Unit = {},
     val onWipe: () -> Unit = {},
+    val onOpsec: (Boolean) -> Unit = {},
     val onTestRoute: suspend () -> vip.ringling.recon.data.net.RouteResult = { vip.ringling.recon.data.net.RouteResult.Failed("not available") },
 )
 
@@ -190,6 +191,8 @@ private fun PrivacySection(state: SettingsUiState, a: SettingsActions) {
             }
             RouteTestRow(state.settings.proxyMode, a.onTestRoute)
         }
+        Divider()
+        SwitchRow("OPSEC mode", "Never contact a target's own server from your address: photos load only when tapped, links open only in Tor Browser (or are copied), and the link inspector needs Tor or a proxy.", state.settings.opsec, a.onOpsec)
         Divider()
         SwitchRow("App lock", "Fingerprint, face or PIN. Hides Recon from recents.", state.settings.appLock, a.onAppLock)
     }
@@ -341,7 +344,7 @@ private fun DataSection(state: SettingsUiState, a: SettingsActions) {
         Row(Modifier.fillMaxWidth().heightIn(min = 64.dp).padding(start = 14.dp, end = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Column(Modifier.weight(1f)) {
                 Text("Backup", color = sig.text, style = MaterialTheme.typography.titleSmall)
-                Text("Scans, cases and watchlist. Never keys or settings. The file is NOT encrypted: keep it somewhere private.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
+                Text("Scans, cases and watchlist, encrypted with a passphrase you choose. Never keys or settings.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
             }
             SignalButton("Export", a.onExportBackup, mono = true)
             SignalButton("Import", a.onImportBackup, mono = true)

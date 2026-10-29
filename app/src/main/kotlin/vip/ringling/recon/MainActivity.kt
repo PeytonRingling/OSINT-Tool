@@ -7,7 +7,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -19,6 +18,9 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import vip.ringling.recon.ui.AppLockPrompt
+import vip.ringling.recon.ui.LockGate
+import vip.ringling.recon.domain.Incoming
+import vip.ringling.recon.domain.IncomingText
 import vip.ringling.recon.ui.LockScreen
 import vip.ringling.recon.ui.MainViewModel
 import vip.ringling.recon.ui.ReconRoot
@@ -43,13 +45,10 @@ class MainActivity : ComponentActivity() {
         }
         locked = runBlockingLockSetting()
         setContent {
-            Box {
-                ReconRoot(vm)
-                if (locked) {
-                    val s by vm.settings.collectAsStateWithLifecycle()
-                    ReconTheme(s.themeMode, s.dynamicColor) { LockScreen(onUnlock = ::promptUnlock) }
-                }
-            }
+            LockGate(locked, lockScreen = {
+                val s by vm.settings.collectAsStateWithLifecycle()
+                ReconTheme(s.themeMode, s.dynamicColor) { LockScreen(onUnlock = ::promptUnlock) }
+            }) { ReconRoot(vm) }
         }
         handleShare(intent)
     }
@@ -90,17 +89,20 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /** Text shared into Recon (share sheet), selected text ("Recon" in the selection menu), mailto:/tel: links and the clipboard shortcut become a search. */
+    /** Text shared into Recon (share sheet), selected text ("Recon" in the selection menu), mailto:/tel: links and the clipboard shortcut fill the search box (links: the Lab's inspector). Nothing is searched until the user presses go. */
     private fun handleShare(intent: Intent?) {
         intent ?: return
-        val query = when (intent.action) {
-            Intent.ACTION_SEND -> if (intent.type?.startsWith("text/") == true) vip.ringling.recon.domain.IncomingText.clean(intent.getStringExtra(Intent.EXTRA_TEXT)) else null
-            Intent.ACTION_PROCESS_TEXT -> vip.ringling.recon.domain.IncomingText.clean(intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString())
-            Intent.ACTION_VIEW, Intent.ACTION_SENDTO, Intent.ACTION_DIAL -> vip.ringling.recon.domain.IncomingText.fromUri(intent.data?.scheme, intent.data?.schemeSpecificPart)
-            "vip.ringling.recon.SCAN_CLIPBOARD" -> { scanClipboardOnFocus = true; null }
+        val text = when (intent.action) {
+            Intent.ACTION_SEND -> intent.getStringExtra(Intent.EXTRA_TEXT)
+            Intent.ACTION_PROCESS_TEXT -> intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()
             else -> null
         }
-        if (query != null && intent.action != Intent.ACTION_VIEW && vip.ringling.recon.domain.IncomingText.isLink(query)) vm.requestLink(query) else query?.let(vm::requestSearch)
-        if (query != null || intent.action == "vip.ringling.recon.SCAN_CLIPBOARD") setIntent(Intent(this, MainActivity::class.java))
+        when (val r = IncomingText.route(intent.action, intent.type, text, intent.data?.scheme, intent.data?.schemeSpecificPart)) {
+            is Incoming.Prefill -> vm.requestPrefill(r.text)
+            is Incoming.Link -> vm.requestLink(r.url)
+            Incoming.ClipboardOnFocus -> scanClipboardOnFocus = true
+            null -> return
+        }
+        setIntent(Intent(this, MainActivity::class.java))
     }
 }

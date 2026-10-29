@@ -1,0 +1,7 @@
+# Secret scanning for CI (gitleaks). Default rules plus one reviewed false positive.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Upstream WhatsMyName site list: the Disqus api_key is Disqus's own public embed key, not ours."
+paths = ['''(^|/)wmn_sites\.json$''']

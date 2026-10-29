@@ -70,7 +70,16 @@ class CaseTest {
         assertEquals(listOf("ann@b.com"), b.watches().snapshot().map { it.raw })
         assertTrue(mb.import("{\"format\":\"other\",\"createdAt\":1,\"scans\":[],\"snapshots\":[],\"cases\":[],\"watch\":[]}").isFailure)
         assertTrue(mb.import("not json").isFailure)
-        a.close(); b.close()
+
+        val sealed = ma.exportEncrypted("backup passphrase".toCharArray())
+        assertTrue("ann@b.com" !in sealed && "hello" !in sealed, "encrypted backup hides targets and notes")
+        val c2 = Room.inMemoryDatabaseBuilder(ctx, HistoryDb::class.java).allowMainThreadQueries().build()
+        val (mc, rc) = mgr(c2)
+        assertTrue(mc.import(sealed).exceptionOrNull() is vip.ringling.recon.data.BackupManager.PassphraseNeeded)
+        assertTrue(mc.import(sealed, "wrong passphrase".toCharArray()).exceptionOrNull() is vip.ringling.recon.data.BackupCrypto.WrongPassphrase)
+        assertEquals(1, mc.import(sealed, "backup passphrase".toCharArray()).getOrThrow().cases)
+        assertEquals(listOf("hello"), rc.cases.first().single().notes.map { it.text })
+        a.close(); b.close(); c2.close()
     }
 
     @Test fun ageBasedDeleteRemovesOnlyOldScansAndKeepsCases() = runTest {
@@ -128,8 +137,8 @@ class WatchTest {
         assertEquals(null, vip.ringling.recon.data.watch.WatchLogic.signature(ok + Finding("BREACH-hibp-error", ModuleId.BREACH, "x", "d", Severity.INFO)))
         assertEquals(emptySet(), vip.ringling.recon.data.watch.WatchLogic.newItems(null, setOf("a")), "first run is a silent baseline")
         val hits = listOf(Finding("IDENTITY-github", ModuleId.IDENTITY, "GitHub", "d", Severity.INFO), Finding("IDENTITY-summary", ModuleId.IDENTITY, "s", "d", Severity.INFO), Finding("IDENTITY-gitlab", ModuleId.IDENTITY, "GitLab", "d", Severity.INFO))
-        assertEquals(setOf("IDENTITY-github", "IDENTITY-gitlab"), vip.ringling.recon.data.watch.WatchLogic.signatureFor(vip.ringling.recon.domain.InputType.USERNAME, hits), "housekeeping rows are not findings")
-        assertEquals(null, vip.ringling.recon.data.watch.WatchLogic.signatureFor(vip.ringling.recon.domain.InputType.DOMAIN, hits + Finding("DOMAIN-x-error", ModuleId.DOMAIN, "x", "d", Severity.INFO)), "a failed run never alerts")
+        assertEquals(setOf("account:github", "account:gitlab", vip.ringling.recon.data.watch.WatchLogic.TYPED), vip.ringling.recon.data.watch.WatchLogic.signatureFor(vip.ringling.recon.domain.InputType.USERNAME, hits), "housekeeping rows are not findings")
+        assertEquals(null, vip.ringling.recon.data.watch.WatchLogic.signatureFor(vip.ringling.recon.domain.InputType.DOMAIN, listOf(Finding("DOMAIN-x-error", ModuleId.DOMAIN, "x", "d", Severity.INFO))), "a run that learned nothing never alerts")
         assertEquals(setOf("b"), vip.ringling.recon.data.watch.WatchLogic.newItems(setOf("a"), setOf("a", "b")))
     }
 

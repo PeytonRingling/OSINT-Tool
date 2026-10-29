@@ -208,4 +208,22 @@ class ProxyStateTest {
         s.apply(m.getValue("CUSTOM"), "", 0); assertEquals(java.net.Proxy.Type.SOCKS, s.selector.select(null).single().type(), "invalid custom proxy must fail closed")
         s.apply(m.getValue("OFF"), "", 0)
     }
+
+    @Test fun nothingLeavesBeforeTheSavedSettingIsApplied() {
+        val s = vip.ringling.recon.data.net.ProxyState
+        val server = okhttp3.mockwebserver.MockWebServer().apply { enqueue(okhttp3.mockwebserver.MockResponse().setBody("hi")); start() }
+        try {
+            s.reset()
+            assertEquals(false, s.ready)
+            val p = s.selector.select(java.net.URI("https://example.com")).single()
+            assertEquals(java.net.Proxy.Type.SOCKS, p.type(), "unknown setting must not mean direct")
+            val http = vip.ringling.recon.data.net.Http()
+            val sent = kotlinx.coroutines.runBlocking { runCatching { http.execute(okhttp3.Request.Builder().url(server.url("/")).build()) { it.code } } }
+            assertEquals(true, sent.isFailure, "request must fail while the proxy setting is unknown")
+            assertEquals(0, server.requestCount, "nothing reached the network directly")
+            s.apply(vip.ringling.recon.data.net.ProxyMode.OFF, "", 0)
+            assertEquals(true, s.ready)
+            assertEquals(200, kotlinx.coroutines.runBlocking { http.execute(okhttp3.Request.Builder().url(server.url("/")).build()) { it.code } })
+        } finally { s.apply(vip.ringling.recon.data.net.ProxyMode.OFF, "", 0); server.shutdown() }
+    }
 }

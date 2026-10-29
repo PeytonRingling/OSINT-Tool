@@ -91,7 +91,7 @@ fun ReconRoot(vm: MainViewModel = hiltViewModel()) {
             }
         }
         val me by vm.me.collectAsStateWithLifecycle()
-        CompositionLocalProvider(LocalUserLocation provides me, LocalMapLayer provides MapLayerState(settings.mapSatellite, vm::setMapSatellite)) {
+        CompositionLocalProvider(LocalUserLocation provides me, LocalMapLayer provides MapLayerState(settings.mapSatellite, vm::setMapSatellite), vip.ringling.recon.ui.components.LocalOpsecImages provides settings.opsec) {
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { ReconApp() }
         }
     }
@@ -103,8 +103,6 @@ fun ReconApp() {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val main: MainViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
-    // The clipboard shortcut fills the search box on the Radar.
-    androidx.compose.runtime.LaunchedEffect(Unit) { main.prefill.collect { nav.goTab(Tab.HOME) } }
     // A link shared into Recon opens the Lab's link inspector.
     val sharedLink by main.pendingLink.collectAsStateWithLifecycle()
     androidx.compose.runtime.LaunchedEffect(sharedLink) { if (sharedLink != null) nav.goTab(Tab.LAB) }
@@ -126,6 +124,9 @@ fun ReconApp() {
     val pinState by pinCases.state.collectAsStateWithLifecycle()
     val radarVm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
     val radarState by radarVm.state.collectAsStateWithLifecycle()
+    // Shared text, selected text, mailto:/tel: links and the clipboard shortcut fill the Radar's search box (never searched on their own).
+    val incomingText by main.prefill.collectAsStateWithLifecycle()
+    LaunchedEffect(incomingText) { incomingText?.let { radarVm.prefill(it); main.consumePrefill(); nav.goTab(Tab.HOME) } }
     LaunchedEffect(Unit) {
         radarVm.events.collect { e ->
             when (e) {
@@ -198,19 +199,42 @@ fun ReconApp() {
                         val st by vm.state.collectAsStateWithLifecycle()
                         val ctx = androidx.compose.ui.platform.LocalContext.current
                         val scope = androidx.compose.runtime.rememberCoroutineScope()
+                        // Backups are always encrypted with a passphrase; an older plaintext backup still imports without one.
+                        var exportPass by remember { androidx.compose.runtime.mutableStateOf(false) }
+                        var importText by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+                        var importError by remember { androidx.compose.runtime.mutableStateOf<String?>(null) }
+                        fun importNow(text: String, pass: CharArray?) = scope.launch {
+                            val r = vm.importBackup(text, pass)
+                            val e = r.exceptionOrNull()
+                            if (e is vip.ringling.recon.data.BackupManager.PassphraseNeeded || e is vip.ringling.recon.data.BackupCrypto.WrongPassphrase) {
+                                importText = text; importError = if (pass == null) null else e.message
+                            } else {
+                                importText = null; importError = null
+                                snackbar.showSnackbar(r.fold({ "Imported ${it.scans} scans, ${it.cases} cases, ${it.watch} watched" }, { "Import failed: ${it.message}" }))
+                            }
+                        }
                         val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.OpenDocument()) { uri ->
                             if (uri != null) scope.launch {
                                 val text = runCatching { ctx.contentResolver.openInputStream(uri)?.use { it.readBytes().decodeToString() } }.getOrNull()
-                                val r = if (text == null) null else vm.importBackup(text)
-                                snackbar.showSnackbar(r?.fold({ "Imported ${it.scans} scans, ${it.cases} cases, ${it.watch} watched" }, { "Import failed: ${it.message}" }) ?: "Couldn't read that file")
+                                if (text == null) snackbar.showSnackbar("Couldn't read that file") else importNow(text, null)
                             }
+                        }
+                        if (exportPass) vip.ringling.recon.ui.settings.PassphraseDialog(
+                            "Encrypt backup", "Scans, cases, notes and the watchlist are encrypted with this passphrase. You'll need it to restore.", confirm = true,
+                            onDismiss = { exportPass = false },
+                        ) { pass -> exportPass = false; scope.launch { actions.saveFile("recon-backup-${java.time.LocalDate.now()}.recon", vm.encryptedBackup(pass).toByteArray()) } }
+                        importText?.let { text ->
+                            vip.ringling.recon.ui.settings.PassphraseDialog(
+                                "Open backup", "This backup is encrypted. Enter the passphrase it was saved with.", confirm = false, error = importError,
+                                onDismiss = { importText = null; importError = null },
+                            ) { pass -> importNow(text, pass) }
                         }
                         SettingsScreen(
                             st,
                             SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock,
-                                onExportBackup = { scope.launch { actions.saveFile("recon-backup-${java.time.LocalDate.now()}.json", vm.backupText().toByteArray()) } },
+                                onExportBackup = { exportPass = true },
                                 onImportBackup = { picker.launch(arrayOf("application/json", "text/plain", "*/*")) },
-                                onTestRoute = vm::testRoute, onRetention = vm::setRetention, onAutoRescan = vm::setAutoRescan, onWipe = vm::wipeEverything),
+                                onTestRoute = vm::testRoute, onRetention = vm::setRetention, onAutoRescan = vm::setAutoRescan, onWipe = vm::wipeEverything, onOpsec = vm::setOpsec),
                             contentPadding = pad,
                         )
                     }

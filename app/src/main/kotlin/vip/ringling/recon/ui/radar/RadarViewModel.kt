@@ -57,7 +57,6 @@ class RadarViewModel @Inject constructor(
 
     init {
         viewModelScope.launch { snapshots.backfill(history.records.first()) }
-        viewModelScope.launch { controller.prefill.collect { query.value = it } }
         viewModelScope.launch {
             controller.pendingQuery.collect { q ->
                 if (q != null) { controller.consumePending(); query.value = q; submit() }
@@ -75,6 +74,8 @@ class RadarViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RadarUiState())
 
     fun onQueryChange(v: String) { query.value = v }
+    /** Text another app handed over: shown in the box, searched only when the user presses go. */
+    fun prefill(v: String) { query.value = v }
 
     fun submit() {
         val raw = query.value.trim()

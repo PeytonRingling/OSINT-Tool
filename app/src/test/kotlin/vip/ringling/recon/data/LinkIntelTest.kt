@@ -38,6 +38,7 @@ class LinkIntelTest {
         val now = Instant.parse("2026-10-21T00:00:00Z")
         assertEquals(Severity.INFO, LinkIntel.ageFlag(Instant.parse("2026-07-01T00:00:00Z"), now).severity)
         assertEquals("example.co", LinkIntel.registrable("a.b.example.co"))
+        assertEquals("example.co.uk", LinkIntel.registrable("login.example.co.uk"), "multi-part suffixes keep the registered name")
         assertTrue(IncomingText.isLink("https://bit.ly/abc") && !IncomingText.isLink("see https://bit.ly/abc") && !IncomingText.isLink("example.com"))
     }
 }
