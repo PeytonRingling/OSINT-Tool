@@ -48,10 +48,13 @@ class UpdateSignerTest {
         signatures = certs.map(::Signature).toTypedArray()
     }
 
+    /** One build newer than this one: CI stamps versionCode with its run number, so a fixed number would be "up to date" there. */
+    private val newerBuild = vip.ringling.recon.BuildConfig.VERSION_CODE + 1
+
     /** The release body exactly as .github/workflows/build.yml writes it. */
     private fun releaseJson(base: String) = """
         {"html_url":"https://github.com/testuser/OSINT-Tool/releases/tag/latest","published_at":"2026-10-28T00:00:00Z",
-         "body":"Rolling build of `abc1234` — sideload `Recon.apk`; it installs over the previous build, or use Settings → Updates in the app.\nbuild: 7\nsha256: $apkSha\n",
+         "body":"Rolling build of `abc1234` — sideload `Recon.apk`; it installs over the previous build, or use Settings → Updates in the app.\nbuild: $newerBuild\nsha256: $apkSha\n",
          "assets":[{"url":"$base/gh/repos/testuser/OSINT-Tool/releases/assets/42","name":"Recon.apk","size":${apk.size}}]}
     """.trimIndent()
 
