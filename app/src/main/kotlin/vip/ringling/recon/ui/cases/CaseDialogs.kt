@@ -88,7 +88,7 @@ fun AddWatchDialog(onDismiss: () -> Unit, onAdd: (String) -> Unit) {
     val valid = vip.ringling.recon.domain.InputDetector.detect(email).let { it == InputType.EMAIL || it == InputType.USERNAME || it == InputType.DOMAIN }
     AlertDialog(
         onDismissRequest = onDismiss, title = { Text("Watch a target") },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Checked once a day. An email alerts on NEW breaches (needs a HIBP or LeakCheck key); a username or domain alerts when a new finding appears."); SignalTextField(email, { email = it }, "email, @username or domain", description = "Target to watch", keyboard = androidx.compose.ui.text.input.KeyboardType.Email, onGo = { if (valid) onAdd(email) }) } },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(10.dp)) { Text("Checked once a day. An email alerts on NEW breaches (needs a HIBP or LeakCheck key); a username alerts on a new account; a domain on new subdomains (crt.sh), WHOIS changes or a new Wayback capture."); SignalTextField(email, { email = it }, "email, @username or domain", description = "Target to watch", keyboard = androidx.compose.ui.text.input.KeyboardType.Email, onGo = { if (valid) onAdd(email) }) } },
         confirmButton = { TextButton(onClick = { onAdd(email) }, enabled = valid) { Text("Watch") } }, dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
