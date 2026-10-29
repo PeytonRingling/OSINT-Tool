@@ -91,7 +91,7 @@ fun ReconRoot(vm: MainViewModel = hiltViewModel()) {
             }
         }
         val me by vm.me.collectAsStateWithLifecycle()
-        CompositionLocalProvider(LocalUserLocation provides me, LocalMapLayer provides MapLayerState(settings.mapSatellite, vm::setMapSatellite)) {
+        CompositionLocalProvider(LocalUserLocation provides me, LocalMapLayer provides MapLayerState(settings.mapSatellite, vm::setMapSatellite), vip.ringling.recon.ui.components.LocalOpsecImages provides settings.opsec) {
             Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) { ReconApp() }
         }
     }
@@ -211,7 +211,7 @@ fun ReconApp() {
                             SettingsActions(vm::setTheme, vm::setDynamic, vm::setHaptics, vm::setKey, vm::clearHistory, vm::checkUpdate, vm::installUpdate, vm::dismissUpdateError, vm::setProxyMode, vm::setProxyHost, vm::setProxyPort, vm::setAppLock,
                                 onExportBackup = { scope.launch { actions.saveFile("recon-backup-${java.time.LocalDate.now()}.json", vm.backupText().toByteArray()) } },
                                 onImportBackup = { picker.launch(arrayOf("application/json", "text/plain", "*/*")) },
-                                onTestRoute = vm::testRoute, onRetention = vm::setRetention, onAutoRescan = vm::setAutoRescan, onWipe = vm::wipeEverything),
+                                onTestRoute = vm::testRoute, onRetention = vm::setRetention, onAutoRescan = vm::setAutoRescan, onWipe = vm::wipeEverything, onOpsec = vm::setOpsec),
                             contentPadding = pad,
                         )
                     }

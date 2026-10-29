@@ -187,11 +187,11 @@ private fun LinkTool(vm: LabViewModel, onPivot: (String) -> Unit, prefill: Strin
                 SignalLabel("VirusTotal")
                 vtFlags?.sortedBy { -it.severity.ordinal }?.forEach { FlagRow(it) }
                 if (!hasVt) Text("Add a free VirusTotal key under System → API keys to see what ~70 security engines say about this domain here. Without one you can open the report in your browser.", color = sig.muted, style = MaterialTheme.typography.bodySmall)
-                SignalButton("Open domain report on VirusTotal", { vip.ringling.recon.ui.LinkOpener.open(ctx, vip.ringling.recon.data.lab.VirusTotal.domainPage(host)) }, Modifier.fillMaxWidth(), mono = true)
+                SignalButton("Open domain report on VirusTotal", { vip.ringling.recon.ui.LinkOpener.openOrCopy(ctx, vip.ringling.recon.data.lab.VirusTotal.domainPage(host))?.let { android.widget.Toast.makeText(ctx, it, android.widget.Toast.LENGTH_LONG).show() } }, Modifier.fillMaxWidth(), mono = true)
                 val full = result?.chain?.lastOrNull() ?: LinkTracerNormalize(url)
                 if (hasVt) {
                     SignalButton(if (vtBusy) "Looking up…" else "Look up the full link (sends it to VirusTotal)", { vtBusy = true; scope.launch { vtFlags = (vtFlags.orEmpty().filter { it.text.startsWith("VirusTotal:") && "domain" in it.text }) + vip.ringling.recon.data.lab.VirusTotal.flags(vm.vtUrl(full), "link").map { it.copy(text = "Link " + it.text) }; vtBusy = false } }, Modifier.fillMaxWidth(), enabled = !vtBusy, mono = true)
-                } else SignalButton("Open link report on VirusTotal", { vip.ringling.recon.ui.LinkOpener.open(ctx, vip.ringling.recon.data.lab.VirusTotal.urlPage(full)) }, Modifier.fillMaxWidth(), mono = true)
+                } else SignalButton("Open link report on VirusTotal", { vip.ringling.recon.ui.LinkOpener.openOrCopy(ctx, vip.ringling.recon.data.lab.VirusTotal.urlPage(full))?.let { android.widget.Toast.makeText(ctx, it, android.widget.Toast.LENGTH_LONG).show() } }, Modifier.fillMaxWidth(), mono = true)
             }
         }
     }

@@ -92,6 +92,7 @@ data class SettingsActions(
     val onRetention: (Int) -> Unit = {},
     val onAutoRescan: (Boolean) -> Unit = {},
     val onWipe: () -> Unit = {},
+    val onOpsec: (Boolean) -> Unit = {},
     val onTestRoute: suspend () -> vip.ringling.recon.data.net.RouteResult = { vip.ringling.recon.data.net.RouteResult.Failed("not available") },
 )
 
@@ -188,6 +189,8 @@ private fun PrivacySection(state: SettingsUiState, a: SettingsActions) {
             }
             RouteTestRow(state.settings.proxyMode, a.onTestRoute)
         }
+        Divider()
+        SwitchRow("OPSEC mode", "Never contact a target's own server from your address: photos load only when tapped, links open only in Tor Browser (or are copied), and the link inspector needs Tor or a proxy.", state.settings.opsec, a.onOpsec)
         Divider()
         SwitchRow("App lock", "Fingerprint, face or PIN. Hides Recon from recents.", state.settings.appLock, a.onAppLock)
     }

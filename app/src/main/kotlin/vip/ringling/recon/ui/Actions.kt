@@ -80,10 +80,7 @@ fun rememberReconActions(snackbar: SnackbarHostState, onPivot: (String) -> Unit 
                     runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, "geo:${g.lat},${g.lng}?q=${g.lat},${g.lng}".toUri()).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
                 },
                 onOpenUrl = { url ->
-                    if (!LinkOpener.open(context, url)) {
-                        LinkOpener.copy(context, url)
-                        scope.launch { snackbar.showSnackbar("Couldn't open that link. It was copied instead.") }
-                    }
+                    LinkOpener.openOrCopy(context, url)?.let { msg -> scope.launch { snackbar.showSnackbar(msg) } }
                 },
             ),
             exportScan = { input, findings -> export("recon-scan-${input.type.name.lowercase()}.json", Export.scan(input, findings)) },
