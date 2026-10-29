@@ -35,7 +35,7 @@ class WatchSignalTest {
 
     @Test fun domainSignatureCoversSubdomainsWhoisAndWayback() {
         val sig = WatchLogic.signatureFor(InputType.DOMAIN, listOf(subs("api.x.io", "dev.x.io"), rdap("Gandi", "2027-01-01"), wayback("2026-10-01")))!!
-        assertEquals(setOf("sub:api.x.io", "sub:dev.x.io", "whois:Registrar=Gandi|Expires=2027-01-01|Status=|Nameservers=ns1.x.io", "wayback:2026-10-01"), sig)
+        assertEquals(setOf(WatchLogic.TYPED, "sub:api.x.io", "sub:dev.x.io", "whois:Registrar=Gandi|Expires=2027-01-01|Status=|Nameservers=ns1.x.io", "wayback:2026-10-01"), sig)
     }
 
     @Test fun aFailedCategoryKeepsItsBaselineInsteadOfAlertingOrForgetting() {
@@ -68,8 +68,45 @@ class WatchSignalTest {
 
     @Test fun legacyBaselinesAreReRecordedSilently() {
         assertNull(WatchLogic.usableBaseline(InputType.DOMAIN, setOf("DOMAIN-subs", "DOMAIN-rdap")))
+        assertNull(WatchLogic.usableBaseline(InputType.USERNAME, emptySet()), "an old empty baseline can't say what it covered")
         assertEquals(setOf("hibp-Adobe"), WatchLogic.usableBaseline(InputType.EMAIL, setOf("hibp-Adobe")))
-        assertEquals(setOf("sub:a.x.io"), WatchLogic.usableBaseline(InputType.DOMAIN, setOf("sub:a.x.io")))
+        assertEquals(setOf(WatchLogic.TYPED, "sub:a.x.io"), WatchLogic.usableBaseline(InputType.DOMAIN, setOf(WatchLogic.TYPED, "sub:a.x.io")))
+    }
+
+    private fun summary(raw: String = "") = Finding("IDENTITY-summary", ModuleId.IDENTITY, "s", "d", Severity.INFO, raw = raw)
+    private fun account(site: String) = Finding("IDENTITY-$site", ModuleId.IDENTITY, site, "d", Severity.INFO)
+
+    /** One daily check: the baseline as the checker would read it back, then what's new. */
+    private fun check(type: InputType, stored: Set<String>?, findings: List<Finding>): Pair<Set<String>, Set<String>> {
+        val known = WatchLogic.usableBaseline(type, stored)
+        val sig = WatchLogic.signatureFor(type, findings, known)!!
+        return sig to WatchLogic.newItems(known, sig)
+    }
+
+    @Test fun aUsernameWithNoAccountsYetAlertsOnItsFirstOne() {
+        val (base, silent) = check(InputType.USERNAME, null, listOf(summary()))
+        assertEquals(emptySet(), silent, "first check records silently")
+        val (_, fresh) = check(InputType.USERNAME, base, listOf(account("GitHub"), summary()))
+        assertEquals(setOf("account:GitHub"), fresh)
+    }
+
+    @Test fun anAccountMissingForADayIsNotNewWhenItComesBack() {
+        val (base, _) = check(InputType.USERNAME, null, listOf(account("GitHub"), account("Reddit"), summary()))
+        // Reddit skipped as unreliable today: not listed as found, and not listed as inconclusive either.
+        val (gap, none) = check(InputType.USERNAME, base, listOf(account("GitHub"), summary()))
+        assertEquals(emptySet(), none)
+        val (_, back) = check(InputType.USERNAME, gap, listOf(account("GitHub"), account("Reddit"), summary()))
+        assertEquals(emptySet(), back, "Reddit was already known")
+    }
+
+    @Test fun aTruncatedCrtShAnswerDoesNotReAlertLater() {
+        val (base, _) = check(InputType.DOMAIN, null, listOf(subs("api.x.io", "vpn.x.io"), rdap("Gandi", "2027-01-01")))
+        val (partial, none) = check(InputType.DOMAIN, base, listOf(subs("api.x.io"), rdap("Gandi", "2027-01-01")))
+        assertEquals(emptySet(), none)
+        val (_, back) = check(InputType.DOMAIN, partial, listOf(subs("api.x.io", "vpn.x.io"), rdap("Gandi", "2027-01-01")))
+        assertEquals(emptySet(), back)
+        val (_, fresh) = check(InputType.DOMAIN, partial, listOf(subs("api.x.io", "vpn.x.io", "new.x.io"), rdap("Gandi", "2027-01-01")))
+        assertEquals(setOf("sub:new.x.io"), fresh)
     }
 
     @Test fun describeSaysWhatChanged() {

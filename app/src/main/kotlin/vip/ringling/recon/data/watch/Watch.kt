@@ -63,11 +63,16 @@ object WatchLogic {
 
     private val identityHousekeeping = setOf("IDENTITY-summary", "IDENTITY-profile", "IDENTITY-manual", "IDENTITY-email-summary")
 
+    /** In every username/domain signature, so a baseline with no accounts or subdomains yet is still told apart from a pre-token one. */
+    const val TYPED = "v:2"
+
     /**
-     * Signature for watched targets. Email: breach ids ([signature]). Username: `account:<site>` per site with an account. Domain:
-     * `sub:<name>` per certificate-transparency subdomain (crt.sh), one `whois:<registrar|expiry|status|nameservers>` token (RDAP) and one
-     * `wayback:<latest capture>` token. A category whose lookup failed or was inconclusive this run keeps its [known] tokens, so a flaky source
-     * neither alerts nor moves its part of the baseline. Null when nothing at all was learned.
+     * Signature for watched targets. Email: breach ids ([signature]). Username: `account:<site>` for every site an account was ever seen on.
+     * Domain: `sub:<name>` for every certificate-transparency subdomain ever seen (crt.sh), one `whois:<registrar|expiry|status|nameservers>`
+     * token (RDAP) and one `wayback:<latest capture>` token. Accounts and subdomains only accumulate: a site that was blocked, rate-limited or
+     * skipped as unreliable, or a crt.sh answer cut short, then answering again is not news. WHOIS and Wayback are current-state tokens that
+     * keep their [known] value when their lookup failed. Null when nothing at all was learned, so a failed run neither alerts nor moves the
+     * baseline.
      */
     fun signatureFor(type: InputType, findings: List<Finding>, known: Set<String>? = null): Set<String>? {
         val prev = known.orEmpty()
@@ -75,22 +80,20 @@ object WatchLogic {
         return when (type) {
             InputType.EMAIL -> signature(findings)
             InputType.USERNAME -> {
-                val summary = findings.firstOrNull { it.id == "IDENTITY-summary" } ?: return null
-                val inconclusive = summary.raw.removePrefix("inconclusive: ").split(", ").map { it.substringBefore(" (") }.filter { it.isNotBlank() }.toSet()
+                if (findings.none { it.id == "IDENTITY-summary" }) return null
                 val found = findings.filter { it.module == ModuleId.IDENTITY && it.id !in identityHousekeeping && !it.id.endsWith("-error") }.map { "account:" + it.id.removePrefix("IDENTITY-") }
-                (found + carried("account:").filter { it.removePrefix("account:") in inconclusive }).toSet()
+                (found + carried("account:") + TYPED).toSet()
             }
             InputType.DOMAIN -> {
                 val byId = findings.associateBy { it.id }
                 var learned = false
-                val out = mutableSetOf<String>()
-                val subs = byId["DOMAIN-subs"]
-                if (subs != null) { learned = true; out += subs.raw.lines().map { it.trim() }.filter { it.isNotEmpty() }.map { "sub:$it" } } else out += carried("sub:")
+                val out = mutableSetOf(TYPED)
+                out += carried("sub:")
+                byId["DOMAIN-subs"]?.let { subs -> learned = true; out += subs.raw.lines().map { it.trim() }.filter { it.isNotEmpty() }.map { "sub:$it" } }
                 val rdap = byId["DOMAIN-rdap"]
                 if (rdap != null) {
                     learned = true
-                    val v = listOf("Registrar", "Expires", "Status", "Nameservers").joinToString("|") { l -> "$l=" + (rdap.facts.firstOrNull { it.label == l }?.value ?: "") }
-                    out += "whois:$v"
+                    out += "whois:" + listOf("Registrar", "Expires", "Status", "Nameservers").joinToString("|") { l -> "$l=" + (rdap.facts.firstOrNull { it.label == l }?.value ?: "") }
                 } else out += carried("whois:")
                 val latest = byId["DOMAIN-wayback"]?.facts?.firstOrNull { it.label == "Latest capture" }?.value?.substringBefore('\n')
                 if (latest != null) { learned = true; out += "wayback:$latest" } else out += carried("wayback:")
@@ -100,9 +103,9 @@ object WatchLogic {
         }
     }
 
-    /** Tokens written before typed tokens existed (username/domain) can't be compared: such a baseline is re-recorded silently. */
+    /** A username/domain baseline recorded before typed tokens ([TYPED]) can't be compared: it is re-recorded silently. */
     fun usableBaseline(type: InputType, known: Set<String>?): Set<String>? =
-        if (known == null || type == InputType.EMAIL || type !in setOf(InputType.USERNAME, InputType.DOMAIN) || known.any { ':' in it }) known else null
+        if (known != null && type in setOf(InputType.USERNAME, InputType.DOMAIN) && TYPED !in known) null else known
 
     /** One line for the notification, e.g. "2 new subdomains (api, dev) · registration (WHOIS) changed". */
     fun describe(type: InputType, fresh: Set<String>): String {
