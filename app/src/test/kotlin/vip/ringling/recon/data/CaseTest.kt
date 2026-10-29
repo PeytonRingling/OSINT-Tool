@@ -128,7 +128,7 @@ class WatchTest {
         assertEquals(null, vip.ringling.recon.data.watch.WatchLogic.signature(ok + Finding("BREACH-hibp-error", ModuleId.BREACH, "x", "d", Severity.INFO)))
         assertEquals(emptySet(), vip.ringling.recon.data.watch.WatchLogic.newItems(null, setOf("a")), "first run is a silent baseline")
         val hits = listOf(Finding("IDENTITY-github", ModuleId.IDENTITY, "GitHub", "d", Severity.INFO), Finding("IDENTITY-summary", ModuleId.IDENTITY, "s", "d", Severity.INFO), Finding("IDENTITY-gitlab", ModuleId.IDENTITY, "GitLab", "d", Severity.INFO))
-        assertEquals(setOf("account:github", "account:gitlab"), vip.ringling.recon.data.watch.WatchLogic.signatureFor(vip.ringling.recon.domain.InputType.USERNAME, hits), "housekeeping rows are not findings")
+        assertEquals(setOf("account:github", "account:gitlab", vip.ringling.recon.data.watch.WatchLogic.TYPED), vip.ringling.recon.data.watch.WatchLogic.signatureFor(vip.ringling.recon.domain.InputType.USERNAME, hits), "housekeeping rows are not findings")
         assertEquals(null, vip.ringling.recon.data.watch.WatchLogic.signatureFor(vip.ringling.recon.domain.InputType.DOMAIN, listOf(Finding("DOMAIN-x-error", ModuleId.DOMAIN, "x", "d", Severity.INFO))), "a run that learned nothing never alerts")
         assertEquals(setOf("b"), vip.ringling.recon.data.watch.WatchLogic.newItems(setOf("a"), setOf("a", "b")))
     }
