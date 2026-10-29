@@ -14,12 +14,13 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
   Settings at runtime (Keystore-backed encrypted storage, never plaintext, never logged, masked with
   reveal toggle). Test every module's parsing/error handling against saved fixtures + MockWebServer;
   the user does live checks on their phone.
-- The only committed secret-like file is `ci/debug.keystore` (throwaway, password `android`) so
-  every CI build has the same signature and installs over the previous one.
+- Release APKs are signed only with the private release key from GitHub Actions secrets (`RELEASE_KEYSTORE_B64`,
+  `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`). There is no fallback key: without them the
+  release build fails. Never commit a keystore. Debug builds use the standard local debug key.
 
 ## Environment / build
 - Cloud container, no emulator, no KVM. Android SDK at `/opt/android-sdk` (`local.properties` is
-  gitignored; set `ANDROID_HOME=/opt/android-sdk`). JDK 21, Gradle wrapper 9.8.1, AGP 9.4.1
+  gitignored; set `ANDROID_HOME=/opt/android-sdk`). JDK 21 is required (Robolectric's SDK 36/37 sandboxes refuse JDK 17), Gradle wrapper 9.8.1, AGP 9.4.1
   (built-in Kotlin — no `kotlin-android` plugin), Hilt 2.60.1, KSP.
 - Network allowlist needed: dl.google.com, maven.google.com, services.gradle.org,
   plugins.gradle.org, repo1.maven.org, fonts.google.com. `repo.maven.apache.org` often returns 429, so
@@ -92,12 +93,12 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
 
 ## In-app updates (added 2026-10-15)
 - Settings → Updates (+ a quiet launch-time check and snackbar when a token is set). Source = the rolling `latest` GitHub release.
-  While the repo is PRIVATE the user adds a fine-grained GitHub token (this repo, **Contents: read**) under Settings → API keys
-  (`ApiKeyId.GITHUB`, Keystore-encrypted like the others); if the repo is made public no token is needed (it's optional everywhere). Token only goes to api.github.com; OkHttp drops it on the storage redirect (tested).
+  The repo is public, so no token is needed. A fine-grained GitHub token (this repo, **Contents: read**) under Settings → API keys
+  (`ApiKeyId.GITHUB`, Keystore-encrypted like the others) is optional and only raises the rate limit. Token only goes to api.github.com; OkHttp drops it on the storage redirect (tested).
 - CI writes `build: <run number>` and `sha256: <hex>` lines into the release body; `versionCode` = `GITHUB_RUN_NUMBER` (local builds = 1).
   The app compares build vs `BuildConfig.VERSION_CODE`, downloads to `cacheDir/updates/Recon.apk`, verifies size + SHA-256 (bad file deleted),
-  installs via `PackageInstaller` (needs REQUEST_INSTALL_PACKAGES / "Install unknown apps" for Recon). Android itself enforces same-signature,
-  so the shared `ci/debug.keystore` must never change or updates stop installing.
+  then refuses the APK unless its signing certificate SHA-256 equals the installed app's (`SigningCheck`), and installs via `PackageInstaller`
+  (needs REQUEST_INSTALL_PACKAGES / "Install unknown apps" for Recon). The release key must never change or updates stop installing.
 - Code: `data/update/{UpdateRepository,ApkInstaller,UpdateManager}.kt`; tests `UpdateTest` (MockWebServer; release JSON fixture authored from GitHub docs).
 - Local/dev APKs have versionCode 1, so they can't update over a CI build; always install the release build first.
 
@@ -234,3 +235,13 @@ Private, sideloaded app. Repo: the GitHub repo this was cloned from (its owner i
   is counted, never treated as "not found".
 - Tests: `./gradlew testDebugUnitTest` (domain, MockWebServer source tests, Roborazzi). 200+ tests at last count.
 - Robolectric on JDK 21 needs the `--add-opens/--add-exports` jvmArgs already in `app/build.gradle.kts`.
+
+## Security hardening (added 2026-10-28)
+- Every request is held at a dead SOCKS port (`ProxyState.UNSET`) until the saved proxy setting is applied; `ReconApp.onCreate` reads it
+  synchronously before any activity or worker runs. Tests call `directNetworkForTests()`.
+- `USER_AGENT` is a common browser string (no tool name, no repo). HIBP alone gets `Recon-Android/0.2` (it asks clients to identify themselves).
+- `LockGate` covers the UI while locked: the cover takes every touch and the content is dropped from the accessibility tree.
+- Outside input (share, selected text, mailto:/tel:, clipboard shortcut) goes through `IncomingText.route` and only ever prefills the search box
+  or the Lab's link box (`ScanController.prefill` is a StateFlow so a cold-start share isn't lost).
+- `DbKey.load` distinguishes Missing from Unreadable. Unreadable never deletes or replaces anything: that session uses an in-memory database.
+  An encrypted file with no saved key is renamed `recon.db.unopenable-<ts>`, never deleted.

@@ -93,6 +93,7 @@ class UpdateManager @Inject constructor(
             try {
                 _state.value = UpdateState.Downloading(info, 0f)
                 val file = repo.download(info, keys.get(ApiKeyId.GITHUB), apkFile) { p -> _state.value = UpdateState.Downloading(info, p) }
+                SigningCheck.requireSameSigner(context, file)
                 _state.value = UpdateState.Installing(info)
                 installer.install(file)
             } catch (e: Exception) {

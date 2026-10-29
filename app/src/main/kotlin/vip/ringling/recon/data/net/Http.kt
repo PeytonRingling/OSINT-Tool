@@ -11,7 +11,6 @@ import okhttp3.Request
 import okhttp3.Response
 import java.util.concurrent.TimeUnit
 
-val USER_AGENT = "Recon-Android/0.2 (personal OSINT toolkit" + vip.ringling.recon.BuildConfig.UPDATE_REPO.let { if (it.isBlank()) "" else "; +https://github.com/$it" } + ")"
 
 fun buildHttpClient(): OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(10, TimeUnit.SECONDS)
@@ -50,5 +49,11 @@ class Http(val client: OkHttpClient = buildHttpClient()) {
 
 /** Browser-like UA for site probes: many sites 403 non-browser agents. Requests run from the user's own device. */
 const val BROWSER_USER_AGENT = "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36"
+
+/**
+ * Sent on every request that doesn't set its own. A common browser string on purpose: anything naming Recon or its repo would tell every
+ * service, and every target whose avatar or page is fetched, which tool (and whose GitHub) is looking.
+ */
+const val USER_AGENT = BROWSER_USER_AGENT
 
 class HttpException(val code: Int, message: String) : IOException(message)

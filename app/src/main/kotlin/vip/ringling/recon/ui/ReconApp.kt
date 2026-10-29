@@ -103,8 +103,6 @@ fun ReconApp() {
     val nav = rememberNavController()
     val snackbar = remember { SnackbarHostState() }
     val main: MainViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
-    // The clipboard shortcut fills the search box on the Radar.
-    androidx.compose.runtime.LaunchedEffect(Unit) { main.prefill.collect { nav.goTab(Tab.HOME) } }
     // A link shared into Recon opens the Lab's link inspector.
     val sharedLink by main.pendingLink.collectAsStateWithLifecycle()
     androidx.compose.runtime.LaunchedEffect(sharedLink) { if (sharedLink != null) nav.goTab(Tab.LAB) }
@@ -126,6 +124,9 @@ fun ReconApp() {
     val pinState by pinCases.state.collectAsStateWithLifecycle()
     val radarVm: vip.ringling.recon.ui.radar.RadarViewModel = hiltViewModel(androidx.activity.compose.LocalActivity.current as androidx.activity.ComponentActivity)
     val radarState by radarVm.state.collectAsStateWithLifecycle()
+    // Shared text, selected text, mailto:/tel: links and the clipboard shortcut fill the Radar's search box (never searched on their own).
+    val incomingText by main.prefill.collectAsStateWithLifecycle()
+    LaunchedEffect(incomingText) { incomingText?.let { radarVm.prefill(it); main.consumePrefill(); nav.goTab(Tab.HOME) } }
     LaunchedEffect(Unit) {
         radarVm.events.collect { e ->
             when (e) {

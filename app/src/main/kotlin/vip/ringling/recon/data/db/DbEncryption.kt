@@ -34,19 +34,29 @@ object DbEncryption {
 
     /** The passphrase bytes to open the database with, or null to open it unencrypted. */
     fun prepare(context: Context): ByteArray? = try {
-        System.loadLibrary("sqlcipher")
         val file = context.getDatabasePath(DB)
-        var pass = DbKey.load(context)
-        if (pass == null) {
-            // An encrypted file with no readable key (Keystore reset) can never be opened again: start fresh rather than crash-loop.
-            if (file.exists() && !isPlaintext(file)) deleteDbFiles(file)
-            pass = DbKey.create(context)
+        val pass = when (val k = DbKey.load(context)) {
+            is DbKey.Loaded -> k.pass
+            is DbKey.Unreadable -> {
+                // The key exists but can't be decrypted right now (Keystore hiccup, device just booted...). Never delete or replace anything:
+                // the next launch may read it fine. This run uses a throwaway in-memory database instead of the real one.
+                status = DbStatus(false, "The database key couldn't be read (${k.reason.take(120)}). Your data was left untouched; restart Recon to try again.")
+                throw DbKeyUnreadable(k.reason)
+            }
+            DbKey.Missing -> {
+                // An encrypted file with no saved key at all can never be opened again: keep it aside (never delete) and start fresh.
+                if (file.exists() && !isPlaintext(file)) setAside(file)
+                DbKey.create(context)
+            }
         }
+        System.loadLibrary("sqlcipher")
         val failure = if (file.exists() && isPlaintext(file)) migrate(file, pass) else null
         if (failure != null) {
             status = DbStatus(false, "Converting the existing database failed (${failure.ifBlank { "unknown error" }}), so it was left unchanged.")
             null
         } else { status = DbStatus(true); pass.toByteArray(Charsets.US_ASCII) }
+    } catch (t: DbKeyUnreadable) {
+        throw t
     } catch (t: Throwable) {
         status = DbStatus(false, "Encryption isn't available on this device (${t.javaClass.simpleName}${t.message?.let { ": " + it.take(120) } ?: ""}).")
         null
@@ -55,6 +65,12 @@ object DbEncryption {
     internal fun isPlaintext(file: File): Boolean = runCatching {
         file.inputStream().use { s -> ByteArray(16).also { s.read(it) }.contentEquals(PLAIN_HEADER) }
     }.getOrDefault(false)
+
+    /** Moves an unopenable database out of the way (with its WAL/SHM) instead of deleting it. */
+    internal fun setAside(file: File) {
+        val stamp = System.currentTimeMillis()
+        listOf("", "-wal", "-shm", "-journal").forEach { ext -> File(file.path + ext).takeIf { it.exists() }?.renameTo(File(file.parentFile, "${file.name}.unopenable-$stamp$ext")) }
+    }
 
     private fun deleteDbFiles(file: File) {
         listOf(file, File(file.path + "-wal"), File(file.path + "-shm"), File(file.path + "-journal")).forEach { it.delete() }
@@ -139,6 +155,9 @@ object DbEncryption {
     }
 }
 
+/** The saved database key exists but couldn't be read; opening must not continue with a new key or a wiped file. */
+class DbKeyUnreadable(reason: String) : Exception(reason)
+
 /** The database passphrase, stored as AES-GCM ciphertext under a Keystore key. */
 @android.annotation.SuppressLint("ApplySharedPref") // the key must be on disk before the database is created with it
 internal object DbKey {
@@ -146,12 +165,20 @@ internal object DbKey {
     private const val PREFS = "recon_db"
     private const val ENTRY = "k"
 
-    fun load(context: Context): String? = runCatching {
-        val blob = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(ENTRY, null) ?: return null
-        val raw = Base64.decode(blob, Base64.NO_WRAP)
-        val c = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, raw, 0, 12)) }
-        String(c.doFinal(raw, 12, raw.size - 12), Charsets.US_ASCII)
-    }.getOrNull()
+    sealed interface Result
+    data class Loaded(val pass: String) : Result
+    /** A key is saved but couldn't be decrypted. NOT the same as missing: the data must not be thrown away over it. */
+    data class Unreadable(val reason: String) : Result
+    data object Missing : Result
+
+    fun load(context: Context): Result {
+        val blob = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(ENTRY, null) ?: return Missing
+        return runCatching {
+            val raw = Base64.decode(blob, Base64.NO_WRAP)
+            val c = Cipher.getInstance("AES/GCM/NoPadding").apply { init(Cipher.DECRYPT_MODE, key(), GCMParameterSpec(128, raw, 0, 12)) }
+            Loaded(String(c.doFinal(raw, 12, raw.size - 12), Charsets.US_ASCII))
+        }.getOrElse { Unreadable("${it.javaClass.simpleName}${it.message?.let { m -> ": $m" } ?: ""}") }
+    }
 
     fun create(context: Context): String {
         val pass = ByteArray(32).also { SecureRandom().nextBytes(it) }.joinToString("") { "%02x".format(it) }

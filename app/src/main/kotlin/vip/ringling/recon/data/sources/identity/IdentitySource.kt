@@ -78,7 +78,8 @@ class IdentitySource @Inject constructor(
 
     private fun usernameSweep(username: String): Flow<Finding> = channelFlow {
         val all = sites.load()
-        val formatOk = all.filter { it.usernameRegex == null || Regex(it.usernameRegex).matches(username) }
+        // A malformed pattern in the site list skips that one site instead of failing the whole sweep.
+        val formatOk = all.filter { it.usernameRegex == null || runCatching { Regex(it.usernameRegex).matches(username) }.getOrDefault(false) }
         val unreliable = formatOk.filter { health.shouldSkip(it.name) }
         val applicable = formatOk - unreliable.toSet()
         val outcomes = mutableMapOf<String, Boolean>()
@@ -101,7 +102,7 @@ class IdentitySource @Inject constructor(
                 when (result) {
                     Probe.Found, is Probe.Hit -> {
                         tally.withLock { found++ }
-                        val url = (site.profileUrl ?: site.url).replace("{u}", username)
+                        val url = (site.profileUrl ?: site.url).replace("{u}", URLEncoder.encode(username, "UTF-8").replace("+", "%20"))
                         val ex = if (result is Probe.Hit && site.extract != null) Extractor.extract(site.extract, result.body) else null
                         if (ex != null) tally.withLock {
                             profiles += site.name to ex
@@ -115,7 +116,9 @@ class IdentitySource @Inject constructor(
                                     append(if (ex != null && ex.facts.isNotEmpty()) ex.facts.take(2).joinToString(" · ") { "${it.first}: ${it.second}" } else "Account found for $username.")
                                 },
                                 severity = Severity.INFO, url = url,
-                                raw = """{"site":"${site.name}","probe":"${site.url.replace("{u}", username)}","method":"${site.method}"}""",
+                                raw = kotlinx.serialization.json.buildJsonObject {
+                                    put("site", kotlinx.serialization.json.JsonPrimitive(site.name)); put("probe", kotlinx.serialization.json.JsonPrimitive(site.url.replace("{u}", URLEncoder.encode(username, "UTF-8")))); put("method", kotlinx.serialization.json.JsonPrimitive(site.method.name))
+                                }.toString(),
                                 confidence = site.confidence,
                                 imageUrl = ex?.avatar, imageLargeUrl = ex?.avatar,
                                 facts = ex?.facts?.map { Fact(it.first, it.second) }.orEmpty(),

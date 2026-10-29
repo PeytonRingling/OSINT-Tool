@@ -10,6 +10,7 @@ import vip.ringling.recon.data.lab.LinkTracer
 import vip.ringling.recon.data.net.Http
 
 class LinkTracerTest {
+    init { directNetworkForTests() }
     @Test fun followsRedirectsHopByHopWithoutReadingBodies() = runTest {
         val s = MockWebServer().apply {
             enqueue(MockResponse().setResponseCode(301).setHeader("Location", "/two"))
