@@ -29,18 +29,24 @@ no token. It installs an update only if the APK is signed with the same certific
 ## Release signing
 
 Release builds are signed with a private key kept in GitHub Actions secrets. There is no fallback key: if any secret is missing,
-the release workflow fails. Debug builds use the standard local debug key.
+the release workflow stops with an error naming it and publishes nothing. Debug builds use the standard local debug key.
 
-One-time setup (run on your own computer, keep the `.jks` file and passwords somewhere safe, never commit them):
+One-time setup, on your own computer (`keytool` ships with any JDK, including Android Studio's). Keep the `.jks` file and its
+password somewhere safe and never commit them: every future update must be signed with this key.
 
 ```
-keytool -genkeypair -v -keystore recon-release.jks -alias recon -keyalg RSA -keysize 4096 -validity 10000
+keytool -genkeypair -v -storetype PKCS12 -keystore recon-release.jks -alias recon -keyalg RSA -keysize 4096 -validity 10000
 base64 -w0 recon-release.jks | gh secret set RELEASE_KEYSTORE_B64 -R PeytonRingling/OSINT-Tool
-gh secret set RELEASE_KEYSTORE_PASSWORD -R PeytonRingling/OSINT-Tool   # paste the store password
+gh secret set RELEASE_KEYSTORE_PASSWORD -R PeytonRingling/OSINT-Tool   # paste the keystore password
+gh secret set RELEASE_KEY_PASSWORD -R PeytonRingling/OSINT-Tool        # paste the same password (PKCS12 uses one password)
 gh secret set RELEASE_KEY_ALIAS -R PeytonRingling/OSINT-Tool -b recon
-gh secret set RELEASE_KEY_PASSWORD -R PeytonRingling/OSINT-Tool        # paste the key password
+gh secret list -R PeytonRingling/OSINT-Tool                            # expect the four RELEASE_* names
 ```
 
-(On macOS use `base64 -i recon-release.jks` instead of `base64 -w0`.) Builds signed with the new key can't install over a build
-signed with the old one, so once: export a backup in Recon (System → Data → Backup → Export), uninstall Recon, install the new `Recon.apk`,
-then restore the backup and re-enter API keys.
+On macOS use `base64 -i recon-release.jks | gh secret set ...`. Set the secrets before the first push to `main` that carries this
+workflow, or that build fails at "Load release key".
+
+Android won't install an update signed with a different key, so the switch needs one manual reinstall: export a backup in Recon
+(System → Data → Backup → Export), uninstall Recon, install `Recon.apk` from the `latest` release, then import the backup and re-enter
+your API keys (backups never contain keys). Until you do, the old app's in-app update fails at install time, which is harmless.
+After the reinstall, in-app updates from the `latest` release work as before.

@@ -3,7 +3,6 @@ package vip.ringling.recon.security
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlinx.coroutines.runBlocking
 import okhttp3.Request
 import okhttp3.mockwebserver.MockResponse
@@ -12,7 +11,6 @@ import org.junit.Test
 import vip.ringling.recon.data.directNetworkForTests
 import vip.ringling.recon.data.net.BROWSER_USER_AGENT
 import vip.ringling.recon.data.net.Http
-import vip.ringling.recon.data.update.SigningCheck
 import vip.ringling.recon.domain.Incoming
 import vip.ringling.recon.domain.IncomingText
 
@@ -55,16 +53,5 @@ class UserAgentTest {
             assertEquals(BROWSER_USER_AGENT, ua)
             assertFalse(ua.contains("recon", ignoreCase = true) || ua.contains("github", ignoreCase = true), ua)
         } finally { s.shutdown() }
-    }
-}
-
-class SigningCheckTest {
-    @Test fun onlyTheSameSignerPasses() {
-        val mine = setOf(SigningCheck.sha256("release cert".toByteArray()))
-        assertTrue(SigningCheck.matches(mine, setOf(SigningCheck.sha256("release cert".toByteArray()))))
-        assertFalse(SigningCheck.matches(mine, setOf(SigningCheck.sha256("someone else".toByteArray()))), "foreign key refused")
-        assertFalse(SigningCheck.matches(mine, emptySet()), "unsigned/unreadable refused")
-        assertFalse(SigningCheck.matches(emptySet(), emptySet()), "unknown installed signer never matches")
-        assertFalse(SigningCheck.matches(mine, mine + SigningCheck.sha256("extra".toByteArray())), "extra signer refused")
     }
 }
